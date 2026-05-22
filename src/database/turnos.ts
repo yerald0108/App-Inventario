@@ -18,13 +18,6 @@ export async function crearTurno(): Promise<number> {
   return resultado.lastInsertRowId;
 }
 
-// Obtener o crear turno automáticamente
-export async function obtenerOCrearTurno(): Promise<number> {
-  const turnoActual = await obtenerTurnoAbierto();
-  if (turnoActual) return turnoActual.id;
-  return await crearTurno();
-}
-
 // Obtener resumen completo de un turno para el cierre
 export async function obtenerResumenTurno(turnoId: number) {
   // Total en efectivo (solo ventas no canceladas)
@@ -57,6 +50,20 @@ export async function obtenerResumenTurno(turnoId: number) {
     [turnoId]
   );
 
+  // Lista de salidas familiares (Bug 9)
+  const salidasFamiliares = await db.getAllAsync<{
+    nombre: string;
+    cantidad: number;
+    fecha_hora: string;
+  }>(
+    `SELECT p.nombre, m.cantidad, m.fecha_hora
+     FROM movimientos m
+     JOIN productos p ON m.producto_id = p.id
+     WHERE m.turno_id = ? AND m.tipo = 'salida_familiar'
+     ORDER BY m.fecha_hora ASC`,
+    [turnoId]
+  );
+
   // Inventario actual de todos los productos
   const inventario = await db.getAllAsync<{
     nombre: string;
@@ -70,6 +77,7 @@ export async function obtenerResumenTurno(turnoId: number) {
     totalEfectivo: efectivo?.total ?? 0,
     totalTransferencia: transferencia?.total ?? 0,
     entradas,
+    salidasFamiliares,
     inventario,
   };
 }

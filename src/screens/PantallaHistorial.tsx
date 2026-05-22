@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { Turno } from '../types';
 import { obtenerTurnosCerrados } from '../database/turnos';
-import Skeleton from '../components/Skeleton';
+import Skeleton, { SkeletonTurno } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
 type Props = {
@@ -46,6 +46,21 @@ export default function PantallaHistorial({ navigation }: Props) {
     });
   }
 
+  // Calcular duración del turno (Task 7)
+  function calcularDuracion(inicio: string, cierre: string | null): string {
+    if (!cierre) return '';
+    const dInicio = new Date(inicio);
+    const dCierre = new Date(cierre);
+    const diffMs = dCierre.getTime() - dInicio.getTime();
+    
+    const diffMins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+
+    if (hours === 0) return `${mins} min`;
+    return `${hours} h ${mins} min`;
+  }
+
   // Calcular si el turno cuadró
   function estadoCuadre(turno: Turno): { texto: string; color: string; icono: any } {
     if (turno.efectivo_real == null || turno.total_esperado_efectivo == null) {
@@ -60,16 +75,7 @@ export default function PantallaHistorial({ navigation }: Props) {
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
       {[1, 2, 3, 4].map((i) => (
-        <View key={i} style={estilos.skeletonCard}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 }}>
-            <Skeleton width="40%" height={20} />
-            <Skeleton width="30%" height={20} />
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f7fafc' }}>
-            <Skeleton width="40%" height={15} />
-            <Skeleton width="30%" height={15} />
-          </View>
-        </View>
+        <SkeletonTurno key={i} />
       ))}
     </View>
   );
@@ -95,16 +101,28 @@ export default function PantallaHistorial({ navigation }: Props) {
               (item.total_esperado_efectivo ?? 0) +
               (item.total_esperado_transferencia ?? 0);
             const cuadre = estadoCuadre(item);
+            const duracion = calcularDuracion(item.fecha_inicio, item.fecha_cierre);
 
             return (
               <TouchableOpacity
                 style={estilos.tarjeta}
-                onPress={() => navigation.navigate('DetalleTurno', { turnoId: item.id })}
+                onPress={() => navigation.navigate('DetalleTurno', { 
+                  turnoId: item.id,
+                  fechaCierre: item.fecha_cierre ?? undefined
+                })}
               >
                 <View style={estilos.filaSuperior}>
-                  <Text style={estilos.fecha}>
-                    {item.fecha_cierre ? formatearFecha(item.fecha_cierre) : '—'}
-                  </Text>
+                  <View>
+                    <Text style={estilos.fecha}>
+                      {item.fecha_cierre ? formatearFecha(item.fecha_cierre) : '—'}
+                    </Text>
+                    {duracion !== '' && (
+                      <View style={estilos.filaDuracion}>
+                        <Ionicons name="time-outline" size={12} color="#a0aec0" />
+                        <Text style={estilos.textoDuracion}>Duración: {duracion}</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={estilos.total}>{totalVendido.toFixed(2)} CUP</Text>
                 </View>
                 <View style={estilos.filaInferior}>
@@ -168,6 +186,17 @@ const estilos = StyleSheet.create({
   },
   filaSuperior: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   fecha: { fontSize: 15, fontWeight: '700', color: '#2d3748' },
+  filaDuracion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  textoDuracion: {
+    fontSize: 12,
+    color: '#a0aec0',
+    fontWeight: '500',
+  },
   total: { fontSize: 16, fontWeight: '900', color: '#1a1a2e' },
   filaInferior: { 
     flexDirection: 'row', 

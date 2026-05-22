@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { VentaAgrupada } from '../types';
 import { obtenerVentasTurnoActual, cancelarVenta } from '../database/cancelaciones';
 import { obtenerTurnoAbierto } from '../database/turnos';
-import Skeleton from '../components/Skeleton';
+import Skeleton, { SkeletonVenta } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
 export default function PantallaUltimasVentas() {
@@ -80,15 +80,7 @@ export default function PantallaUltimasVentas() {
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
       {[1, 2, 3].map((i) => (
-        <View key={i} style={estilos.skeletonCard}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 }}>
-            <Skeleton width="30%" height={25} />
-            <Skeleton width="40%" height={25} />
-          </View>
-          <Skeleton width="100%" height={15} style={{ marginBottom: 8 }} />
-          <Skeleton width="80%" height={15} style={{ marginBottom: 15 }} />
-          <Skeleton width="100%" height={40} borderRadius={8} />
-        </View>
+        <SkeletonVenta key={i} />
       ))}
     </View>
   );

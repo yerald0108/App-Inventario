@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, crearTurno, obtenerResumenTurno } from '../database/turnos';
 import { Turno } from '../types';
 
 type Props = {
@@ -14,12 +14,41 @@ type Props = {
 
 export default function PantallaInicio({ navigation }: Props) {
   const [turnoActual, setTurnoActual] = useState<Turno | null>(null);
+  const [totalesActuales, setTotalesActuales] = useState({ efectivo: 0, transferencia: 0 });
 
   useFocusEffect(
     useCallback(() => {
-      obtenerTurnoAbierto().then(setTurnoActual).catch(console.error);
+      async function cargarTurno() {
+        try {
+          const turno = await obtenerTurnoAbierto();
+          setTurnoActual(turno);
+          if (turno) {
+            const resumen = await obtenerResumenTurno(turno.id);
+            setTotalesActuales({
+              efectivo: resumen.totalEfectivo,
+              transferencia: resumen.totalTransferencia
+            });
+          }
+        } catch (error) {
+          console.error('Error al cargar turno:', error);
+        }
+      }
+      cargarTurno();
     }, [])
   );
+
+  async function handleAbrirTurno() {
+    try {
+      await crearTurno();
+      const turno = await obtenerTurnoAbierto();
+      setTurnoActual(turno);
+      if (turno) {
+        setTotalesActuales({ efectivo: 0, transferencia: 0 });
+      }
+    } catch (error) {
+      console.error('Error al abrir turno:', error);
+    }
+  }
 
   function formatearFecha(iso: string): string {
     const fecha = new Date(iso);
@@ -58,28 +87,46 @@ export default function PantallaInicio({ navigation }: Props) {
             <View style={estilos.filaTotales}>
               <View style={estilos.colTotal}>
                 <Text style={estilos.totalEtiqueta}>💵 Efectivo</Text>
-                <Text style={estilos.totalValor}>${(turnoActual.total_esperado_efectivo ?? 0).toFixed(2)}</Text>
+                <Text style={estilos.totalValor}>${totalesActuales.efectivo.toFixed(2)}</Text>
               </View>
               <View style={estilos.colTotal}>
                 <Text style={estilos.totalEtiqueta}>📱 Transf.</Text>
-                <Text style={estilos.totalValor}>${(turnoActual.total_esperado_transferencia ?? 0).toFixed(2)}</Text>
+                <Text style={estilos.totalValor}>${totalesActuales.transferencia.toFixed(2)}</Text>
               </View>
             </View>
           </View>
         )}
 
+        {!turnoActual && (
+          <TouchableOpacity 
+            style={estilos.botonAbrirTurno} 
+            onPress={handleAbrirTurno}
+          >
+            <Ionicons name="play" size={24} color="#ffffff" />
+            <Text style={estilos.textoBotonAbrir}>INICIAR NUEVO TURNO</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={estilos.grid}>
           <TouchableOpacity 
-            style={[estilos.tarjetaAccion, { backgroundColor: '#38a169' }]} 
-            onPress={() => navigation.navigate('Venta')}
+            style={[
+              estilos.tarjetaAccion, 
+              { backgroundColor: turnoActual ? '#38a169' : '#a0aec0' }
+            ]} 
+            onPress={() => turnoActual ? navigation.navigate('Venta') : null}
+            disabled={!turnoActual}
           >
             <Ionicons name="cart" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Venta</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[estilos.tarjetaAccion, { backgroundColor: '#d69e2e' }]} 
-            onPress={() => navigation.navigate('Entrada')}
+            style={[
+              estilos.tarjetaAccion, 
+              { backgroundColor: turnoActual ? '#d69e2e' : '#a0aec0' }
+            ]} 
+            onPress={() => turnoActual ? navigation.navigate('Entrada') : null}
+            disabled={!turnoActual}
           >
             <Ionicons name="download" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Entrada</Text>
@@ -102,8 +149,12 @@ export default function PantallaInicio({ navigation }: Props) {
           </TouchableOpacity>
 
           <TouchableOpacity 
-            style={[estilos.tarjetaAccion, { backgroundColor: '#ed64a6' }]} 
-            onPress={() => navigation.navigate('SalidaFamiliar')}
+            style={[
+              estilos.tarjetaAccion, 
+              { backgroundColor: turnoActual ? '#ed64a6' : '#a0aec0' }
+            ]} 
+            onPress={() => turnoActual ? navigation.navigate('SalidaFamiliar') : null}
+            disabled={!turnoActual}
           >
             <Ionicons name="people" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Salida Familiar</Text>
@@ -172,6 +223,26 @@ const estilos = StyleSheet.create({
   colTotal: { flex: 1 },
   totalEtiqueta: { fontSize: 12, color: '#718096', marginBottom: 2 },
   totalValor: { fontSize: 20, color: '#2d3748', fontWeight: 'bold' },
+  botonAbrirTurno: {
+    backgroundColor: '#3182ce',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  textoBotonAbrir: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '900',
+  },
   grid: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 

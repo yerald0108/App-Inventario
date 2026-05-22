@@ -167,35 +167,44 @@ export default function FormularioProducto({
               autoCapitalize="words"
             />
 
-            <Text style={estilos.etiqueta}>Precio (CUP)</Text>
-            <TextInput
-              style={estilos.input}
-              value={precio}
-              onChangeText={setPrecio}
-              placeholder="Ej: 45"
-              placeholderTextColor="#a0aec0"
-              keyboardType="numeric"
-            />
+            <Text style={estilos.etiqueta}>Precio</Text>
+            <View style={estilos.contenedorInputSufijo}>
+              <TextInput
+                style={estilos.inputSufijo}
+                value={precio}
+                onChangeText={setPrecio}
+                placeholder="Ej: 45"
+                placeholderTextColor="#a0aec0"
+                keyboardType="numeric"
+              />
+              <Text style={estilos.sufijo}>CUP</Text>
+            </View>
 
             <Text style={estilos.etiqueta}>Existencia actual</Text>
-            <TextInput
-              style={estilos.input}
-              value={existencia}
-              onChangeText={setExistencia}
-              placeholder="Ej: 24"
-              placeholderTextColor="#a0aec0"
-              keyboardType="numeric"
-            />
+            <View style={estilos.contenedorInputSufijo}>
+              <TextInput
+                style={estilos.inputSufijo}
+                value={existencia}
+                onChangeText={setExistencia}
+                placeholder="Ej: 24"
+                placeholderTextColor="#a0aec0"
+                keyboardType="numeric"
+              />
+              <Text style={estilos.sufijo}>unid.</Text>
+            </View>
 
             <Text style={estilos.etiqueta}>Alerta mínima de stock</Text>
-            <TextInput
-              style={estilos.input}
-              value={alertaMinima}
-              onChangeText={setAlertaMinima}
-              placeholder="Ej: 5"
-              placeholderTextColor="#a0aec0"
-              keyboardType="numeric"
-            />
+            <View style={estilos.contenedorInputSufijo}>
+              <TextInput
+                style={estilos.inputSufijo}
+                value={alertaMinima}
+                onChangeText={setAlertaMinima}
+                placeholder="Ej: 5"
+                placeholderTextColor="#a0aec0"
+                keyboardType="numeric"
+              />
+              <Text style={estilos.sufijo}>unid.</Text>
+            </View>
 
             {/* Botón guardar */}
             <TouchableOpacity style={estilos.botonGuardar} onPress={validarYGuardar}>
@@ -275,6 +284,26 @@ const estilos = StyleSheet.create({
     fontSize: 16,
     color: '#1a1a2e',
     backgroundColor: '#f7fafc',
+  },
+  contenedorInputSufijo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e0',
+    borderRadius: 10,
+    backgroundColor: '#f7fafc',
+    paddingRight: 14,
+  },
+  inputSufijo: {
+    flex: 1,
+    padding: 14,
+    fontSize: 16,
+    color: '#1a1a2e',
+  },
+  sufijo: {
+    fontSize: 14,
+    color: '#a0aec0',
+    fontWeight: 'bold',
   },
   botonGuardar: {
     backgroundColor: '#2b6cb0',

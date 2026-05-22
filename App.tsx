@@ -26,7 +26,7 @@ export type RootStackParamList = {
   CierreTurno: undefined;
   UltimasVentas: undefined;
   Historial: undefined;
-  DetalleTurno: { turnoId: number };
+  DetalleTurno: { turnoId: number; fechaCierre?: string };
   SalidaFamiliar: undefined;
 };
 
@@ -34,7 +34,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   useEffect(() => {
-    // Habilitar LayoutAnimation para Android
+    // LayoutAnimation para Android (New Arch está desactivada en app.json)
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
@@ -64,7 +64,21 @@ export default function App() {
           <Stack.Screen name="CierreTurno" component={PantallaCierreTurno} options={{ title: 'Cierre de Turno' }} />
           <Stack.Screen name="UltimasVentas" component={PantallaUltimasVentas} options={{ title: 'Últimas Ventas' }} />
           <Stack.Screen name="Historial" component={PantallaHistorial} options={{ title: 'Historial de Turnos' }} />
-          <Stack.Screen name="DetalleTurno" component={PantallaDetalleTurno} options={{ title: 'Detalle del Turno' }} />
+          <Stack.Screen 
+            name="DetalleTurno" 
+            component={PantallaDetalleTurno} 
+            options={({ route }) => {
+              const { fechaCierre } = route.params;
+              let titulo = 'Detalle del Turno';
+              if (fechaCierre) {
+                const fecha = new Date(fechaCierre);
+                const dia = fecha.getDate();
+                const mes = fecha.toLocaleString('es-CU', { month: 'short' }).replace('.', '');
+                titulo = `Turno · ${dia} ${mes}`;
+              }
+              return { title: titulo };
+            }} 
+          />
           <Stack.Screen name="SalidaFamiliar" component={PantallaSalidaFamiliar} options={{ title: 'Salida Familiar' }} />
         </Stack.Navigator>
       </NavigationContainer>

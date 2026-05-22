@@ -7,16 +7,23 @@ import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
-import { obtenerProductosDisponibles, registrarVenta } from '../database/ventas';
-import { obtenerOCrearTurno } from '../database/turnos';
+import { obtenerProductos } from '../database/productos';
+import { registrarVenta } from '../database/ventas';
+import { obtenerTurnoAbierto } from '../database/turnos';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
 import ModalCobro from '../components/ModalCobro';
-import Skeleton from '../components/Skeleton';
+import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
-export default function PantallaVenta() {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Venta'>;
+};
+
+export default function PantallaVenta({ navigation }: Props) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
   const [busqueda, setBusqueda] = useState('');
@@ -24,6 +31,7 @@ export default function PantallaVenta() {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
+  const [alturaCesta, setAlturaCesta] = useState(0);
 
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
@@ -36,11 +44,16 @@ export default function PantallaVenta() {
   );
 
   async function cargarProductos() {
-    if (productos.length === 0) setCargando(true);
-    const lista = await obtenerProductosDisponibles();
-    setProductos(lista);
-    setProductosFiltrados(lista);
-    setCargando(false);
+    setCargando(true);
+    try {
+      const lista = await obtenerProductos();
+      setProductos(lista);
+      setProductosFiltrados(lista);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCargando(false);
+    }
   }
 
   // Filtrar productos cuando cambia la búsqueda
@@ -60,6 +73,20 @@ export default function PantallaVenta() {
   // Actualizar cantidad de un producto en la cesta
   function cambiarCantidad(productoId: number, cantidad: number) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    
+    // Feedback de stock agotado (Bug 2)
+    const producto = productos.find(p => p.id === productoId);
+    if (producto && cantidad >= producto.existencia && cantidad > cantidadEnCesta(productoId)) {
+      if (producto.existencia > 0 && cantidad === producto.existencia) {
+        Toast.show({
+          type: 'info',
+          text1: 'Stock al límite',
+          text2: `Has alcanzado el máximo disponible de ${producto.nombre}.`,
+          position: 'bottom',
+        });
+      }
+    }
+
     setCesta(prev => {
       const nueva = new Map(prev);
       if (cantidad === 0) {
@@ -69,6 +96,10 @@ export default function PantallaVenta() {
       }
       return nueva;
     });
+  }
+
+  function cantidadEnCesta(productoId: number) {
+    return cesta.get(productoId) ?? 0;
   }
 
   // Construir lista de items de la cesta para pasarla a CestaFlotante
@@ -97,8 +128,13 @@ export default function PantallaVenta() {
     setProcesando(true);
 
     try {
-      const turnoId = await obtenerOCrearTurno();
-      await registrarVenta(items, metodoPago, turnoId);
+      const turno = await obtenerTurnoAbierto();
+      if (!turno) {
+        Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de vender.');
+        return;
+      }
+      
+      await registrarVenta(items, metodoPago, turno.id);
 
       // Cerrar modal
       setModalCobroVisible(false);
@@ -133,13 +169,7 @@ export default function PantallaVenta() {
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <View key={i} style={estilos.skeletonCard}>
-          <View style={{ flex: 1 }}>
-            <Skeleton width="60%" height={20} style={{ marginBottom: 10 }} />
-            <Skeleton width="30%" height={16} />
-          </View>
-          <Skeleton width={40} height={40} borderRadius={20} />
-        </View>
+        <SkeletonProducto key={i} />
       ))}
     </View>
   );
@@ -164,14 +194,18 @@ export default function PantallaVenta() {
       ) : productos.length === 0 ? (
         <EstadoVacio 
           icono="cart-outline" 
-          titulo="Sin stock" 
-          descripcion="No hay productos disponibles para vender. Agrega stock en Inventario." 
+          titulo="Sin productos" 
+          descripcion="No hay productos en el inventario. Agrega productos para comenzar a vender." 
+          accion={{
+            texto: "Ir a Inventario",
+            onPress: () => navigation.navigate('Inventario')
+          }}
         />
       ) : productosFiltrados.length === 0 ? (
         <EstadoVacio 
           icono="search-outline" 
           titulo="Sin resultados" 
-          descripcion={`No encontramos "${busqueda}" en los productos disponibles.`} 
+          descripcion={`No encontramos "${busqueda}" en los productos.`} 
         />
       ) : (
         <FlatList
@@ -180,17 +214,25 @@ export default function PantallaVenta() {
           renderItem={({ item }) => (
             <ProductoVenta
               producto={item}
-              cantidadEnCesta={cesta.get(item.id) ?? 0}
+              cantidadEnCesta={cantidadEnCesta(item.id)}
               onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
             />
           )}
-          contentContainerStyle={{ paddingBottom: itemsCesta.length > 0 ? 120 : 20 }}
+          contentContainerStyle={{ 
+            paddingBottom: itemsCesta.length > 0 ? (alturaCesta + 20) : 20 
+          }}
           showsVerticalScrollIndicator={false}
         />
       )}
 
       {/* Cesta flotante — aparece solo si hay algo en la cesta */}
-      <CestaFlotante items={itemsCesta} onCobrar={handleCobrar} />
+      <View onLayout={(e) => setAlturaCesta(e.nativeEvent.layout.height)}>
+        <CestaFlotante 
+          items={itemsCesta} 
+          onCobrar={handleCobrar} 
+          procesando={procesando}
+        />
+      </View>
 
       {/* Modal de cobro inteligente */}
       <ModalCobro

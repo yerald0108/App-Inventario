@@ -14,8 +14,8 @@ export async function registrarVenta(
   metodoPago: 'efectivo' | 'transferencia',
   turnoId: number
 ): Promise<void> {
-  // Generar datos comunes para la venta
-  const ventaId = Date.now().toString();
+  // Generar ID único robusto (Bug 8)
+  const ventaId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();
 
   // Ejecutar todo dentro de una transacción para asegurar la integridad de los datos

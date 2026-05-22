@@ -12,7 +12,8 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
   const [editando, setEditando] = useState(false);
   const [valorInput, setValorInput] = useState('');
 
-  const colorStock = producto.existencia < producto.alerta_minima ? '#e53e3e' : '#38a169';
+  const agotado = producto.existencia <= 0;
+  const colorStock = agotado ? '#e53e3e' : (producto.existencia < producto.alerta_minima ? '#e53e3e' : '#38a169');
   const enCesta = cantidadEnCesta > 0;
 
   function incrementar() {
@@ -28,6 +29,7 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
   }
 
   function abrirInput() {
+    if (agotado) return;
     setValorInput(cantidadEnCesta > 0 ? cantidadEnCesta.toString() : '');
     setEditando(true);
   }
@@ -41,14 +43,22 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
   }
 
   return (
-    <View style={[estilos.tarjeta, enCesta && estilos.tarjetaActiva]}>
+    <View style={[
+      estilos.tarjeta, 
+      enCesta && estilos.tarjetaActiva,
+      agotado && estilos.tarjetaAgotada
+    ]}>
       {/* Info del producto */}
       <View style={estilos.infoProducto}>
-        <Text style={estilos.nombre} numberOfLines={1}>{producto.nombre}</Text>
+        <Text style={[estilos.nombre, agotado && estilos.textoGris]} numberOfLines={1}>
+          {producto.nombre}
+        </Text>
         <View style={estilos.filaInferior}>
-          <Text style={estilos.precio}>{producto.precio.toFixed(2)} CUP</Text>
+          <Text style={[estilos.precio, agotado && estilos.textoGris]}>
+            {producto.precio.toFixed(2)} CUP
+          </Text>
           <Text style={[estilos.stock, { color: colorStock }]}>
-            Stock: {producto.existencia}
+            {agotado ? 'Agotado' : `Stock: ${producto.existencia}`}
           </Text>
         </View>
       </View>
@@ -56,15 +66,19 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
       {/* Controles de cantidad */}
       <View style={estilos.controles}>
         <TouchableOpacity
-          style={[estilos.botonControl, cantidadEnCesta === 0 && estilos.botonDeshabilitado]}
+          style={[estilos.botonControl, (cantidadEnCesta === 0 || agotado) && estilos.botonDeshabilitado]}
           onPress={decrementar}
-          disabled={cantidadEnCesta === 0}
+          disabled={cantidadEnCesta === 0 || agotado}
         >
           <Text style={estilos.textoControl}>−</Text>
         </TouchableOpacity>
 
         {/* Toca el número para editar directamente */}
-        <TouchableOpacity onPress={abrirInput} style={estilos.cantidadTouchable}>
+        <TouchableOpacity 
+          onPress={abrirInput} 
+          style={estilos.cantidadTouchable}
+          disabled={agotado}
+        >
           {editando ? (
             <TextInput
               style={estilos.inputCantidad}
@@ -77,16 +91,20 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
               maxLength={3}
             />
           ) : (
-            <Text style={[estilos.cantidad, enCesta && estilos.cantidadActiva]}>
+            <Text style={[
+              estilos.cantidad, 
+              enCesta && estilos.cantidadActiva,
+              agotado && estilos.textoGris
+            ]}>
               {cantidadEnCesta}
             </Text>
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[estilos.botonControl, cantidadEnCesta >= producto.existencia && estilos.botonDeshabilitado]}
+          style={[estilos.botonControl, (cantidadEnCesta >= producto.existencia || agotado) && estilos.botonDeshabilitado]}
           onPress={incrementar}
-          disabled={cantidadEnCesta >= producto.existencia}
+          disabled={cantidadEnCesta >= producto.existencia || agotado}
         >
           <Text style={estilos.textoControl}>+</Text>
         </TouchableOpacity>
@@ -111,6 +129,13 @@ const estilos = StyleSheet.create({
   tarjetaActiva: {
     borderColor: '#2b6cb0',
     backgroundColor: '#ebf8ff',
+  },
+  tarjetaAgotada: {
+    backgroundColor: '#f8fafc',
+    opacity: 0.8,
+  },
+  textoGris: {
+    color: '#a0aec0',
   },
   infoProducto: {
     flex: 1,

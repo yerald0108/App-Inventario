@@ -14,7 +14,7 @@ import {
 import { Producto } from '../types';
 import ProductoItem from '../components/ProductoItem';
 import FormularioProducto from '../components/FormularioProducto';
-import Skeleton from '../components/Skeleton';
+import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
 export default function PantallaInventario() {
@@ -34,16 +34,16 @@ export default function PantallaInventario() {
   );
 
   async function cargarProductos() {
-    // Solo mostramos Skeleton si es la carga inicial o si no hay productos
-    if (productos.length === 0) setCargando(true);
-    
-    // Simular una carga pequeña para que se vea el skeleton (opcional, pero ayuda a la UX)
-    // await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const lista = await obtenerProductos();
-    setProductos(lista);
-    setProductosFiltrados(lista);
-    setCargando(false);
+    setCargando(true);
+    try {
+      const lista = await obtenerProductos();
+      setProductos(lista);
+      setProductosFiltrados(lista);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCargando(false);
+    }
   }
 
   // Filtrar productos cuando cambia la búsqueda
@@ -147,10 +147,7 @@ export default function PantallaInventario() {
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <View key={i} style={estilos.skeletonCard}>
-          <Skeleton width="60%" height={20} style={{ marginBottom: 10 }} />
-          <Skeleton width="40%" height={16} />
-        </View>
+        <SkeletonProducto key={i} />
       ))}
     </View>
   );

@@ -10,10 +10,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Producto, ItemCesta } from '../types';
 import { obtenerProductos } from '../database/productos';
 import { registrarSalidaFamiliar } from '../database/salidas_familiares';
-import { obtenerOCrearTurno } from '../database/turnos';
+import { obtenerTurnoAbierto } from '../database/turnos';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
-import Skeleton from '../components/Skeleton';
+import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
 export default function PantallaSalidaFamiliar() {
@@ -23,6 +23,7 @@ export default function PantallaSalidaFamiliar() {
   const [cesta, setCesta] = useState<Map<number, number>>(new Map());
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
+  const [alturaCesta, setAlturaCesta] = useState(0);
 
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
@@ -34,11 +35,16 @@ export default function PantallaSalidaFamiliar() {
   );
 
   async function cargarProductos() {
-    if (productos.length === 0) setCargando(true);
-    const lista = await obtenerProductos();
-    setProductos(lista);
-    setProductosFiltrados(lista);
-    setCargando(false);
+    setCargando(true);
+    try {
+      const lista = await obtenerProductos();
+      setProductos(lista);
+      setProductosFiltrados(lista);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCargando(false);
+    }
   }
 
   // Filtrar productos cuando cambia la búsqueda
@@ -80,16 +86,40 @@ export default function PantallaSalidaFamiliar() {
   }
 
   // Confirmar y registrar la salida familiar
-  async function handleConfirmarSalida() {
+  function handleConfirmarSalida() {
     const items = obtenerItemsCesta();
     if (items.length === 0) return;
 
+    const totalUnidades = items.reduce((acc, item) => acc + item.cantidad, 0);
+    const resumen = items.map(i => `• ${i.cantidad}x ${i.producto.nombre}`).join('\n');
+
+    Alert.alert(
+      'Confirmar Salida Familiar',
+      `¿Registrar el consumo de estos productos?\n\n${resumen}\n\nTotal: ${totalUnidades} unidades.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Registrar Salida', 
+          style: 'destructive', 
+          onPress: ejecutarSalida 
+        },
+      ]
+    );
+  }
+
+  async function ejecutarSalida() {
+    const items = obtenerItemsCesta();
     if (procesando) return;
     setProcesando(true);
 
     try {
-      const turnoId = await obtenerOCrearTurno();
-      await registrarSalidaFamiliar(items, turnoId);
+      const turno = await obtenerTurnoAbierto();
+      if (!turno) {
+        Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de operar.');
+        return;
+      }
+      
+      await registrarSalidaFamiliar(items, turno.id);
 
       // Limpiar cesta y recargar inventario
       setCesta(new Map());
@@ -122,13 +152,7 @@ export default function PantallaSalidaFamiliar() {
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <View key={i} style={estilos.skeletonCard}>
-          <View style={{ flex: 1 }}>
-            <Skeleton width="60%" height={20} style={{ marginBottom: 10 }} />
-            <Skeleton width="30%" height={16} />
-          </View>
-          <Skeleton width={40} height={40} borderRadius={20} />
-        </View>
+        <SkeletonProducto key={i} />
       ))}
     </View>
   );
@@ -173,18 +197,23 @@ export default function PantallaSalidaFamiliar() {
               onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
             />
           )}
-          contentContainerStyle={{ paddingBottom: itemsCesta.length > 0 ? 120 : 20 }}
+          contentContainerStyle={{ 
+            paddingBottom: itemsCesta.length > 0 ? (alturaCesta + 20) : 20 
+          }}
           showsVerticalScrollIndicator={false}
         />
       )}
 
       {/* Cesta flotante específica para salida familiar */}
-      <CestaFlotante 
-        items={itemsCesta} 
-        onCobrar={handleConfirmarSalida} 
-        label="REGISTRAR SALIDA"
-        showTotal={false}
-      />
+      <View onLayout={(e) => setAlturaCesta(e.nativeEvent.layout.height)}>
+        <CestaFlotante 
+          items={itemsCesta} 
+          onCobrar={handleConfirmarSalida} 
+          label="REGISTRAR SALIDA"
+          showTotal={false}
+          procesando={procesando}
+        />
+      </View>
     </SafeAreaView>
   );
 }

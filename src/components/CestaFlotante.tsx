@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ItemCesta } from '../types';
 
 interface Props {
@@ -6,9 +6,16 @@ interface Props {
   onCobrar: () => void;
   label?: string;
   showTotal?: boolean;
+  procesando?: boolean;
 }
 
-export default function CestaFlotante({ items, onCobrar, label = 'COBRAR', showTotal = true }: Props) {
+export default function CestaFlotante({ 
+  items, 
+  onCobrar, 
+  label = 'COBRAR', 
+  showTotal = true,
+  procesando = false
+}: Props) {
   // No mostrar si la cesta está vacía
   if (items.length === 0) return null;
 
@@ -29,8 +36,17 @@ export default function CestaFlotante({ items, onCobrar, label = 'COBRAR', showT
         </Text>
         {showTotal && <Text style={estilos.textoTotal}>{total.toFixed(2)} CUP</Text>}
       </View>
-      <TouchableOpacity style={estilos.botonCobrar} onPress={onCobrar}>
-        <Text style={estilos.textoBotonCobrar}>{label}</Text>
+      <TouchableOpacity 
+        style={[estilos.botonCobrar, procesando && estilos.botonDeshabilitado]} 
+        onPress={onCobrar}
+        disabled={procesando}
+      >
+        <View style={estilos.filaBoton}>
+          {procesando && <ActivityIndicator size="small" color="#ffffff" style={estilos.spinner} />}
+          <Text style={estilos.textoBotonCobrar}>
+            {procesando ? 'PROCESANDO...' : label}
+          </Text>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -73,6 +89,18 @@ const estilos = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 28,
     paddingVertical: 16,
+  },
+  botonDeshabilitado: {
+    backgroundColor: '#2f855a',
+    opacity: 0.7,
+  },
+  filaBoton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  spinner: {
+    marginRight: 4,
   },
   textoBotonCobrar: {
     color: '#ffffff',

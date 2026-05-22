@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, TextInput, Modal,
   Animated, Pressable, PanResponder, KeyboardAvoidingView, Platform,
-  LayoutAnimation
+  LayoutAnimation, ActivityIndicator
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,9 +11,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Producto } from '../types';
 import { obtenerProductos } from '../database/productos';
 import { registrarEntrada } from '../database/entradas';
-import { obtenerOCrearTurno } from '../database/turnos';
+import { obtenerTurnoAbierto } from '../database/turnos';
 import { Ionicons } from '@expo/vector-icons';
-import Skeleton from '../components/Skeleton';
+import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
 export default function PantallaEntrada() {
@@ -25,6 +25,7 @@ export default function PantallaEntrada() {
   const [cantidad, setCantidad] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [procesando, setProcesando] = useState(false);
+  const [ultimoProductoActualizado, setUltimoProductoActualizado] = useState<number | null>(null);
   const slideAnim = useRef(new Animated.Value(600)).current;
 
   const panResponder = useRef(
@@ -116,10 +117,21 @@ export default function PantallaEntrada() {
     setProcesando(true);
 
     try {
-      const turnoId = await obtenerOCrearTurno();
-      await registrarEntrada(productoSeleccionado.id, cantidadNum, turnoId);
+      const turno = await obtenerTurnoAbierto();
+      if (!turno) {
+        Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de operar.');
+        return;
+      }
+      
+      await registrarEntrada(productoSeleccionado.id, cantidadNum, turno.id);
+      
+      const idActualizado = productoSeleccionado.id;
       await cargarProductos();
       cerrarModal();
+      
+      // Resaltar producto actualizado (Bug 11)
+      setUltimoProductoActualizado(idActualizado);
+      setTimeout(() => setUltimoProductoActualizado(null), 2000);
       
       Toast.show({
         type: 'success',
@@ -143,10 +155,7 @@ export default function PantallaEntrada() {
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <View key={i} style={estilos.skeletonCard}>
-          <Skeleton width="60%" height={20} style={{ marginBottom: 10 }} />
-          <Skeleton width="40%" height={16} />
-        </View>
+        <SkeletonProducto key={i} />
       ))}
     </View>
   );
@@ -173,9 +182,10 @@ export default function PantallaEntrada() {
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
             const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
+            const esReciente = item.id === ultimoProductoActualizado;
             return (
               <TouchableOpacity
-                style={estilos.tarjeta}
+                style={[estilos.tarjeta, esReciente && estilos.tarjetaReciente]}
                 onPress={() => abrirModal(item)}
               >
                 <View style={estilos.filaProducto}>
@@ -251,13 +261,16 @@ export default function PantallaEntrada() {
             )}
 
             <TouchableOpacity
-              style={[estilos.botonConfirmar, procesando && estilos.botonDeshabilitado]}
+              style={[estilos.botonConfirmar, (procesando || cantidad === '') && estilos.botonDeshabilitado]}
               onPress={confirmarEntrada}
-              disabled={procesando}
+              disabled={procesando || cantidad === ''}
             >
-              <Text style={estilos.textoBotonConfirmar}>
-                {procesando ? 'Registrando...' : 'CONFIRMAR ENTRADA'}
-              </Text>
+              <View style={estilos.filaBotonConfirmar}>
+                {procesando && <ActivityIndicator size="small" color="#ffffff" />}
+                <Text style={estilos.textoBotonConfirmar}>
+                  {procesando ? 'REGISTRANDO...' : 'CONFIRMAR ENTRADA'}
+                </Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={estilos.botonCancelar} onPress={cerrarModal}>
@@ -313,6 +326,11 @@ const estilos = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
+  },
+  tarjetaReciente: {
+    borderColor: '#38a169',
+    backgroundColor: '#f0fff4',
+    borderLeftWidth: 5,
   },
   filaProducto: {
     flexDirection: 'row',
@@ -416,6 +434,11 @@ const estilos = StyleSheet.create({
   },
   botonDeshabilitado: {
     backgroundColor: '#a0aec0',
+  },
+  filaBotonConfirmar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   textoBotonConfirmar: {
     color: '#ffffff',

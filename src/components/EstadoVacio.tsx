@@ -1,14 +1,18 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
   icono: any;
   titulo: string;
   descripcion?: string;
+  accion?: {
+    texto: string;
+    onPress: () => void;
+  };
 }
 
-export default function EstadoVacio({ icono, titulo, descripcion }: Props) {
+export default function EstadoVacio({ icono, titulo, descripcion, accion }: Props) {
   return (
     <View style={estilos.contenedor}>
       <View style={estilos.circulo}>
@@ -16,6 +20,12 @@ export default function EstadoVacio({ icono, titulo, descripcion }: Props) {
       </View>
       <Text style={estilos.titulo}>{titulo}</Text>
       {descripcion && <Text style={estilos.descripcion}>{descripcion}</Text>}
+      
+      {accion && (
+        <TouchableOpacity style={estilos.boton} onPress={accion.onPress}>
+          <Text style={estilos.textoBoton}>{accion.texto}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -26,7 +36,7 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
-    marginTop: 40,
+    marginTop: 20,
   },
   circulo: {
     width: 120,
@@ -49,5 +59,22 @@ const estilos = StyleSheet.create({
     color: '#718096',
     textAlign: 'center',
     lineHeight: 22,
+  },
+  boton: {
+    marginTop: 24,
+    backgroundColor: '#2b6cb0',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  textoBoton: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

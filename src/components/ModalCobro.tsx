@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity,
   TextInput, ScrollView, KeyboardAvoidingView, Platform,
-  Animated, Pressable, PanResponder
+  Animated, Pressable, PanResponder, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ItemCesta } from '../types';
@@ -12,13 +12,46 @@ interface Props {
   items: ItemCesta[];
   onConfirmar: (metodoPago: 'efectivo' | 'transferencia') => void;
   onCancelar: () => void;
+  procesando?: boolean;
 }
 
-export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: Props) {
+export default function ModalCobro({ 
+  visible, 
+  items, 
+  onConfirmar, 
+  onCancelar,
+  procesando = false
+}: Props) {
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
   const [montoRecibido, setMontoRecibido] = useState('');
   const [cambio, setCambio] = useState(0);
+  const [errorMonto, setErrorMonto] = useState('');
   const slideAnim = useRef(new Animated.Value(600)).current;
+
+  const total = items.reduce(
+    (acc, item) => acc + item.producto.precio * item.cantidad,
+    0
+  );
+
+  useEffect(() => {
+    if (metodoPago === 'efectivo') {
+      const recibido = parseFloat(montoRecibido);
+      if (!isNaN(recibido)) {
+        if (recibido < total) {
+          setErrorMonto('Monto insuficiente para cubrir el total');
+          setCambio(0);
+        } else {
+          setErrorMonto('');
+          setCambio(recibido - total);
+        }
+      } else {
+        setErrorMonto('');
+        setCambio(0);
+      }
+    } else {
+      setErrorMonto('');
+    }
+  }, [montoRecibido, metodoPago, total]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -61,26 +94,31 @@ export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: 
         tension: 50,
         friction: 8
       }).start();
+      // Resetear estado al abrir
+      setMontoRecibido('');
+      setMetodoPago('efectivo');
     } else {
       slideAnim.setValue(600);
     }
   }, [visible]);
 
-  const total = items.reduce(
-    (acc, item) => acc + item.producto.precio * item.cantidad,
-    0
-  );
+  function handleTextChange(text: string) {
+    // Solo permitir números y un punto decimal
+    const filtered = text.replace(/[^0-9.]/g, '');
+    // Evitar múltiples puntos decimales
+    const parts = filtered.split('.');
+    if (parts.length > 2) return;
+    setMontoRecibido(filtered);
+  }
 
-  useEffect(() => {
-    if (metodoPago === 'efectivo') {
-      const recibido = parseFloat(montoRecibido);
-      if (!isNaN(recibido) && recibido >= total) {
-        setCambio(recibido - total);
-      } else {
-        setCambio(0);
-      }
+  function formatMonto() {
+    const num = parseFloat(montoRecibido);
+    if (!isNaN(num)) {
+      setMontoRecibido(num.toFixed(2));
     }
-  }, [montoRecibido, metodoPago, total]);
+  }
+
+  const botonDeshabilitado = procesando || (metodoPago === 'efectivo' && (montoRecibido === '' || parseFloat(montoRecibido) < total));
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
@@ -100,7 +138,7 @@ export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: 
           
           <View style={estilos.cabecera}>
             <Text style={estilos.titulo}>Finalizar Venta</Text>
-            <TouchableOpacity onPress={onCancelar} style={estilos.botonCerrar}>
+            <TouchableOpacity onPress={onCancelar} style={estilos.botonCerrar} disabled={procesando}>
               <Ionicons name="close" size={24} color="#a0aec0" />
             </TouchableOpacity>
           </View>
@@ -119,6 +157,7 @@ export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: 
                   metodoPago === 'efectivo' && estilos.botonMetodoActivo
                 ]}
                 onPress={() => setMetodoPago('efectivo')}
+                disabled={procesando}
               >
                 <Ionicons 
                   name="cash" 
@@ -137,6 +176,7 @@ export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: 
                   metodoPago === 'transferencia' && estilos.botonMetodoActivo
                 ]}
                 onPress={() => setMetodoPago('transferencia')}
+                disabled={procesando}
               >
                 <Ionicons 
                   name="card" 
@@ -153,15 +193,24 @@ export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: 
             {metodoPago === 'efectivo' && (
               <View style={estilos.seccionEfectivo}>
                 <Text style={estilos.etiquetaInput}>Monto recibido</Text>
-                <TextInput
-                  style={estilos.inputEfectivo}
-                  placeholder="0.00"
-                  keyboardType="numeric"
-                  value={montoRecibido}
-                  onChangeText={setMontoRecibido}
-                  autoFocus
-                />
+                <View style={estilos.contenedorInput}>
+                  <TextInput
+                    style={[estilos.inputEfectivo, errorMonto !== '' && estilos.inputError]}
+                    placeholder="0.00"
+                    keyboardType="numeric"
+                    value={montoRecibido}
+                    onChangeText={handleTextChange}
+                    onBlur={formatMonto}
+                    autoFocus
+                    editable={!procesando}
+                  />
+                  <Text style={estilos.sufijoInput}>CUP</Text>
+                </View>
                 
+                {errorMonto !== '' && (
+                  <Text style={estilos.textoError}>{errorMonto}</Text>
+                )}
+
                 {cambio > 0 && (
                   <View style={estilos.contenedorCambio}>
                     <Text style={estilos.etiquetaCambio}>CAMBIO (VUELTO)</Text>
@@ -183,10 +232,16 @@ export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: 
           </ScrollView>
 
           <TouchableOpacity 
-            style={estilos.botonConfirmar}
+            style={[estilos.botonConfirmar, botonDeshabilitado && estilos.botonDeshabilitado]}
             onPress={() => onConfirmar(metodoPago)}
+            disabled={botonDeshabilitado}
           >
-            <Text style={estilos.textoConfirmar}>CONFIRMAR COBRO</Text>
+            <View style={estilos.filaBotonConfirmar}>
+              {procesando && <ActivityIndicator size="small" color="#ffffff" />}
+              <Text style={estilos.textoConfirmar}>
+                {procesando ? 'PROCESANDO...' : 'CONFIRMAR COBRO'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -197,7 +252,7 @@ export default function ModalCobro({ visible, items, onConfirmar, onCancelar }: 
 const estilos = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)', // Un poco más claro para suavizar
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
   dismissArea: {
@@ -205,13 +260,12 @@ const estilos = StyleSheet.create({
   },
   contenedor: {
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 32, // Bordes más redondeados
+    borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     paddingTop: 12,
     maxHeight: '90%',
-    // Sombra para dar profundidad
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
@@ -308,15 +362,35 @@ const estilos = StyleSheet.create({
     color: '#64748b',
     marginBottom: 8,
   },
-  inputEfectivo: {
+  contenedorInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: '#cbd5e0',
     borderRadius: 12,
+    backgroundColor: '#f7fafc',
+    paddingRight: 16,
+  },
+  inputEfectivo: {
+    flex: 1,
     padding: 16,
     fontSize: 24,
     fontWeight: 'bold',
     color: '#1a1a2e',
-    backgroundColor: '#f7fafc',
+  },
+  inputError: {
+    borderColor: '#e53e3e',
+  },
+  sufijoInput: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#a0aec0',
+  },
+  textoError: {
+    color: '#e53e3e',
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 4,
   },
   contenedorCambio: {
     marginTop: 16,
@@ -368,6 +442,16 @@ const estilos = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  botonDeshabilitado: {
+    backgroundColor: '#a0aec0',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  filaBotonConfirmar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   textoConfirmar: {
     color: '#ffffff',

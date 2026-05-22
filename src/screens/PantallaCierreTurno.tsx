@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TextInput, TouchableOpacity, Alert, ActivityIndicator
+  TextInput, TouchableOpacity, Alert, ActivityIndicator,
+  RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
@@ -19,13 +21,17 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const [totalEfectivo, setTotalEfectivo] = useState(0);
   const [totalTransferencia, setTotalTransferencia] = useState(0);
   const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
+  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [efectivoReal, setEfectivoReal] = useState('');
   const [procesando, setProcesando] = useState(false);
+  const [refrescando, setRefrescando] = useState(false);
 
-  useEffect(() => {
-    cargarResumen();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      cargarResumen();
+    }, [])
+  );
 
   async function cargarResumen() {
     setCargando(true);
@@ -41,6 +47,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       setTotalEfectivo(resumen.totalEfectivo);
       setTotalTransferencia(resumen.totalTransferencia);
       setEntradas(resumen.entradas);
+      setSalidasFamiliares(resumen.salidasFamiliares);
       setInventario(resumen.inventario);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar el resumen del turno.');
@@ -48,6 +55,12 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     } finally {
       setCargando(false);
     }
+  }
+
+  async function handleRefresh() {
+    setRefrescando(true);
+    await cargarResumen();
+    setRefrescando(false);
   }
 
   // Calcular diferencia entre efectivo esperado y real
@@ -117,13 +130,30 @@ export default function PantallaCierreTurno({ navigation }: Props) {
 
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      <ScrollView style={estilos.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView 
+        style={estilos.scroll} 
+        contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor="#2b6cb0" />
+        }
+      >
 
       {/* Resumen de ventas */}
       <View style={estilos.seccion}>
         <View style={estilos.cabeceraSeccion}>
           <Ionicons name="stats-chart-outline" size={20} color="#38a169" />
           <Text style={estilos.tituloSeccion}>Resumen de ventas</Text>
+          <TouchableOpacity 
+            onPress={cargarResumen} 
+            style={estilos.botonRefrescar}
+            disabled={cargando}
+          >
+            <Ionicons 
+              name="refresh" 
+              size={18} 
+              color={cargando ? "#cbd5e0" : "#2b6cb0"} 
+            />
+          </TouchableOpacity>
         </View>
 
         <View style={estilos.filaResumen}>
@@ -195,6 +225,25 @@ export default function PantallaCierreTurno({ navigation }: Props) {
         </View>
       )}
 
+      {/* Salidas familiares (Bug 9) */}
+      {salidasFamiliares.length > 0 && (
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="people-outline" size={20} color="#ed64a6" />
+            <Text style={estilos.tituloSeccion}>Consumo familiar</Text>
+          </View>
+          {salidasFamiliares.map((salida, index) => (
+            <View key={index} style={estilos.filaEntrada}>
+              <Text style={estilos.nombreEntrada}>{salida.nombre}</Text>
+              <Text style={[estilos.cantidadEntrada, { color: '#ed64a6' }]}>
+                -{salida.cantidad} unid.
+              </Text>
+              <Text style={estilos.horaEntrada}>{formatearFecha(salida.fecha_hora)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* Inventario final */}
       <View style={estilos.seccion}>
         <View style={estilos.cabeceraSeccion}>
@@ -255,6 +304,10 @@ const estilos = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1a1a2e',
+    flex: 1,
+  },
+  botonRefrescar: {
+    padding: 4,
   },
   seccion: {
     backgroundColor: '#ffffff',
