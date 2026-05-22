@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, Alert
+  StyleSheet, Alert, LayoutAnimation
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,6 +29,7 @@ export default function PantallaUltimasVentas() {
     if (turno) {
       setTurnoId(turno.id);
       const lista = await obtenerVentasTurnoActual(turno.id);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setVentas(lista);
     } else {
       setTurnoId(null);

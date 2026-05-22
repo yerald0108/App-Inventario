@@ -76,11 +76,13 @@ export default function PantallaHistorial({ navigation }: Props) {
 
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      <View style={estilos.encabezado}>
-        <Text style={estilos.textoEncabezado}>
-          {turnos.length} {turnos.length === 1 ? 'turno cerrado' : 'turnos cerrados'}
-        </Text>
-      </View>
+      {!cargando && (
+        <View style={estilos.encabezado}>
+          <Text style={estilos.textoEncabezado}>
+            {turnos.length} {turnos.length === 1 ? 'turno cerrado' : 'turnos cerrados'}
+          </Text>
+        </View>
+      )}
 
       {cargando ? (
         renderSkeleton()
@@ -140,8 +142,16 @@ export default function PantallaHistorial({ navigation }: Props) {
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#f7fafc' },
   centrado: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  encabezado: { padding: 16, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#edf2f7' },
-  textoEncabezado: { fontSize: 14, color: '#718096', fontWeight: '600' },
+  encabezado: { 
+    backgroundColor: '#1a1a2e', 
+    padding: 12, 
+    alignItems: 'center' 
+  },
+  textoEncabezado: { 
+    fontSize: 14, 
+    color: '#a0aec0', 
+    fontWeight: '600' 
+  },
   tarjeta: {
     backgroundColor: '#ffffff',
     marginHorizontal: 16,

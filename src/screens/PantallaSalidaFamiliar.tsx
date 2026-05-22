@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
-  Text, TextInput, TouchableOpacity
+  Text, TextInput, TouchableOpacity, LayoutAnimation
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +43,7 @@ export default function PantallaSalidaFamiliar() {
 
   // Filtrar productos cuando cambia la búsqueda
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (busqueda.trim() === '') {
       setProductosFiltrados(productos);
     } else {
@@ -56,6 +57,7 @@ export default function PantallaSalidaFamiliar() {
 
   // Actualizar cantidad de un producto en la cesta
   function cambiarCantidad(productoId: number, cantidad: number) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCesta(prev => {
       const nueva = new Map(prev);
       if (cantidad === 0) {

@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, TextInput
+  StyleSheet, TextInput, LayoutAnimation
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,6 +48,7 @@ export default function PantallaInventario() {
 
   // Filtrar productos cuando cambia la búsqueda
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (busqueda.trim() === '') {
       setProductosFiltrados(productos);
     } else {

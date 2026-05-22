@@ -2,7 +2,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, TextInput, Modal,
-  Animated, Pressable, PanResponder, KeyboardAvoidingView, Platform
+  Animated, Pressable, PanResponder, KeyboardAvoidingView, Platform,
+  LayoutAnimation
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -81,6 +82,7 @@ export default function PantallaEntrada() {
 
   // Filtrar productos
   useEffect(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (busqueda.trim() === '') {
       setProductosFiltrados(productos);
     } else {

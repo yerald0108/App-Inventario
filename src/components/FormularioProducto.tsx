@@ -162,7 +162,7 @@ export default function FormularioProducto({
               style={estilos.input}
               value={nombre}
               onChangeText={setNombre}
-              placeholder="Ej: Cerveza 260ml"
+              placeholder="Ej: Cerveza Cristal"
               placeholderTextColor="#a0aec0"
               autoCapitalize="words"
             />
