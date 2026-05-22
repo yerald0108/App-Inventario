@@ -1,8 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator
+  StyleSheet, TextInput
 } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -12,9 +14,13 @@ import {
 import { Producto } from '../types';
 import ProductoItem from '../components/ProductoItem';
 import FormularioProducto from '../components/FormularioProducto';
+import Skeleton from '../components/Skeleton';
+import EstadoVacio from '../components/EstadoVacio';
 
 export default function PantallaInventario() {
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
@@ -23,15 +29,35 @@ export default function PantallaInventario() {
   useFocusEffect(
     useCallback(() => {
       cargarProductos();
+      setBusqueda('');
     }, [])
   );
 
   async function cargarProductos() {
-    setCargando(true);
+    // Solo mostramos Skeleton si es la carga inicial o si no hay productos
+    if (productos.length === 0) setCargando(true);
+    
+    // Simular una carga pequeña para que se vea el skeleton (opcional, pero ayuda a la UX)
+    // await new Promise(resolve => setTimeout(resolve, 500));
+    
     const lista = await obtenerProductos();
     setProductos(lista);
+    setProductosFiltrados(lista);
     setCargando(false);
   }
+
+  // Filtrar productos cuando cambia la búsqueda
+  useEffect(() => {
+    if (busqueda.trim() === '') {
+      setProductosFiltrados(productos);
+    } else {
+      const termino = busqueda.toLowerCase();
+      const filtrados = productos.filter(p => 
+        p.nombre.toLowerCase().includes(termino)
+      );
+      setProductosFiltrados(filtrados);
+    }
+  }, [busqueda, productos]);
 
   function abrirCrear() {
     setProductoSeleccionado(null);
@@ -54,64 +80,133 @@ export default function PantallaInventario() {
     existencia: number;
     alerta_minima: number;
   }) {
-    if (productoSeleccionado) {
-      // Modo edición
-      await actualizarProducto(
-        productoSeleccionado.id,
-        datos.nombre,
-        datos.precio,
-        datos.existencia,
-        datos.alerta_minima
-      );
-    } else {
-      // Modo crear
-      await crearProducto(datos.nombre, datos.precio, datos.existencia, datos.alerta_minima);
+    try {
+      if (productoSeleccionado) {
+        // Modo edición
+        await actualizarProducto(
+          productoSeleccionado.id,
+          datos.nombre,
+          datos.precio,
+          datos.existencia,
+          datos.alerta_minima
+        );
+        Toast.show({
+          type: 'success',
+          text1: 'Producto actualizado',
+          text2: `"${datos.nombre}" se guardó correctamente.`,
+          position: 'top',
+        });
+      } else {
+        // Modo crear
+        await crearProducto(datos.nombre, datos.precio, datos.existencia, datos.alerta_minima);
+        Toast.show({
+          type: 'success',
+          text1: 'Producto creado',
+          text2: `"${datos.nombre}" se añadió al inventario.`,
+          position: 'top',
+        });
+      }
+      cerrarModal();
+      cargarProductos();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudo guardar el producto.',
+        position: 'top',
+      });
+      console.error(error);
     }
-    cerrarModal();
-    cargarProductos();
   }
 
   async function handleEliminar() {
     if (!productoSeleccionado) return;
-    await eliminarProducto(productoSeleccionado.id);
-    cerrarModal();
-    cargarProductos();
+    try {
+      const nombreEliminado = productoSeleccionado.nombre;
+      await eliminarProducto(productoSeleccionado.id);
+      Toast.show({
+        type: 'info',
+        text1: 'Producto eliminado',
+        text2: `"${nombreEliminado}" ha sido borrado.`,
+        position: 'top',
+      });
+      cerrarModal();
+      cargarProductos();
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudo eliminar el producto.',
+        position: 'top',
+      });
+      console.error(error);
+    }
   }
 
-  if (cargando) {
-    return (
-      <SafeAreaView style={estilos.contenedor}>
-        <View style={estilos.centrado}>
-          <ActivityIndicator size="large" color="#2b6cb0" />
+  const renderSkeleton = () => (
+    <View style={{ padding: 16 }}>
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <View key={i} style={estilos.skeletonCard}>
+          <Skeleton width="60%" height={20} style={{ marginBottom: 10 }} />
+          <Skeleton width="40%" height={16} />
         </View>
-      </SafeAreaView>
-    );
-  }
+      ))}
+    </View>
+  );
 
   return (
-    <SafeAreaView style={estilos.contenedor}>
+    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
       {/* Resumen de stock */}
-      <View style={estilos.resumen}>
-        <Text style={estilos.textoResumen}>
-          {productos.length} productos · {productos.filter(p => p.existencia < p.alerta_minima).length} con stock bajo
-        </Text>
+      {!cargando && (
+        <View style={estilos.resumen}>
+          <Text style={estilos.textoResumen}>
+            {productos.length} productos · {productos.filter(p => p.existencia < p.alerta_minima).length} con stock bajo
+          </Text>
+        </View>
+      )}
+
+      {/* Barra de búsqueda */}
+      <View style={estilos.contenedorBusqueda}>
+        <Ionicons name="search" size={20} color="#718096" style={estilos.iconoBusqueda} />
+        <TextInput
+          style={estilos.inputBusqueda}
+          placeholder="Buscar en inventario..."
+          placeholderTextColor="#a0aec0"
+          value={busqueda}
+          onChangeText={setBusqueda}
+          clearButtonMode="while-editing"
+        />
       </View>
 
-      {/* Lista de productos */}
-      <FlatList
-        data={productos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <ProductoItem producto={item} onEditar={abrirEditar} />
-        )}
-        ListEmptyComponent={
-          <View style={estilos.centrado}>
-            <Text style={estilos.textoVacio}>No hay productos aún.</Text>
-            <Text style={estilos.textoVacioSub}>Toca el botón + para agregar uno.</Text>
-          </View>
-        }
-        contentContainerStyle={{ paddingBottom: 100 }}
-      />
+      {/* Lista de productos o Skeleton */}
+      {cargando ? (
+        renderSkeleton()
+      ) : (
+        <FlatList
+          data={productosFiltrados}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <ProductoItem producto={item} onEditar={abrirEditar} />
+          )}
+          ListEmptyComponent={
+            busqueda !== '' ? (
+              <EstadoVacio 
+                icono="search-outline" 
+                titulo="Sin resultados" 
+                descripcion={`No encontramos nada que coincida con "${busqueda}"`} 
+              />
+            ) : (
+              <EstadoVacio 
+                icono="cube-outline" 
+                titulo="Inventario vacío" 
+                descripcion="Toca el botón + para agregar tu primer producto." 
+              />
+            )
+          }
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* Botón flotante para agregar */}
       <TouchableOpacity style={estilos.botonAgregar} onPress={abrirCrear}>
@@ -159,6 +254,28 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     color: '#a0aec0',
   },
+  contenedorBusqueda: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    margin: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    height: 50,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  iconoBusqueda: {
+    marginRight: 8,
+  },
+  inputBusqueda: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1a1a2e',
+  },
   botonAgregar: {
     position: 'absolute',
     bottom: 24,
@@ -180,5 +297,13 @@ const estilos = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     lineHeight: 36,
+  },
+  skeletonCard: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#edf2f7',
   },
 });

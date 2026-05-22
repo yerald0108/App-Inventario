@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Producto } from '../types';
 
 interface Props {
@@ -7,21 +8,30 @@ interface Props {
 }
 
 export default function ProductoItem({ producto, onEditar }: Props) {
-  // Verde si stock ok, rojo si stock bajo
-  const colorStock = producto.existencia >= producto.alerta_minima ? '#38a169' : '#e53e3e';
-  const etiquetaStock = producto.existencia < producto.alerta_minima ? '⚠️ Stock bajo' : '✅ Stock ok';
+  const esStockBajo = producto.existencia < producto.alerta_minima;
+  const colorStock = esStockBajo ? '#e53e3e' : '#38a169';
+  const bgColorStock = esStockBajo ? '#fff5f5' : '#f0fff4';
 
   return (
     <TouchableOpacity style={estilos.tarjeta} onPress={() => onEditar(producto)}>
       <View style={estilos.fila}>
-        <Text style={estilos.nombre} numberOfLines={1}>{producto.nombre}</Text>
-        <Text style={estilos.precio}>{producto.precio.toFixed(2)} CUP</Text>
-      </View>
-      <View style={estilos.fila}>
-        <Text style={[estilos.stock, { color: colorStock }]}>
-          {etiquetaStock} — {producto.existencia} unid.
-        </Text>
-        <Text style={estilos.alerta}>Alerta: &lt;{producto.alerta_minima}</Text>
+        <View style={estilos.infoProducto}>
+          <Text style={estilos.nombre} numberOfLines={1}>{producto.nombre}</Text>
+          <View style={[estilos.badge, { backgroundColor: bgColorStock }]}>
+            <Ionicons 
+              name={esStockBajo ? "warning" : "checkmark-circle"} 
+              size={12} 
+              color={colorStock} 
+            />
+            <Text style={[estilos.textoBadge, { color: colorStock }]}>
+              {producto.existencia} unidades
+            </Text>
+          </View>
+        </View>
+        <View style={estilos.derecha}>
+          <Text style={estilos.precio}>{producto.precio.toFixed(2)}</Text>
+          <Text style={estilos.moneda}>CUP</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -30,40 +40,56 @@ export default function ProductoItem({ producto, onEditar }: Props) {
 const estilos = StyleSheet.create({
   tarjeta: {
     backgroundColor: '#ffffff',
-    borderRadius: 10,
+    borderRadius: 14,
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 6,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
   },
   fila: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+  },
+  infoProducto: {
+    flex: 1,
+    marginRight: 12,
   },
   nombre: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#1a1a2e',
-    flex: 1,
-    marginRight: 8,
+    marginBottom: 6,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  textoBadge: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  derecha: {
+    alignItems: 'flex-end',
   },
   precio: {
-    fontSize: 17,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#2b6cb0',
   },
-  stock: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  alerta: {
-    fontSize: 12,
-    color: '#a0aec0',
+  moneda: {
+    fontSize: 11,
+    color: '#718096',
+    fontWeight: 'bold',
+    marginTop: -2,
   },
 });

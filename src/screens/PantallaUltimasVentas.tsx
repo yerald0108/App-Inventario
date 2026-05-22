@@ -1,13 +1,16 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator
+  StyleSheet, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { VentaAgrupada } from '../types';
 import { obtenerVentasTurnoActual, cancelarVenta } from '../database/cancelaciones';
 import { obtenerTurnoAbierto } from '../database/turnos';
+import Skeleton from '../components/Skeleton';
+import EstadoVacio from '../components/EstadoVacio';
 
 export default function PantallaUltimasVentas() {
   const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
@@ -21,7 +24,7 @@ export default function PantallaUltimasVentas() {
   );
 
   async function cargarVentas() {
-    setCargando(true);
+    if (ventas.length === 0) setCargando(true);
     const turno = await obtenerTurnoAbierto();
     if (turno) {
       setTurnoId(turno.id);
@@ -44,9 +47,9 @@ export default function PantallaUltimasVentas() {
       '¿Anular esta venta?',
       `Se devolverán los productos al inventario:\n\n${resumenItems}\n\nTotal: ${venta.total.toFixed(2)} CUP`,
       [
-        { text: 'No cancelar', style: 'cancel' },
+        { text: 'Mantener venta', style: 'cancel' },
         {
-          text: 'Sí, anular',
+          text: 'Anular venta ahora',
           style: 'destructive',
           onPress: () => ejecutarCancelacion(venta.venta_id),
         },
@@ -73,80 +76,103 @@ export default function PantallaUltimasVentas() {
     return `${horas}:${minutos}`;
   }
 
-  if (cargando) {
-    return (
-      <SafeAreaView style={estilos.contenedor}>
-        <View style={estilos.centrado}>
-          <ActivityIndicator size="large" color="#2b6cb0" />
+  const renderSkeleton = () => (
+    <View style={{ padding: 16 }}>
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={estilos.skeletonCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 }}>
+            <Skeleton width="30%" height={25} />
+            <Skeleton width="40%" height={25} />
+          </View>
+          <Skeleton width="100%" height={15} style={{ marginBottom: 8 }} />
+          <Skeleton width="80%" height={15} style={{ marginBottom: 15 }} />
+          <Skeleton width="100%" height={40} borderRadius={8} />
         </View>
-      </SafeAreaView>
-    );
-  }
+      ))}
+    </View>
+  );
 
-  if (!turnoId) {
+  if (!cargando && !turnoId) {
     return (
-      <SafeAreaView style={estilos.contenedor}>
-        <View style={estilos.centrado}>
-          <Text style={estilos.textoVacio}>No hay turno abierto.</Text>
-          <Text style={estilos.textoVacioSub}>Regresa al inicio para abrir un turno.</Text>
-        </View>
+      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+        <EstadoVacio 
+          icono="alert-circle-outline" 
+          titulo="Sin turno abierto" 
+          descripcion="Regresa al inicio para realizar operaciones y abrir un turno." 
+        />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={estilos.contenedor}>
-      <View style={estilos.encabezado}>
-        <Text style={estilos.textoEncabezado}>
-          {ventas.length} {ventas.length === 1 ? 'venta' : 'ventas'} en este turno
-        </Text>
-      </View>
+    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+      {!cargando && (
+        <View style={estilos.encabezado}>
+          <Text style={estilos.textoEncabezado}>
+            {ventas.length} {ventas.length === 1 ? 'venta' : 'ventas'} en este turno
+          </Text>
+        </View>
+      )}
 
-      <FlatList
-        data={ventas}
-        keyExtractor={(item) => item.venta_id}
-        renderItem={({ item }) => (
-          <View style={estilos.tarjeta}>
-            {/* Encabezado de la venta */}
-            <View style={estilos.filaSuperior}>
-              <Text style={estilos.hora}>{formatearHora(item.fecha_hora)}</Text>
-              <View style={[
-                estilos.etiquetaPago,
-                item.metodo_pago === 'efectivo' ? estilos.etiquetaEfectivo : estilos.etiquetaTransferencia
-              ]}>
-                <Text style={estilos.textoEtiqueta}>
-                  {item.metodo_pago === 'efectivo' ? '💵 Efectivo' : '📱 Transferencia'}
-                </Text>
+      {cargando ? (
+        renderSkeleton()
+      ) : (
+        <FlatList
+          data={ventas}
+          keyExtractor={(item) => item.venta_id}
+          renderItem={({ item }) => (
+            <View style={estilos.tarjeta}>
+              {/* Encabezado de la venta */}
+              <View style={estilos.filaSuperior}>
+                <Text style={estilos.hora}>{formatearHora(item.fecha_hora)}</Text>
+                <View style={[
+                  estilos.etiquetaPago,
+                  item.metodo_pago === 'efectivo' ? estilos.etiquetaEfectivo : estilos.etiquetaTransferencia
+                ]}>
+                  <Ionicons 
+                    name={item.metodo_pago === 'efectivo' ? 'cash-outline' : 'card-outline'} 
+                    size={14} 
+                    color={item.metodo_pago === 'efectivo' ? '#2f855a' : '#2b6cb0'} 
+                  />
+                  <Text style={[
+                    estilos.textoEtiqueta,
+                    { color: item.metodo_pago === 'efectivo' ? '#2f855a' : '#2b6cb0' }
+                  ]}>
+                    {item.metodo_pago === 'efectivo' ? 'Efectivo' : 'Transferencia'}
+                  </Text>
+                </View>
+                <Text style={estilos.total}>{item.total.toFixed(2)} CUP</Text>
               </View>
-              <Text style={estilos.total}>{item.total.toFixed(2)} CUP</Text>
-            </View>
 
-            {/* Lista de productos de la venta */}
-            <View style={estilos.items}>
-              {item.items.map((prod, index) => (
-                <Text key={index} style={estilos.itemTexto}>
-                  {prod.cantidad}x {prod.nombre_producto} — {(prod.cantidad * prod.precio_aplicado).toFixed(2)} CUP
-                </Text>
-              ))}
-            </View>
+              {/* Lista de productos de la venta */}
+              <View style={estilos.items}>
+                {item.items.map((prod, index) => (
+                  <Text key={index} style={estilos.itemTexto}>
+                    {prod.cantidad}x {prod.nombre_producto} — {(prod.cantidad * prod.precio_aplicado).toFixed(2)} CUP
+                  </Text>
+                ))}
+              </View>
 
-            {/* Botón cancelar */}
-            <TouchableOpacity
-              style={estilos.botonCancelar}
-              onPress={() => confirmarCancelacion(item)}
-            >
-              <Text style={estilos.textoBotonCancelar}>CANCELAR VENTA</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={estilos.centrado}>
-            <Text style={estilos.textoVacio}>No hay ventas en este turno.</Text>
-            <Text style={estilos.textoVacioSub}>Las ventas registradas aparecerán aquí.</Text>
-          </View>
-        }
-        contentContainerStyle={{ paddingBottom: 24 }}
-      />
+              {/* Botón cancelar */}
+              <TouchableOpacity
+                style={estilos.botonCancelar}
+                onPress={() => confirmarCancelacion(item)}
+              >
+                <Text style={estilos.textoBotonCancelar}>ANULAR VENTA</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          ListEmptyComponent={
+            <EstadoVacio 
+              icono="receipt-outline" 
+              titulo="Sin ventas" 
+              descripcion="Las ventas que realices en este turno aparecerán aquí." 
+            />
+          }
+          contentContainerStyle={{ paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -196,6 +222,9 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   etiquetaEfectivo: {
     backgroundColor: '#f0fff4',
@@ -238,8 +267,16 @@ const estilos = StyleSheet.create({
   },
   textoBotonCancelar: {
     color: '#e53e3e',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+  skeletonCard: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#edf2f7',
   },
   textoVacio: {
     fontSize: 18,

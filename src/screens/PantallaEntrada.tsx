@@ -1,22 +1,69 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, TextInput, Modal
+  StyleSheet, Alert, TextInput, Modal,
+  Animated, Pressable, PanResponder, KeyboardAvoidingView, Platform
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Producto } from '../types';
 import { obtenerProductos } from '../database/productos';
 import { registrarEntrada } from '../database/entradas';
 import { obtenerOCrearTurno } from '../database/turnos';
+import { Ionicons } from '@expo/vector-icons';
+import Skeleton from '../components/Skeleton';
+import EstadoVacio from '../components/EstadoVacio';
 
 export default function PantallaEntrada() {
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
+  const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
   const [cantidad, setCantidad] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [procesando, setProcesando] = useState(false);
+  const slideAnim = useRef(new Animated.Value(600)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) slideAnim.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 150 || gestureState.vy > 0.5) {
+          Animated.timing(slideAnim, {
+            toValue: 600,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(cerrarModal);
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 8
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (modalVisible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8
+      }).start();
+    } else {
+      slideAnim.setValue(600);
+    }
+  }, [modalVisible]);
 
   useFocusEffect(
     useCallback(() => {
@@ -25,11 +72,22 @@ export default function PantallaEntrada() {
   );
 
   async function cargarProductos() {
-    setCargando(true);
+    if (productos.length === 0) setCargando(true);
     const lista = await obtenerProductos();
     setProductos(lista);
+    setProductosFiltrados(lista);
     setCargando(false);
   }
+
+  // Filtrar productos
+  useEffect(() => {
+    if (busqueda.trim() === '') {
+      setProductosFiltrados(productos);
+    } else {
+      const termino = busqueda.toLowerCase();
+      setProductosFiltrados(productos.filter(p => p.nombre.toLowerCase().includes(termino)));
+    }
+  }, [busqueda, productos]);
 
   function abrirModal(producto: Producto) {
     setProductoSeleccionado(producto);
@@ -60,68 +118,109 @@ export default function PantallaEntrada() {
       await registrarEntrada(productoSeleccionado.id, cantidadNum, turnoId);
       await cargarProductos();
       cerrarModal();
-      Alert.alert(
-        '✅ Entrada registrada',
-        `Se agregaron ${cantidadNum} unidades de ${productoSeleccionado.nombre}.`
-      );
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Entrada registrada',
+        text2: `Se agregaron ${cantidadNum} unidades de ${productoSeleccionado.nombre}.`,
+        position: 'top',
+      });
     } catch (error) {
-      Alert.alert('Error', 'No se pudo registrar la entrada.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudo registrar la entrada.',
+        position: 'top',
+      });
       console.error(error);
     } finally {
       setProcesando(false);
     }
   }
 
-  if (cargando) {
-    return (
-      <SafeAreaView style={estilos.contenedor}>
-        <View style={estilos.centrado}>
-          <ActivityIndicator size="large" color="#2b6cb0" />
+  const renderSkeleton = () => (
+    <View style={{ padding: 16 }}>
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <View key={i} style={estilos.skeletonCard}>
+          <Skeleton width="60%" height={20} style={{ marginBottom: 10 }} />
+          <Skeleton width="40%" height={16} />
         </View>
-      </SafeAreaView>
-    );
-  }
+      ))}
+    </View>
+  );
 
   return (
-    <SafeAreaView style={estilos.contenedor}>
-      <View style={estilos.encabezado}>
-        <Text style={estilos.textoEncabezado}>
-          Toca un producto para registrar una entrada
-        </Text>
+    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+      <View style={estilos.contenedorBusqueda}>
+        <Ionicons name="search" size={20} color="#718096" style={estilos.iconoBusqueda} />
+        <TextInput
+          style={estilos.inputBusqueda}
+          placeholder="Buscar producto para entrada..."
+          placeholderTextColor="#a0aec0"
+          value={busqueda}
+          onChangeText={setBusqueda}
+          clearButtonMode="while-editing"
+        />
       </View>
 
-      <FlatList
-        data={productos}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => {
-          const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
-          return (
-            <TouchableOpacity
-              style={estilos.tarjeta}
-              onPress={() => abrirModal(item)}
-            >
-              <View style={estilos.filaProducto}>
-                <Text style={estilos.nombre} numberOfLines={1}>{item.nombre}</Text>
-                <Text style={[estilos.stock, { color: colorStock }]}>
-                  {item.existencia} unid.
-                </Text>
-              </View>
-              <Text style={estilos.precio}>{item.precio.toFixed(2)} CUP</Text>
-            </TouchableOpacity>
-          );
-        }}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        ListEmptyComponent={
-          <View style={estilos.centrado}>
-            <Text style={estilos.textoVacio}>No hay productos registrados.</Text>
-          </View>
-        }
-      />
+      {cargando ? (
+        renderSkeleton()
+      ) : (
+        <FlatList
+          data={productosFiltrados}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => {
+            const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
+            return (
+              <TouchableOpacity
+                style={estilos.tarjeta}
+                onPress={() => abrirModal(item)}
+              >
+                <View style={estilos.filaProducto}>
+                  <Text style={estilos.nombre} numberOfLines={1}>{item.nombre}</Text>
+                  <Text style={[estilos.stock, { color: colorStock }]}>
+                    {item.existencia} unid.
+                  </Text>
+                </View>
+                <Text style={estilos.precio}>{item.precio.toFixed(2)} CUP</Text>
+              </TouchableOpacity>
+            );
+          }}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ListEmptyComponent={
+            busqueda !== '' ? (
+              <EstadoVacio 
+                icono="search-outline" 
+                titulo="Sin resultados" 
+                descripcion={`No encontramos nada que coincida con "${busqueda}"`} 
+              />
+            ) : (
+              <EstadoVacio 
+                icono="download-outline" 
+                titulo="Sin productos" 
+                descripcion="Agrega productos en Inventario para registrar entradas." 
+              />
+            )
+          }
+        />
+      )}
 
-      {/* Modal para ingresar cantidad */}
+      {/* Modal mejorado con deslizamiento */}
       <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={estilos.overlayModal}>
-          <View style={estilos.modal}>
+        <KeyboardAvoidingView
+          style={estilos.overlayModal}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={estilos.dismissArea} onPress={cerrarModal} />
+          
+          <Animated.View 
+            style={[
+              estilos.modal,
+              { transform: [{ translateY: slideAnim }] }
+            ]}
+          >
+            <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
+            
             <Text style={estilos.tituloModal}>Entrada de mercancía</Text>
             <Text style={estilos.nombreModal}>
               {productoSeleccionado?.nombre}
@@ -162,8 +261,8 @@ export default function PantallaEntrada() {
             <TouchableOpacity style={estilos.botonCancelar} onPress={cerrarModal}>
               <Text style={estilos.textoBotonCancelar}>Cancelar</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </Animated.View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -172,7 +271,7 @@ export default function PantallaEntrada() {
 const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#f7fafc',
   },
   centrado: {
     flex: 1,
@@ -180,22 +279,38 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
   },
-  encabezado: {
-    backgroundColor: '#1a1a2e',
-    padding: 12,
+  contenedorBusqueda: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#ffffff',
+    margin: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  textoEncabezado: {
-    color: '#a0aec0',
-    fontSize: 14,
+  iconoBusqueda: {
+    marginRight: 8,
+  },
+  inputBusqueda: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2d3748',
   },
   tarjeta: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
     marginHorizontal: 16,
-    marginVertical: 5,
-    elevation: 1,
+    marginVertical: 6,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#edf2f7',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   filaProducto: {
     flexDirection: 'row',
@@ -204,49 +319,61 @@ const estilos = StyleSheet.create({
     marginBottom: 4,
   },
   nombre: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#1a1a2e',
     flex: 1,
-    marginRight: 8,
   },
   stock: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '700',
   },
   precio: {
     fontSize: 14,
     color: '#718096',
   },
-  textoVacio: {
-    fontSize: 16,
-    color: '#718096',
-  },
   overlayModal: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  dismissArea: {
+    ...StyleSheet.absoluteFillObject,
   },
   modal: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingTop: 12,
+    maxHeight: '90%',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 20,
+  },
+  barraArrastre: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   tituloModal: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1a1a2e',
-    marginBottom: 8,
     textAlign: 'center',
+    marginBottom: 8,
   },
   nombreModal: {
     fontSize: 18,
-    fontWeight: '600',
     color: '#2b6cb0',
     textAlign: 'center',
+    fontWeight: '600',
     marginBottom: 4,
   },
   stockActual: {
@@ -264,26 +391,26 @@ const estilos = StyleSheet.create({
   input: {
     borderWidth: 1.5,
     borderColor: '#cbd5e0',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 14,
-    fontSize: 24,
-    color: '#1a1a2e',
-    backgroundColor: '#f7fafc',
-    textAlign: 'center',
+    fontSize: 18,
+    color: '#2d3748',
+    backgroundColor: '#f8fafc',
+    marginBottom: 12,
   },
   previa: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#38a169',
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: 20,
     textAlign: 'center',
-    marginTop: 10,
   },
   botonConfirmar: {
     backgroundColor: '#2b6cb0',
-    borderRadius: 12,
     padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
+    marginBottom: 12,
   },
   botonDeshabilitado: {
     backgroundColor: '#a0aec0',
@@ -294,11 +421,25 @@ const estilos = StyleSheet.create({
     fontWeight: 'bold',
   },
   botonCancelar: {
-    padding: 14,
+    padding: 12,
     alignItems: 'center',
   },
   textoBotonCancelar: {
     color: '#718096',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  textoVacio: {
     fontSize: 16,
+    color: '#718096',
+    textAlign: 'center',
+  },
+  skeletonCard: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#edf2f7',
   },
 });

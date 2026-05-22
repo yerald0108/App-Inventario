@@ -18,7 +18,7 @@ export async function inicializarDB(): Promise<void> {
 
     CREATE TABLE IF NOT EXISTS movimientos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      tipo TEXT NOT NULL CHECK(tipo IN ('venta', 'entrada', 'cancelacion')),
+      tipo TEXT NOT NULL CHECK(tipo IN ('venta', 'entrada', 'cancelacion', 'salida_familiar')),
       fecha_hora TEXT NOT NULL,
       producto_id INTEGER NOT NULL,
       cantidad REAL NOT NULL,
@@ -41,20 +41,43 @@ export async function inicializarDB(): Promise<void> {
     );
   `);
 
-  const resultado = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM productos'
-  );
-
-  if (resultado && resultado.count === 0) {
-    await db.execAsync(`
-      INSERT INTO productos (nombre, precio, existencia, alerta_minima) VALUES
-        ('Cerveza 260ml', 45, 24, 5),
-        ('Cerveza 500ml', 70, 18, 5),
-        ('Refresco Cola', 30, 10, 5),
-        ('Agua Natural', 20, 3, 5),
-        ('Jugo de Mango', 25, 8, 5);
-    `);
+  // Migración manual para el CHECK constraint de 'movimientos'
+  // SQLite no permite ALTER TABLE para cambiar CHECK, hay que recrear si es necesario
+  try {
+    const tableInfo = await db.getAllAsync<{ sql: string }>(
+      "SELECT sql FROM sqlite_master WHERE type='table' AND name='movimientos'"
+    );
+    
+    if (tableInfo.length > 0 && !tableInfo[0].sql.includes('salida_familiar')) {
+      console.log('Migrando tabla movimientos para soportar salida_familiar...');
+      await db.execAsync(`
+        BEGIN TRANSACTION;
+        CREATE TABLE movimientos_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tipo TEXT NOT NULL CHECK(tipo IN ('venta', 'entrada', 'cancelacion', 'salida_familiar')),
+          fecha_hora TEXT NOT NULL,
+          producto_id INTEGER NOT NULL,
+          cantidad REAL NOT NULL,
+          precio_aplicado REAL,
+          total REAL,
+          metodo_pago TEXT CHECK(metodo_pago IN ('efectivo', 'transferencia')),
+          turno_id INTEGER,
+          venta_id TEXT,
+          FOREIGN KEY (producto_id) REFERENCES productos(id)
+        );
+        INSERT INTO movimientos_new SELECT * FROM movimientos;
+        DROP TABLE movimientos;
+        ALTER TABLE movimientos_new RENAME TO movimientos;
+        COMMIT;
+      `);
+      console.log('Migración completada con éxito.');
+    }
+  } catch (error) {
+    console.error('Error en la migración:', error);
+    await db.execAsync('ROLLBACK;').catch(() => {});
   }
+
+  // La base de datos se inicializa vacía para uso real
 }
 
 // Exportar la instancia de la base de datos para usarla en toda la app

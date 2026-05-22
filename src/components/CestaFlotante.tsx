@@ -4,9 +4,11 @@ import { ItemCesta } from '../types';
 interface Props {
   items: ItemCesta[];
   onCobrar: () => void;
+  label?: string;
+  showTotal?: boolean;
 }
 
-export default function CestaFlotante({ items, onCobrar }: Props) {
+export default function CestaFlotante({ items, onCobrar, label = 'COBRAR', showTotal = true }: Props) {
   // No mostrar si la cesta está vacía
   if (items.length === 0) return null;
 
@@ -25,10 +27,10 @@ export default function CestaFlotante({ items, onCobrar }: Props) {
         <Text style={estilos.textoCantidad}>
           {cantidadDistintos} {cantidadDistintos === 1 ? 'producto' : 'productos'}
         </Text>
-        <Text style={estilos.textoTotal}>{total.toFixed(2)} CUP</Text>
+        {showTotal && <Text style={estilos.textoTotal}>{total.toFixed(2)} CUP</Text>}
       </View>
       <TouchableOpacity style={estilos.botonCobrar} onPress={onCobrar}>
-        <Text style={estilos.textoBotonCobrar}>COBRAR</Text>
+        <Text style={estilos.textoBotonCobrar}>{label}</Text>
       </TouchableOpacity>
     </View>
   );

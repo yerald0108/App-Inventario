@@ -10,7 +10,7 @@ export interface Producto {
 
 export interface Movimiento {
   id: number;
-  tipo: 'venta' | 'entrada' | 'cancelacion';
+  tipo: 'venta' | 'entrada' | 'cancelacion' | 'salida_familiar';
   fecha_hora: string;
   producto_id: number;
   cantidad: number;

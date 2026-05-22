@@ -8,28 +8,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Producto, ItemCesta } from '../types';
-import { obtenerProductosDisponibles, registrarVenta } from '../database/ventas';
+import { obtenerProductos } from '../database/productos';
+import { registrarSalidaFamiliar } from '../database/salidas_familiares';
 import { obtenerOCrearTurno } from '../database/turnos';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
-import ModalCobro from '../components/ModalCobro';
 import Skeleton from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
-export default function PantallaVenta() {
+export default function PantallaSalidaFamiliar() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [cesta, setCesta] = useState<Map<number, number>>(new Map());
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
-  const [modalCobroVisible, setModalCobroVisible] = useState(false);
 
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
       cargarProductos();
-      // Limpiar cesta al entrar
       setCesta(new Map());
       setBusqueda('');
     }, [])
@@ -37,7 +35,7 @@ export default function PantallaVenta() {
 
   async function cargarProductos() {
     if (productos.length === 0) setCargando(true);
-    const lista = await obtenerProductosDisponibles();
+    const lista = await obtenerProductos();
     setProductos(lista);
     setProductosFiltrados(lista);
     setCargando(false);
@@ -69,7 +67,7 @@ export default function PantallaVenta() {
     });
   }
 
-  // Construir lista de items de la cesta para pasarla a CestaFlotante
+  // Construir lista de items de la cesta
   function obtenerItemsCesta(): ItemCesta[] {
     const items: ItemCesta[] = [];
     cesta.forEach((cantidad, productoId) => {
@@ -79,45 +77,36 @@ export default function PantallaVenta() {
     return items;
   }
 
-  // Al pulsar COBRAR — mostrar modal de cobro
-  function handleCobrar() {
+  // Confirmar y registrar la salida familiar
+  async function handleConfirmarSalida() {
     const items = obtenerItemsCesta();
     if (items.length === 0) return;
-    setModalCobroVisible(true);
-  }
 
-  // Confirmar y registrar la venta en la BD
-  async function confirmarVenta(
-    items: ItemCesta[],
-    metodoPago: 'efectivo' | 'transferencia'
-  ) {
     if (procesando) return;
     setProcesando(true);
 
     try {
       const turnoId = await obtenerOCrearTurno();
-      await registrarVenta(items, metodoPago, turnoId);
-
-      // Cerrar modal
-      setModalCobroVisible(false);
+      await registrarSalidaFamiliar(items, turnoId);
 
       // Limpiar cesta y recargar inventario
       setCesta(new Map());
       await cargarProductos();
 
-      // Confirmación profesional con Toast
+      const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
+
       Toast.show({
         type: 'success',
-        text1: 'Venta registrada',
-        text2: `Cobrado en ${metodoPago} correctamente.`,
+        text1: 'Salida familiar registrada',
+        text2: `Registrado: ${totalItems} productos para consumo familiar.`,
         position: 'top',
-        visibilityTime: 3000,
+        visibilityTime: 4000,
       });
     } catch (error) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'No se pudo registrar la venta. Intenta de nuevo.',
+        text2: 'No se pudo registrar la salida familiar.',
         position: 'top',
       });
       console.error(error);
@@ -149,7 +138,7 @@ export default function PantallaVenta() {
         <Ionicons name="search" size={20} color="#718096" style={estilos.iconoBusqueda} />
         <TextInput
           style={estilos.inputBusqueda}
-          placeholder="Buscar producto..."
+          placeholder="Buscar producto para familiar..."
           placeholderTextColor="#a0aec0"
           value={busqueda}
           onChangeText={setBusqueda}
@@ -161,15 +150,15 @@ export default function PantallaVenta() {
         renderSkeleton()
       ) : productos.length === 0 ? (
         <EstadoVacio 
-          icono="cart-outline" 
-          titulo="Sin stock" 
-          descripcion="No hay productos disponibles para vender. Agrega stock en Inventario." 
+          icono="people-outline" 
+          titulo="Sin productos" 
+          descripcion="Agrega productos en Inventario para registrar salidas familiares." 
         />
       ) : productosFiltrados.length === 0 ? (
         <EstadoVacio 
           icono="search-outline" 
           titulo="Sin resultados" 
-          descripcion={`No encontramos "${busqueda}" en los productos disponibles.`} 
+          descripcion={`No encontramos nada que coincida con "${busqueda}"`} 
         />
       ) : (
         <FlatList
@@ -187,15 +176,12 @@ export default function PantallaVenta() {
         />
       )}
 
-      {/* Cesta flotante — aparece solo si hay algo en la cesta */}
-      <CestaFlotante items={itemsCesta} onCobrar={handleCobrar} />
-
-      {/* Modal de cobro inteligente */}
-      <ModalCobro
-        visible={modalCobroVisible}
-        items={itemsCesta}
-        onConfirmar={(metodo) => confirmarVenta(itemsCesta, metodo)}
-        onCancelar={() => setModalCobroVisible(false)}
+      {/* Cesta flotante específica para salida familiar */}
+      <CestaFlotante 
+        items={itemsCesta} 
+        onCobrar={handleConfirmarSalida} 
+        label="REGISTRAR SALIDA"
+        showTotal={false}
       />
     </SafeAreaView>
   );
@@ -204,19 +190,13 @@ export default function PantallaVenta() {
 const estilos = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#f7fafc',
   },
   centrado: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-    padding: 40,
-  },
-  textoVacio: {
-    fontSize: 16,
-    color: '#718096',
-    textAlign: 'center',
-    marginTop: 8,
+    alignItems: 'center',
+    padding: 20,
   },
   contenedorBusqueda: {
     flexDirection: 'row',
@@ -226,11 +206,8 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 12,
     height: 50,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   iconoBusqueda: {
     marginRight: 8,
@@ -239,6 +216,11 @@ const estilos = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#2d3748',
+  },
+  textoVacio: {
+    fontSize: 16,
+    color: '#718096',
+    textAlign: 'center',
   },
   skeletonCard: {
     backgroundColor: '#ffffff',

@@ -3,14 +3,13 @@ import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { obtenerDetalleTurno } from '../database/turnos';
 import { Turno } from '../types';
 
 type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'DetalleTurno'>;
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;
 };
 
@@ -58,7 +57,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
   if (cargando) {
     return (
-      <SafeAreaView style={estilos.contenedor}>
+      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
         <View style={estilos.centrado}>
           <ActivityIndicator size="large" color="#2b6cb0" />
         </View>
@@ -68,7 +67,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
   if (!turno) {
     return (
-      <SafeAreaView style={estilos.contenedor}>
+      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
         <View style={estilos.centrado}>
           <Text style={estilos.textoVacio}>No se encontró el turno.</Text>
         </View>
@@ -82,24 +81,32 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
   let cuadreTexto = '';
   let cuadreColor = '#38a169';
+  let cuadreIcono: any = 'checkmark-circle';
+  
   if (diferencia === 0) {
-    cuadreTexto = 'Caja cuadrada ✅';
+    cuadreTexto = 'Caja cuadrada';
     cuadreColor = '#38a169';
+    cuadreIcono = 'checkmark-circle';
   } else if (diferencia > 0) {
-    cuadreTexto = `Faltante: ${diferencia.toFixed(2)} CUP ⚠️`;
+    cuadreTexto = `Faltante: ${diferencia.toFixed(2)} CUP`;
     cuadreColor = '#e53e3e';
+    cuadreIcono = 'warning';
   } else {
-    cuadreTexto = `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP ℹ️`;
+    cuadreTexto = `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP`;
     cuadreColor = '#d69e2e';
+    cuadreIcono = 'information-circle';
   }
 
   return (
-    <SafeAreaView style={estilos.contenedor}>
+    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
       <ScrollView style={estilos.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
 
       {/* Fechas del turno */}
       <View style={estilos.seccion}>
-        <Text style={estilos.tituloSeccion}>📅 Datos del turno</Text>
+        <View style={estilos.cabeceraSeccion}>
+          <Ionicons name="calendar-outline" size={20} color="#2b6cb0" />
+          <Text style={estilos.tituloSeccion}>Datos del turno</Text>
+        </View>
         <View style={estilos.fila}>
           <Text style={estilos.etiqueta}>Apertura:</Text>
           <Text style={estilos.valor}>{formatearFecha(turno.fecha_inicio)}</Text>
@@ -114,13 +121,22 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
       {/* Resumen de ventas */}
       <View style={estilos.seccion}>
-        <Text style={estilos.tituloSeccion}>💰 Resumen de ventas</Text>
+        <View style={estilos.cabeceraSeccion}>
+          <Ionicons name="stats-chart-outline" size={20} color="#38a169" />
+          <Text style={estilos.tituloSeccion}>Resumen de ventas</Text>
+        </View>
         <View style={estilos.fila}>
-          <Text style={estilos.etiqueta}>Efectivo:</Text>
+          <View style={estilos.filaIcono}>
+            <Ionicons name="cash-outline" size={16} color="#718096" />
+            <Text style={estilos.etiqueta}>Efectivo:</Text>
+          </View>
           <Text style={estilos.valor}>{totalEfectivo.toFixed(2)} CUP</Text>
         </View>
         <View style={estilos.fila}>
-          <Text style={estilos.etiqueta}>Transferencia:</Text>
+          <View style={estilos.filaIcono}>
+            <Ionicons name="card-outline" size={16} color="#718096" />
+            <Text style={estilos.etiqueta}>Transferencia:</Text>
+          </View>
           <Text style={estilos.valor}>{totalTransferencia.toFixed(2)} CUP</Text>
         </View>
         <View style={[estilos.fila, estilos.filaTotal]}>
@@ -131,7 +147,10 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
       {/* Cuadre de caja */}
       <View style={estilos.seccion}>
-        <Text style={estilos.tituloSeccion}>🧾 Cuadre de caja</Text>
+        <View style={estilos.cabeceraSeccion}>
+          <Ionicons name="receipt-outline" size={20} color="#d69e2e" />
+          <Text style={estilos.tituloSeccion}>Cuadre de caja</Text>
+        </View>
         <View style={estilos.fila}>
           <Text style={estilos.etiqueta}>Esperado:</Text>
           <Text style={estilos.valor}>{totalEfectivo.toFixed(2)} CUP</Text>
@@ -141,6 +160,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
           <Text style={estilos.valor}>{efectivoReal.toFixed(2)} CUP</Text>
         </View>
         <View style={[estilos.resultadoCuadre, { borderColor: cuadreColor }]}>
+          <Ionicons name={cuadreIcono} size={18} color={cuadreColor} />
           <Text style={[estilos.textoCuadre, { color: cuadreColor }]}>
             {cuadreTexto}
           </Text>
@@ -150,7 +170,10 @@ export default function PantallaDetalleTurno({ route }: Props) {
       {/* Entradas del turno */}
       {entradas.length > 0 && (
         <View style={estilos.seccion}>
-          <Text style={estilos.tituloSeccion}>📥 Entradas del turno</Text>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="download-outline" size={20} color="#2b6cb0" />
+            <Text style={estilos.tituloSeccion}>Entradas del turno</Text>
+          </View>
           {entradas.map((entrada, index) => (
             <View key={index} style={estilos.filaEntrada}>
               <Text style={estilos.nombreEntrada}>{entrada.nombre}</Text>
@@ -163,7 +186,10 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
       {/* Inventario al cierre */}
       <View style={estilos.seccion}>
-        <Text style={estilos.tituloSeccion}>📦 Inventario al cierre</Text>
+        <View style={estilos.cabeceraSeccion}>
+          <Ionicons name="cube-outline" size={20} color="#805ad5" />
+          <Text style={estilos.tituloSeccion}>Inventario al cierre</Text>
+        </View>
         {inventario.map((item, index) => {
           const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
           return (
@@ -198,63 +224,83 @@ const estilos = StyleSheet.create({
   textoVacio: {
     fontSize: 16,
     color: '#718096',
+    textAlign: 'center',
+  },
+  cabeceraSeccion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#edf2f7',
+    paddingBottom: 8,
+  },
+  tituloSeccion: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
   },
   seccion: {
     backgroundColor: '#ffffff',
-    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 16,
     padding: 16,
-    margin: 16,
-    marginBottom: 0,
+    borderRadius: 16,
     elevation: 2,
-  },
-  tituloSeccion: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
-    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   fila: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f4f8',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  filaIcono: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   etiqueta: {
-    fontSize: 15,
-    color: '#4a5568',
+    fontSize: 14,
+    color: '#718096',
   },
   valor: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#1a1a2e',
+    color: '#2d3748',
   },
   filaTotal: {
-    borderBottomWidth: 0,
-    marginTop: 4,
-    paddingTop: 10,
-    borderTopWidth: 2,
-    borderTopColor: '#e2e8f0',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#edf2f7',
   },
   etiquetaTotal: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: 'bold',
     color: '#1a1a2e',
   },
   valorTotal: {
-    fontSize: 19,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '900',
     color: '#2b6cb0',
   },
   resultadoCuadre: {
-    borderWidth: 2,
-    borderRadius: 10,
-    padding: 14,
-    marginTop: 12,
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    backgroundColor: '#f8fafc',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   textoCuadre: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   filaEntrada: {

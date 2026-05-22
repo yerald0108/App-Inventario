@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Modal, Alert, KeyboardAvoidingView,
-  Platform, ScrollView
+  Platform, ScrollView, Animated, Pressable, PanResponder
 } from 'react-native';
 import { Producto } from '../types';
 
@@ -26,6 +26,50 @@ export default function FormularioProducto({
   const [precio, setPrecio] = useState('');
   const [existencia, setExistencia] = useState('');
   const [alertaMinima, setAlertaMinima] = useState('5');
+  const slideAnim = useRef(new Animated.Value(600)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return gestureState.dy > 10;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          slideAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 150 || gestureState.vy > 0.5) {
+          Animated.timing(slideAnim, {
+            toValue: 600,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(onCancelar);
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 8
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8
+      }).start();
+    } else {
+      slideAnim.setValue(600);
+    }
+  }, [visible]);
 
   // Cargar datos del producto al abrir en modo edición
     useEffect(() => {
@@ -80,22 +124,34 @@ export default function FormularioProducto({
 
   function confirmarEliminar() {
     Alert.alert(
-      'Eliminar producto',
-      `¿Seguro que deseas eliminar "${nombre}"? Esta acción no se puede deshacer.`,
+      '¿Eliminar producto?',
+      `Esta acción borrará definitivamente "${nombre}" y no se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: onEliminar },
+        { 
+          text: 'Eliminar ahora', 
+          style: 'destructive', 
+          onPress: onEliminar 
+        },
       ]
     );
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="fade" transparent>
       <KeyboardAvoidingView
         style={estilos.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={estilos.modal}>
+        <Pressable style={estilos.dismissArea} onPress={onCancelar} />
+        
+        <Animated.View 
+          style={[
+            estilos.modal,
+            { transform: [{ translateY: slideAnim }] }
+          ]}
+        >
+          <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={estilos.titulo}>
               {producto ? 'Editar producto' : 'Nuevo producto'}
@@ -160,7 +216,7 @@ export default function FormularioProducto({
               <Text style={estilos.textoBotonCancelar}>Cancelar</Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -169,15 +225,33 @@ export default function FormularioProducto({
 const estilos = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
+  },
+  dismissArea: {
+    ...StyleSheet.absoluteFillObject,
   },
   modal: {
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingTop: 12,
     maxHeight: '90%',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 20,
+  },
+  barraArrastre: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   titulo: {
     fontSize: 22,
