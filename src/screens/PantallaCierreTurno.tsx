@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView,
   TextInput, TouchableOpacity, Alert, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno } from '../database/turnos';
@@ -102,9 +103,11 @@ export default function PantallaCierreTurno({ navigation }: Props) {
 
   if (cargando) {
     return (
-      <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -112,7 +115,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const resultadoCuadre = calcularDiferencia();
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={{ paddingBottom: 40 }}>
+    <SafeAreaView style={estilos.contenedor}>
+      <ScrollView style={estilos.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
 
       {/* Resumen de ventas */}
       <View style={estilos.seccion}>
@@ -197,7 +201,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           {procesando ? 'Cerrando turno...' : '🔒 CERRAR TURNO'}
         </Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -210,6 +215,9 @@ const estilos = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  scroll: {
+    flex: 1,
   },
   seccion: {
     backgroundColor: '#ffffff',

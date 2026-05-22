@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { VentaAgrupada } from '../types';
 import { obtenerVentasTurnoActual, cancelarVenta } from '../database/cancelaciones';
@@ -74,23 +75,27 @@ export default function PantallaUltimasVentas() {
 
   if (cargando) {
     return (
-      <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (!turnoId) {
     return (
-      <View style={estilos.centrado}>
-        <Text style={estilos.textoVacio}>No hay turno abierto.</Text>
-        <Text style={estilos.textoVacioSub}>Regresa al inicio para abrir un turno.</Text>
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <Text style={estilos.textoVacio}>No hay turno abierto.</Text>
+          <Text style={estilos.textoVacioSub}>Regresa al inicio para abrir un turno.</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={estilos.contenedor}>
+    <SafeAreaView style={estilos.contenedor}>
       <View style={estilos.encabezado}>
         <Text style={estilos.textoEncabezado}>
           {ventas.length} {ventas.length === 1 ? 'venta' : 'ventas'} en este turno
@@ -142,7 +147,7 @@ export default function PantallaUltimasVentas() {
         }
         contentContainerStyle={{ paddingBottom: 24 }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -3,6 +3,7 @@ import {
   View, FlatList, StyleSheet, Alert,
   Text, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Producto, ItemCesta } from '../types';
 import { obtenerProductosDisponibles, registrarVenta } from '../database/ventas';
@@ -113,16 +114,18 @@ export default function PantallaVenta() {
 
   if (cargando) {
     return (
-      <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   const itemsCesta = obtenerItemsCesta();
 
   return (
-    <View style={estilos.contenedor}>
+    <SafeAreaView style={estilos.contenedor}>
       {productos.length === 0 ? (
         <View style={estilos.centrado}>
           <Text style={estilos.textoVacio}>No hay productos con stock disponible.</Text>
@@ -145,7 +148,7 @@ export default function PantallaVenta() {
 
       {/* Cesta flotante — aparece solo si hay algo en la cesta */}
       <CestaFlotante items={itemsCesta} onCobrar={handleCobrar} />
-    </View>
+    </SafeAreaView>
   );
 }
 

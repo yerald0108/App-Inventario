@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
@@ -57,17 +58,21 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
   if (cargando) {
     return (
-      <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (!turno) {
     return (
-      <View style={estilos.centrado}>
-        <Text style={estilos.textoVacio}>No se encontró el turno.</Text>
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <Text style={estilos.textoVacio}>No se encontró el turno.</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -89,7 +94,8 @@ export default function PantallaDetalleTurno({ route }: Props) {
   }
 
   return (
-    <ScrollView style={estilos.contenedor} contentContainerStyle={{ paddingBottom: 40 }}>
+    <SafeAreaView style={estilos.contenedor}>
+      <ScrollView style={estilos.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
 
       {/* Fechas del turno */}
       <View style={estilos.seccion}>
@@ -171,7 +177,8 @@ export default function PantallaDetalleTurno({ route }: Props) {
         })}
       </View>
 
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -184,6 +191,9 @@ const estilos = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  scroll: {
+    flex: 1,
   },
   textoVacio: {
     fontSize: 16,

@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, ActivityIndicator, TextInput, Modal
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Producto } from '../types';
 import { obtenerProductos } from '../database/productos';
@@ -73,14 +74,16 @@ export default function PantallaEntrada() {
 
   if (cargando) {
     return (
-      <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={estilos.contenedor}>
+    <SafeAreaView style={estilos.contenedor}>
       <View style={estilos.encabezado}>
         <Text style={estilos.textoEncabezado}>
           Toca un producto para registrar una entrada
@@ -162,7 +165,7 @@ export default function PantallaEntrada() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
