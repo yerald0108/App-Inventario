@@ -10,6 +10,9 @@ import PantallaInventario from './src/screens/PantallaInventario';
 import PantallaVenta from './src/screens/PantallaVenta';
 import PantallaEntrada from './src/screens/PantallaEntrada';
 import PantallaCierreTurno from './src/screens/PantallaCierreTurno';
+import PantallaUltimasVentas from './src/screens/PantallaUltimasVentas';
+import PantallaHistorial from './src/screens/PantallaHistorial';
+import PantallaDetalleTurno from './src/screens/PantallaDetalleTurno';
 
 export type RootStackParamList = {
   Inicio: undefined;
@@ -17,6 +20,9 @@ export type RootStackParamList = {
   Venta: undefined;
   Entrada: undefined;
   CierreTurno: undefined;
+  UltimasVentas: undefined;
+  Historial: undefined;
+  DetalleTurno: { turnoId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -38,31 +44,14 @@ export default function App() {
             headerTitleStyle: { fontWeight: 'bold' },
           }}
         >
-          <Stack.Screen
-            name="Inicio"
-            component={PantallaInicio}
-            options={{ title: 'MiCaja' }}
-          />
-          <Stack.Screen
-            name="Inventario"
-            component={PantallaInventario}
-            options={{ title: 'Inventario' }}
-          />
-          <Stack.Screen
-            name="Venta"
-            component={PantallaVenta}
-            options={{ title: 'Nueva Venta' }}
-          />
-          <Stack.Screen
-            name="Entrada"
-            component={PantallaEntrada}
-            options={{ title: 'Entrada de Mercancía' }}
-          />
-          <Stack.Screen
-            name="CierreTurno"
-            component={PantallaCierreTurno}
-            options={{ title: 'Cierre de Turno' }}
-          />
+          <Stack.Screen name="Inicio" component={PantallaInicio} options={{ title: 'MiCaja' }} />
+          <Stack.Screen name="Inventario" component={PantallaInventario} options={{ title: 'Inventario' }} />
+          <Stack.Screen name="Venta" component={PantallaVenta} options={{ title: 'Nueva Venta' }} />
+          <Stack.Screen name="Entrada" component={PantallaEntrada} options={{ title: 'Entrada de Mercancía' }} />
+          <Stack.Screen name="CierreTurno" component={PantallaCierreTurno} options={{ title: 'Cierre de Turno' }} />
+          <Stack.Screen name="UltimasVentas" component={PantallaUltimasVentas} options={{ title: 'Últimas Ventas' }} />
+          <Stack.Screen name="Historial" component={PantallaHistorial} options={{ title: 'Historial de Turnos' }} />
+          <Stack.Screen name="DetalleTurno" component={PantallaDetalleTurno} options={{ title: 'Detalle del Turno' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

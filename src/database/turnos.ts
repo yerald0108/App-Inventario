@@ -93,3 +93,24 @@ export async function cerrarTurno(
     [fechaCierre, totalEfectivo, totalTransferencia, efectivoReal, turnoId]
   );
 }
+
+// Obtener todos los turnos cerrados ordenados por fecha (más reciente primero)
+export async function obtenerTurnosCerrados(): Promise<Turno[]> {
+  return await db.getAllAsync<Turno>(
+    'SELECT * FROM turnos WHERE cerrado = 1 ORDER BY fecha_cierre DESC'
+  );
+}
+
+// Obtener el resumen de un turno cerrado (solo lectura)
+export async function obtenerDetalleTurno(turnoId: number) {
+  const turno = await db.getFirstAsync<Turno>(
+    'SELECT * FROM turnos WHERE id = ?',
+    [turnoId]
+  );
+
+  if (!turno) return null;
+
+  const resumen = await obtenerResumenTurno(turnoId);
+
+  return { turno, ...resumen };
+}

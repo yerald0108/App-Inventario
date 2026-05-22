@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, ActivityIndicator
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   obtenerProductos, crearProducto,
@@ -79,14 +80,16 @@ export default function PantallaInventario() {
 
   if (cargando) {
     return (
-      <View style={estilos.centrado}>
-        <ActivityIndicator size="large" color="#2b6cb0" />
-      </View>
+      <SafeAreaView style={estilos.contenedor}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={estilos.contenedor}>
+    <SafeAreaView style={estilos.contenedor}>
       {/* Resumen de stock */}
       <View style={estilos.resumen}>
         <Text style={estilos.textoResumen}>
@@ -123,7 +126,7 @@ export default function PantallaInventario() {
         onCancelar={cerrarModal}
         onEliminar={handleEliminar}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
