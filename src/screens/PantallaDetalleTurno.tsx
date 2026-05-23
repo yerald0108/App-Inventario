@@ -7,7 +7,8 @@ import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { obtenerDetalleTurno } from '../database/turnos';
-import { Turno } from '../types';
+import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
+import { Turno, VentaAgrupada } from '../types';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;
@@ -20,6 +21,9 @@ export default function PantallaDetalleTurno({ route }: Props) {
   const [totalEfectivo, setTotalEfectivo] = useState(0);
   const [totalTransferencia, setTotalTransferencia] = useState(0);
   const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
+  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
+  const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
+  const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
 
   useEffect(() => {
@@ -34,7 +38,14 @@ export default function PantallaDetalleTurno({ route }: Props) {
       setTotalEfectivo(detalle.totalEfectivo);
       setTotalTransferencia(detalle.totalTransferencia);
       setEntradas(detalle.entradas);
+      setSalidasFamiliares(detalle.salidasFamiliares);
       setInventario(detalle.inventario);
+
+      // Cargar ventas y anulaciones
+      const listaVentas = await obtenerVentasTurnoActual(turnoId);
+      const listaAnulaciones = await obtenerAnulacionesTurno(turnoId);
+      setVentas(listaVentas);
+      setAnulaciones(listaAnulaciones);
     }
     setCargando(false);
   }
@@ -167,6 +178,59 @@ export default function PantallaDetalleTurno({ route }: Props) {
         </View>
       </View>
 
+      {/* Ventas del turno */}
+      {ventas.length > 0 && (
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="cart-outline" size={20} color="#38a169" />
+            <Text style={estilos.tituloSeccion}>Ventas ({ventas.length})</Text>
+          </View>
+          {ventas.map((venta) => (
+            <View key={venta.venta_id} style={estilos.filaHistorialVenta}>
+              <View style={estilos.cabeceraFilaVenta}>
+                <Text style={estilos.horaVenta}>{formatearHora(venta.fecha_hora)}</Text>
+                <Text style={estilos.metodoVenta}>{venta.metodo_pago === 'efectivo' ? '💵' : '📱'}</Text>
+                <Text style={estilos.totalVentaFila}>{venta.total.toFixed(2)}</Text>
+              </View>
+              <View style={estilos.detallesVentaFila}>
+                {venta.items.map((item, idx) => (
+                  <Text key={idx} style={estilos.textoItemVenta}>
+                    {item.cantidad}x {item.nombre_producto}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Anulaciones del turno */}
+      {anulaciones.length > 0 && (
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="trash-outline" size={20} color="#e53e3e" />
+            <Text style={estilos.tituloSeccion}>Anulaciones ({anulaciones.length})</Text>
+          </View>
+          {anulaciones.map((venta) => (
+            <View key={venta.venta_id} style={[estilos.filaHistorialVenta, { opacity: 0.6 }]}>
+              <View style={estilos.cabeceraFilaVenta}>
+                <Text style={[estilos.horaVenta, { textDecorationLine: 'line-through' }]}>
+                  {formatearHora(venta.fecha_hora)}
+                </Text>
+                <Text style={estilos.totalVentaFila}>{venta.total.toFixed(2)}</Text>
+              </View>
+              <View style={estilos.detallesVentaFila}>
+                {venta.items.map((item, idx) => (
+                  <Text key={idx} style={[estilos.textoItemVenta, { textDecorationLine: 'line-through' }]}>
+                    {item.cantidad}x {item.nombre_producto}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* Entradas del turno */}
       {entradas.length > 0 && (
         <View style={estilos.seccion}>
@@ -179,6 +243,25 @@ export default function PantallaDetalleTurno({ route }: Props) {
               <Text style={estilos.nombreEntrada}>{entrada.nombre}</Text>
               <Text style={estilos.cantidadEntrada}>+{entrada.cantidad} unid.</Text>
               <Text style={estilos.horaEntrada}>{formatearHora(entrada.fecha_hora)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Salidas familiares (Bug 9) */}
+      {salidasFamiliares.length > 0 && (
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="people-outline" size={20} color="#ed64a6" />
+            <Text style={estilos.tituloSeccion}>Consumo familiar</Text>
+          </View>
+          {salidasFamiliares.map((salida, index) => (
+            <View key={index} style={estilos.filaEntrada}>
+              <Text style={estilos.nombreEntrada}>{salida.nombre}</Text>
+              <Text style={[estilos.cantidadEntrada, { color: '#ed64a6' }]}>
+                -{salida.cantidad} unid.
+              </Text>
+              <Text style={estilos.horaEntrada}>{formatearHora(salida.fecha_hora)}</Text>
             </View>
           ))}
         </View>
@@ -344,5 +427,38 @@ const estilos = StyleSheet.create({
   stockInventario: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  filaHistorialVenta: {
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f4f8',
+  },
+  cabeceraFilaVenta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 4,
+  },
+  horaVenta: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4a5568',
+  },
+  metodoVenta: {
+    fontSize: 14,
+  },
+  totalVentaFila: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    marginLeft: 'auto',
+  },
+  detallesVentaFila: {
+    paddingLeft: 0,
+  },
+  textoItemVenta: {
+    fontSize: 13,
+    color: '#718096',
   },
 });

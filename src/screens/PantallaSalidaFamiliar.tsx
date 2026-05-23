@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
   Text, TextInput, TouchableOpacity, LayoutAnimation
@@ -24,6 +24,7 @@ export default function PantallaSalidaFamiliar() {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [alturaCesta, setAlturaCesta] = useState(0);
+  const procesandoRef = useRef(false);
 
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
@@ -109,7 +110,8 @@ export default function PantallaSalidaFamiliar() {
 
   async function ejecutarSalida() {
     const items = obtenerItemsCesta();
-    if (procesando) return;
+    if (procesandoRef.current) return;
+    procesandoRef.current = true;
     setProcesando(true);
 
     try {
@@ -143,6 +145,7 @@ export default function PantallaSalidaFamiliar() {
       });
       console.error(error);
     } finally {
+      procesandoRef.current = false;
       setProcesando(false);
     }
   }

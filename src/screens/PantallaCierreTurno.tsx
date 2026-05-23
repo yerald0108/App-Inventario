@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TextInput, TouchableOpacity, Alert, ActivityIndicator,
@@ -26,6 +26,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const [efectivoReal, setEfectivoReal] = useState('');
   const [procesando, setProcesando] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
+  const procesandoRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -93,7 +94,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   }
 
   async function confirmarCierre() {
-    if (!turnoId || procesando) return;
+    if (!turnoId || procesandoRef.current) return;
+    procesandoRef.current = true;
     setProcesando(true);
     try {
       const real = parseFloat(efectivoReal);
@@ -105,6 +107,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       Alert.alert('Error', 'No se pudo cerrar el turno.');
       console.error(error);
     } finally {
+      procesandoRef.current = false;
       setProcesando(false);
     }
   }

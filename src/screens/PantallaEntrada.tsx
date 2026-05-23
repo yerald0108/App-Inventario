@@ -26,6 +26,7 @@ export default function PantallaEntrada() {
   const [modalVisible, setModalVisible] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const [ultimoProductoActualizado, setUltimoProductoActualizado] = useState<number | null>(null);
+  const procesandoRef = useRef(false);
   const slideAnim = useRef(new Animated.Value(600)).current;
 
   const panResponder = useRef(
@@ -107,13 +108,14 @@ export default function PantallaEntrada() {
   async function confirmarEntrada() {
     if (!productoSeleccionado) return;
 
-    const cantidadNum = parseInt(cantidad, 10);
-    if (isNaN(cantidadNum) || cantidadNum <= 0) {
-      Alert.alert('Error', 'La cantidad debe ser mayor que 0.');
+    const cantidadNum = Number(cantidad);
+    if (!Number.isInteger(cantidadNum) || cantidadNum <= 0) {
+      Alert.alert('Error', 'La cantidad debe ser un número entero positivo.');
       return;
     }
 
-    if (procesando) return;
+    if (procesandoRef.current) return;
+    procesandoRef.current = true;
     setProcesando(true);
 
     try {
@@ -148,6 +150,7 @@ export default function PantallaEntrada() {
       });
       console.error(error);
     } finally {
+      procesandoRef.current = false;
       setProcesando(false);
     }
   }

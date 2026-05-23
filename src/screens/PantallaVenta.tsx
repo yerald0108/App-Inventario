@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
   Text, TextInput, TouchableOpacity, LayoutAnimation
@@ -32,6 +32,7 @@ export default function PantallaVenta({ navigation }: Props) {
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
   const [alturaCesta, setAlturaCesta] = useState(0);
+  const procesandoRef = useRef(false);
 
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
@@ -124,7 +125,8 @@ export default function PantallaVenta({ navigation }: Props) {
     items: ItemCesta[],
     metodoPago: 'efectivo' | 'transferencia'
   ) {
-    if (procesando) return;
+    if (procesandoRef.current) return;
+    procesandoRef.current = true;
     setProcesando(true);
 
     try {
@@ -160,6 +162,7 @@ export default function PantallaVenta({ navigation }: Props) {
       });
       console.error(error);
     } finally {
+      procesandoRef.current = false;
       setProcesando(false);
     }
   }
@@ -240,6 +243,7 @@ export default function PantallaVenta({ navigation }: Props) {
         items={itemsCesta}
         onConfirmar={(metodo) => confirmarVenta(itemsCesta, metodo)}
         onCancelar={() => setModalCobroVisible(false)}
+        procesando={procesando}
       />
     </SafeAreaView>
   );
