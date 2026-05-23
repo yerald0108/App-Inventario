@@ -30,6 +30,9 @@ export type RootStackParamList = {
   SalidaFamiliar: undefined;
 };
 
+// TODO: Migrar a Bottom Tab Navigator en la siguiente versión.
+// Rutas candidatas para tabs: Venta, UltimasVentas, Inventario, Historial.
+// La pantalla Inicio pasaría a ser el tab de "Inicio" con estado del turno.
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {

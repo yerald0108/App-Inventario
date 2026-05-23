@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, LayoutAnimation
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { RootStackParamList } from '../../App';
 import { VentaAgrupada } from '../types';
 import { obtenerVentasTurnoActual, cancelarVenta, cambiarMetodoPagoVenta } from '../database/cancelaciones';
 import { obtenerTurnoAbierto } from '../database/turnos';
@@ -14,9 +16,25 @@ import EstadoVacio from '../components/EstadoVacio';
 import { formatCUP } from '../utils/formatters';
 
 export default function PantallaUltimasVentas() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
   const [cargando, setCargando] = useState(true);
   const [turnoId, setTurnoId] = useState<number | null>(null);
+
+  // Añadir botón en el header para ir a Venta
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Venta')}
+          style={{ marginRight: 8 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="cart-outline" size={22} color="#ffffff" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   useFocusEffect(
     useCallback(() => {

@@ -42,13 +42,25 @@ export default function PantallaVenta({ navigation }: Props) {
     const totalItems = Array.from(cesta.values()).reduce((acc, qty) => acc + qty, 0);
 
     navigation.setOptions({
-      headerRight: () =>
-        totalItems > 0 ? (
-          <View style={estilos.badgeHeader}>
-            <Text style={estilos.textoBadgeHeader}>{totalItems}</Text>
-            <Text style={estilos.textoUnidadesBadge}> ud.</Text>
-          </View>
-        ) : null,
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 8 }}>
+          {/* Botón a Últimas Ventas */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('UltimasVentas')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="receipt-outline" size={22} color="#ffffff" />
+          </TouchableOpacity>
+          
+          {/* Badge de la cesta */}
+          {totalItems > 0 && (
+            <View style={estilos.badgeHeader}>
+              <Text style={estilos.textoBadgeHeader}>{totalItems}</Text>
+              <Text style={estilos.textoUnidadesBadge}> ud.</Text>
+            </View>
+          )}
+        </View>
+      ),
     });
   }, [cesta, navigation]);
 
@@ -371,7 +383,6 @@ const estilos = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    marginRight: 8,
   },
   textoBadgeHeader: {
     color: '#ffffff',
