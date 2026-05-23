@@ -23,7 +23,6 @@ export default function PantallaSalidaFamiliar() {
   const [cesta, setCesta] = useState<Map<number, number>>(new Map());
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
-  const [alturaCesta, setAlturaCesta] = useState(0);
   const procesandoRef = useRef(false);
 
   // Recargar productos al entrar a la pantalla
@@ -201,14 +200,13 @@ export default function PantallaSalidaFamiliar() {
             />
           )}
           contentContainerStyle={{ 
-            paddingBottom: itemsCesta.length > 0 ? (alturaCesta + 20) : 20 
+            paddingBottom: itemsCesta.length > 0 ? 140 : 20 
           }}
           showsVerticalScrollIndicator={false}
         />
       )}
 
       {/* Cesta flotante específica para salida familiar */}
-      <View onLayout={(e) => setAlturaCesta(e.nativeEvent.layout.height)}>
         <CestaFlotante 
           items={itemsCesta} 
           onCobrar={handleConfirmarSalida} 
@@ -216,7 +214,6 @@ export default function PantallaSalidaFamiliar() {
           showTotal={false}
           procesando={procesando}
         />
-      </View>
     </SafeAreaView>
   );
 }

@@ -31,7 +31,6 @@ export default function PantallaVenta({ navigation }: Props) {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
-  const [alturaCesta, setAlturaCesta] = useState(0);
   const procesandoRef = useRef(false);
 
   // Recargar productos al entrar a la pantalla
@@ -222,20 +221,18 @@ export default function PantallaVenta({ navigation }: Props) {
             />
           )}
           contentContainerStyle={{ 
-            paddingBottom: itemsCesta.length > 0 ? (alturaCesta + 20) : 20 
+            paddingBottom: itemsCesta.length > 0 ? 140 : 20 
           }}
           showsVerticalScrollIndicator={false}
         />
       )}
 
       {/* Cesta flotante — aparece solo si hay algo en la cesta */}
-      <View onLayout={(e) => setAlturaCesta(e.nativeEvent.layout.height)}>
         <CestaFlotante 
           items={itemsCesta} 
           onCobrar={handleCobrar} 
           procesando={procesando}
         />
-      </View>
 
       {/* Modal de cobro inteligente */}
       <ModalCobro
