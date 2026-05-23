@@ -310,5 +310,6 @@ const estilos = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginTop: 12,
+    textAlign: 'center', 
   },
 });
