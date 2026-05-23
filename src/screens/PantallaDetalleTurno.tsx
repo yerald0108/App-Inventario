@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, ActivityIndicator
+  View, Text, StyleSheet, ScrollView, ActivityIndicator,
+  TouchableOpacity
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
-import { obtenerDetalleTurno } from '../database/turnos';
+import { obtenerDetalleTurno, obtenerVentasDetalleTurno } from '../database/turnos';
 import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
 import { Turno, VentaAgrupada } from '../types';
 
@@ -22,7 +23,14 @@ export default function PantallaDetalleTurno({ route }: Props) {
   const [totalTransferencia, setTotalTransferencia] = useState(0);
   const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
   const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
-  const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
+  const [ventas, setVentas] = useState<{
+    venta_id: string;
+    fecha_hora: string;
+    metodo_pago: 'efectivo' | 'transferencia';
+    total: number;
+    items: { nombre_producto: string; cantidad: number; precio_aplicado: number }[];
+  }[]>([]);
+  const [ventasExpandidas, setVentasExpandidas] = useState<Set<string>>(new Set());
   const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
 
@@ -47,7 +55,23 @@ export default function PantallaDetalleTurno({ route }: Props) {
       setVentas(listaVentas);
       setAnulaciones(listaAnulaciones);
     }
+
+    const listaVentas = await obtenerVentasDetalleTurno(turnoId);
+    setVentas(listaVentas);
+
     setCargando(false);
+  }
+
+  function toggleVenta(ventaId: string) {
+    setVentasExpandidas(prev => {
+      const nueva = new Set(prev);
+      if (nueva.has(ventaId)) {
+        nueva.delete(ventaId);
+      } else {
+        nueva.add(ventaId);
+      }
+      return nueva;
+    });
   }
 
   function formatearFecha(iso: string): string {
@@ -182,25 +206,58 @@ export default function PantallaDetalleTurno({ route }: Props) {
       {ventas.length > 0 && (
         <View style={estilos.seccion}>
           <View style={estilos.cabeceraSeccion}>
-            <Ionicons name="cart-outline" size={20} color="#38a169" />
-            <Text style={estilos.tituloSeccion}>Ventas ({ventas.length})</Text>
+            <Ionicons name="receipt-outline" size={20} color="#805ad5" />
+            <Text style={estilos.tituloSeccion}>
+              Ventas ({ventas.length})
+            </Text>
           </View>
-          {ventas.map((venta) => (
-            <View key={venta.venta_id} style={estilos.filaHistorialVenta}>
-              <View style={estilos.cabeceraFilaVenta}>
-                <Text style={estilos.horaVenta}>{formatearHora(venta.fecha_hora)}</Text>
-                <Text style={estilos.metodoVenta}>{venta.metodo_pago === 'efectivo' ? '💵' : '📱'}</Text>
-                <Text style={estilos.totalVentaFila}>{venta.total.toFixed(2)}</Text>
-              </View>
-              <View style={estilos.detallesVentaFila}>
-                {venta.items.map((item, idx) => (
-                  <Text key={idx} style={estilos.textoItemVenta}>
-                    {item.cantidad}x {item.nombre_producto}
+
+          {ventas.map((venta) => {
+            const expandida = ventasExpandidas.has(venta.venta_id);
+            return (
+              <TouchableOpacity
+                key={venta.venta_id}
+                style={estilos.filaVenta}
+                onPress={() => toggleVenta(venta.venta_id)}
+                activeOpacity={0.7}
+              >
+                <View style={estilos.filaVentaCabecera}>
+                  <Text style={estilos.horaVenta}>
+                    {formatearHora(venta.fecha_hora)}
                   </Text>
-                ))}
-              </View>
-            </View>
-          ))}
+                  <View style={[
+                    estilos.etiquetaMetodo,
+                    venta.metodo_pago === 'efectivo' 
+                      ? { backgroundColor: '#f0fff4', borderColor: '#38a169' }
+                      : { backgroundColor: '#ebf8ff', borderColor: '#2b6cb0' }
+                  ]}>
+                    <Text style={[
+                      estilos.textoMetodo,
+                      { color: venta.metodo_pago === 'efectivo' ? '#2f855a' : '#2b6cb0' }
+                    ]}>
+                      {venta.metodo_pago === 'efectivo' ? 'Efectivo' : 'Transfer.'}
+                    </Text>
+                  </View>
+                  <Text style={estilos.totalVenta}>{venta.total.toFixed(2)} CUP</Text>
+                  <Ionicons 
+                    name={expandida ? 'chevron-up' : 'chevron-down'} 
+                    size={16} 
+                    color="#a0aec0" 
+                  />
+                </View>
+
+                {expandida && (
+                  <View style={estilos.itemsVenta}>
+                    {venta.items.map((item, idx) => (
+                      <Text key={idx} style={estilos.textoItemVenta}>
+                        {item.cantidad}x {item.nombre_producto} — {(item.cantidad * item.precio_aplicado).toFixed(2)} CUP
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
 
@@ -428,6 +485,50 @@ const estilos = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  // Estilos para la sección de ventas expandibles
+  filaVenta: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f4f8',
+    paddingVertical: 10,
+  },
+  filaVentaCabecera: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  horaVenta: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    width: 48,
+  },
+  etiquetaMetodo: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    flex: 1,
+  },
+  textoMetodo: {
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  totalVenta: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2d3748',
+  },
+  itemsVenta: {
+    marginTop: 8,
+    paddingLeft: 8,
+    gap: 4,
+  },
+  textoItemVenta: {
+    fontSize: 13,
+    color: '#718096',
+  },
+  // Estilos para la sección de anulaciones
   filaHistorialVenta: {
     marginBottom: 12,
     paddingBottom: 12,
@@ -440,14 +541,6 @@ const estilos = StyleSheet.create({
     gap: 10,
     marginBottom: 4,
   },
-  horaVenta: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4a5568',
-  },
-  metodoVenta: {
-    fontSize: 14,
-  },
   totalVentaFila: {
     fontSize: 15,
     fontWeight: 'bold',
@@ -456,9 +549,5 @@ const estilos = StyleSheet.create({
   },
   detallesVentaFila: {
     paddingLeft: 0,
-  },
-  textoItemVenta: {
-    fontSize: 13,
-    color: '#718096',
   },
 });

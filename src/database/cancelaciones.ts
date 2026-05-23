@@ -141,3 +141,16 @@ export async function cancelarVenta(ventaId: string): Promise<void> {
     );
   }
 }
+
+// Cambiar el método de pago de todos los movimientos de una venta
+export async function cambiarMetodoPagoVenta(
+  ventaId: string,
+  nuevoMetodo: 'efectivo' | 'transferencia'
+): Promise<void> {
+  await db.runAsync(
+    `UPDATE movimientos 
+     SET metodo_pago = ? 
+     WHERE venta_id = ? AND tipo = 'venta'`,
+    [nuevoMetodo, ventaId]
+  );
+}

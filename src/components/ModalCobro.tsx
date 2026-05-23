@@ -10,7 +10,11 @@ import { ItemCesta } from '../types';
 interface Props {
   visible: boolean;
   items: ItemCesta[];
-  onConfirmar: (metodoPago: 'efectivo' | 'transferencia') => void;
+  onConfirmar: (
+    metodoPago: 'efectivo' | 'transferencia',
+    montoRecibido: number,
+    cambio: number
+  ) => void;
   onCancelar: () => void;
   procesando?: boolean;
 }
@@ -233,7 +237,10 @@ export default function ModalCobro({
 
           <TouchableOpacity 
             style={[estilos.botonConfirmar, botonDeshabilitado && estilos.botonDeshabilitado]}
-            onPress={() => onConfirmar(metodoPago)}
+            onPress={() => {
+              const montoNum = metodoPago === 'efectivo' ? parseFloat(montoRecibido) : total;
+              onConfirmar(metodoPago, montoNum, cambio);
+            }}
             disabled={botonDeshabilitado}
           >
             <View style={estilos.filaBotonConfirmar}>

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -49,6 +49,14 @@ export default function PantallaInicio({ navigation }: Props) {
       console.error('Error al abrir turno:', error);
     }
   }
+
+  function handleAccionSinTurno(nombreAccion: string) {
+    Alert.alert(
+      'Turno cerrado',
+      `Para ${nombreAccion} necesitas iniciar un nuevo turno primero.`,
+      [{ text: 'Entendido', style: 'default' }]
+    );
+  } 
 
   function formatearFecha(iso: string): string {
     const fecha = new Date(iso);
@@ -113,8 +121,10 @@ export default function PantallaInicio({ navigation }: Props) {
               estilos.tarjetaAccion, 
               { backgroundColor: turnoActual ? '#38a169' : '#a0aec0' }
             ]} 
-            onPress={() => turnoActual ? navigation.navigate('Venta') : null}
-            disabled={!turnoActual}
+            onPress={() => turnoActual 
+              ? navigation.navigate('Venta') 
+              : handleAccionSinTurno('registrar ventas')
+            }
           >
             <Ionicons name="cart" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Venta</Text>
@@ -125,8 +135,10 @@ export default function PantallaInicio({ navigation }: Props) {
               estilos.tarjetaAccion, 
               { backgroundColor: turnoActual ? '#d69e2e' : '#a0aec0' }
             ]} 
-            onPress={() => turnoActual ? navigation.navigate('Entrada') : null}
-            disabled={!turnoActual}
+            onPress={() => turnoActual 
+              ? navigation.navigate('Entrada') 
+              : handleAccionSinTurno('registrar entradas de mercancía')
+            }
           >
             <Ionicons name="download" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Entrada</Text>
@@ -145,7 +157,7 @@ export default function PantallaInicio({ navigation }: Props) {
             onPress={() => navigation.navigate('UltimasVentas')}
           >
             <Ionicons name="receipt" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Ventas</Text>
+            <Text style={estilos.textoTarjeta}>Resumen de Ventas</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -153,8 +165,10 @@ export default function PantallaInicio({ navigation }: Props) {
               estilos.tarjetaAccion, 
               { backgroundColor: turnoActual ? '#ed64a6' : '#a0aec0' }
             ]} 
-            onPress={() => turnoActual ? navigation.navigate('SalidaFamiliar') : null}
-            disabled={!turnoActual}
+            onPress={() => turnoActual 
+              ? navigation.navigate('SalidaFamiliar') 
+              : handleAccionSinTurno('registrar salidas familiares')
+            }
           >
             <Ionicons name="people" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Salida Familiar</Text>

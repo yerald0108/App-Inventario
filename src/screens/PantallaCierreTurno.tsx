@@ -64,6 +64,24 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     setRefrescando(false);
   }
 
+  function handleCambioEfectivo(texto: string) {
+    // Solo permite dígitos y un punto decimal
+    const filtrado = texto.replace(/[^0-9.]/g, '');
+    // Evita múltiples puntos
+    const partes = filtrado.split('.');
+    if (partes.length > 2) return;
+    // Máximo 2 decimales
+    if (partes[1] && partes[1].length > 2) return;
+    setEfectivoReal(filtrado);
+  }
+
+  function handleBlurEfectivo() {
+    const num = parseFloat(efectivoReal);
+    if (!isNaN(num)) {
+      setEfectivoReal(num.toFixed(2));
+    }
+  }
+
   // Calcular diferencia entre efectivo esperado y real
   function calcularDiferencia(): { diferencia: number; mensaje: string; color: string; icono: any } | null {
     const real = parseFloat(efectivoReal);
@@ -188,9 +206,19 @@ export default function PantallaCierreTurno({ navigation }: Props) {
         
         <Text style={estilos.etiquetaCuadre}>Efectivo físico contado (CUP)</Text>
         <TextInput
-          style={estilos.inputEfectivo}
+          style={[
+            estilos.inputEfectivo,
+            efectivoReal !== '' && !isNaN(parseFloat(efectivoReal)) && {
+              borderColor: calcularDiferencia()?.diferencia === 0
+                ? '#38a169'
+                : calcularDiferencia()?.diferencia ?? 0 > 0
+                  ? '#e53e3e'
+                  : '#d69e2e'
+            }
+          ]}
           value={efectivoReal}
-          onChangeText={setEfectivoReal}
+          onChangeText={handleCambioEfectivo}
+          onBlur={handleBlurEfectivo}
           keyboardType="numeric"
           placeholder="0.00"
           placeholderTextColor="#a0aec0"

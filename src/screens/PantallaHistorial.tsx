@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet
+  StyleSheet, TextInput
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,6 +20,7 @@ type Props = {
 export default function PantallaHistorial({ navigation }: Props) {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [filtroBusqueda, setFiltroBusqueda] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -61,6 +62,20 @@ export default function PantallaHistorial({ navigation }: Props) {
     return `${hours} h ${mins} min`;
   }
 
+  const turnosFiltrados = filtroBusqueda.trim() === ''
+    ? turnos
+    : turnos.filter(turno => {
+        if (!turno.fecha_cierre) return false;
+        const fecha = new Date(turno.fecha_cierre);
+        // Busca en formato dd/mm/yyyy — permite buscar "05/2025", "12/05", etc.
+        const fechaTexto = fecha.toLocaleDateString('es-CU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+        return fechaTexto.includes(filtroBusqueda.trim());
+      });
+
   // Calcular si el turno cuadró
   function estadoCuadre(turno: Turno): { texto: string; color: string; icono: any } {
     if (turno.efectivo_real == null || turno.total_esperado_efectivo == null) {
@@ -83,18 +98,37 @@ export default function PantallaHistorial({ navigation }: Props) {
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
       {!cargando && (
-        <View style={estilos.encabezado}>
-          <Text style={estilos.textoEncabezado}>
-            {turnos.length} {turnos.length === 1 ? 'turno cerrado' : 'turnos cerrados'}
-          </Text>
-        </View>
+        <>
+          <View style={estilos.encabezado}>
+            <Text style={estilos.textoEncabezado}>
+              {turnosFiltrados.length} {turnosFiltrados.length === 1 ? 'turno' : 'turnos'}
+              {filtroBusqueda !== '' ? ` para "${filtroBusqueda}"` : ' cerrados'}
+            </Text>
+          </View>
+          <View style={estilos.contenedorFiltro}>
+            <Ionicons name="calendar-outline" size={18} color="#718096" />
+            <TextInput
+              style={estilos.inputFiltro}
+              placeholder="Filtrar por fecha (ej: 05/2025)"
+              placeholderTextColor="#a0aec0"
+              value={filtroBusqueda}
+              onChangeText={setFiltroBusqueda}
+              keyboardType="numeric"
+            />
+            {filtroBusqueda !== '' && (
+              <TouchableOpacity onPress={() => setFiltroBusqueda('')}>
+                <Ionicons name="close-circle" size={20} color="#a0aec0" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
       )}
 
       {cargando ? (
         renderSkeleton()
       ) : (
         <FlatList
-          data={turnos}
+          data={turnosFiltrados}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
             const totalVendido =
@@ -220,5 +254,24 @@ const estilos = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#edf2f7',
+  },
+  contenedorFiltro: {
+  flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingHorizontal: 12,
+    gap: 8,
+    borderRadius: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  inputFiltro: {
+    flex: 1,
+    fontSize: 15,
+    color: '#2d3748',
   },
 });

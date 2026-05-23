@@ -122,7 +122,9 @@ export default function PantallaVenta({ navigation }: Props) {
   // Confirmar y registrar la venta en la BD
   async function confirmarVenta(
     items: ItemCesta[],
-    metodoPago: 'efectivo' | 'transferencia'
+    metodoPago: 'efectivo' | 'transferencia',
+    montoRecibido: number,
+    cambio: number
   ) {
     if (procesandoRef.current) return;
     procesandoRef.current = true;
@@ -145,12 +147,17 @@ export default function PantallaVenta({ navigation }: Props) {
       await cargarProductos();
 
       // Confirmación profesional con Toast
+      const textoMetodo = metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia';
+      const textoCambio = metodoPago === 'efectivo' && cambio > 0
+        ? ` · Vuelto: ${cambio.toFixed(2)} CUP`
+        : '';
+
       Toast.show({
         type: 'success',
-        text1: 'Venta registrada',
-        text2: `Cobrado en ${metodoPago} correctamente.`,
+        text1: `Venta registrada · ${textoMetodo}`,
+        text2: `Total: ${items.reduce((acc, i) => acc + i.producto.precio * i.cantidad, 0).toFixed(2)} CUP${textoCambio}`,
         position: 'top',
-        visibilityTime: 3000,
+        visibilityTime: 4000,
       });
     } catch (error) {
       Toast.show({
@@ -238,7 +245,7 @@ export default function PantallaVenta({ navigation }: Props) {
       <ModalCobro
         visible={modalCobroVisible}
         items={itemsCesta}
-        onConfirmar={(metodo) => confirmarVenta(itemsCesta, metodo)}
+        onConfirmar={(metodo, monto, cambio) => confirmarVenta(itemsCesta, metodo, monto, cambio)}
         onCancelar={() => setModalCobroVisible(false)}
         procesando={procesando}
       />

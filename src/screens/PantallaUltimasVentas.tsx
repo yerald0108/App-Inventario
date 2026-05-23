@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { VentaAgrupada } from '../types';
-import { obtenerVentasTurnoActual, cancelarVenta } from '../database/cancelaciones';
+import { obtenerVentasTurnoActual, cancelarVenta, cambiarMetodoPagoVenta } from '../database/cancelaciones';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import Skeleton, { SkeletonVenta } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
@@ -65,6 +65,40 @@ export default function PantallaUltimasVentas() {
       Alert.alert('✅ Venta anulada', 'Los productos fueron devueltos al inventario.');
     } catch (error) {
       Alert.alert('Error', 'No se pudo anular la venta.');
+      console.error(error);
+    }
+  }
+  
+  function confirmarCambioMetodo(venta: VentaAgrupada) {
+    const metodoActual = venta.metodo_pago;
+    const metodoNuevo = metodoActual === 'efectivo' ? 'transferencia' : 'efectivo';
+    const nombreActual = metodoActual === 'efectivo' ? 'Efectivo' : 'Transferencia';
+    const nombreNuevo = metodoNuevo === 'efectivo' ? 'Efectivo' : 'Transferencia';
+
+    Alert.alert(
+      'Cambiar método de pago',
+      `Esta venta está registrada como "${nombreActual}".\n¿Cambiarla a "${nombreNuevo}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: `Cambiar a ${nombreNuevo}`,
+          onPress: () => ejecutarCambioMetodo(venta.venta_id, metodoNuevo),
+        },
+      ]
+    );
+  }
+
+  async function ejecutarCambioMetodo(
+    ventaId: string,
+    nuevoMetodo: 'efectivo' | 'transferencia'
+  ) {
+    try {
+      await cambiarMetodoPagoVenta(ventaId, nuevoMetodo);
+      await cargarVentas();
+      const nombreNuevo = nuevoMetodo === 'efectivo' ? 'Efectivo' : 'Transferencia';
+      Alert.alert('✅ Actualizado', `El método de pago fue cambiado a ${nombreNuevo}.`);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo cambiar el método de pago.');
       console.error(error);
     }
   }
@@ -147,12 +181,28 @@ export default function PantallaUltimasVentas() {
               </View>
 
               {/* Botón cancelar */}
-              <TouchableOpacity
-                style={estilos.botonCancelar}
-                onPress={() => confirmarCancelacion(item)}
-              >
-                <Text style={estilos.textoBotonCancelar}>ANULAR VENTA</Text>
-              </TouchableOpacity>
+              <View style={estilos.filaBotones}>
+                <TouchableOpacity
+                  style={estilos.botonCambiarMetodo}
+                  onPress={() => confirmarCambioMetodo(item)}
+                >
+                  <Ionicons 
+                    name={item.metodo_pago === 'efectivo' ? 'card-outline' : 'cash-outline'} 
+                    size={14} 
+                    color="#2b6cb0" 
+                  />
+                  <Text style={estilos.textoBotonCambiarMetodo}>
+                    {item.metodo_pago === 'efectivo' ? 'Cambiar a Transfer.' : 'Cambiar a Efectivo'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={estilos.botonCancelar}
+                  onPress={() => confirmarCancelacion(item)}
+                >
+                  <Text style={estilos.textoBotonCancelar}>ANULAR</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
           ListEmptyComponent={
@@ -251,6 +301,7 @@ const estilos = StyleSheet.create({
     color: '#4a5568',
   },
   botonCancelar: {
+    flex: 1,
     backgroundColor: '#fff5f5',
     borderWidth: 1.5,
     borderColor: '#e53e3e',
@@ -281,5 +332,26 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     color: '#a0aec0',
     textAlign: 'center',
+  },
+  filaBotones: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  botonCambiarMetodo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ebf8ff',
+    borderWidth: 1.5,
+    borderColor: '#2b6cb0',
+    borderRadius: 10,
+    padding: 12,
+  },
+  textoBotonCambiarMetodo: {
+    color: '#2b6cb0',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 });
