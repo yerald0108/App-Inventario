@@ -49,6 +49,9 @@ export default function PantallaDetalleTurno({ route }: Props) {
       setSalidasFamiliares(detalle.salidasFamiliares);
       setInventario(detalle.inventario);
 
+      // Una sola fuente de verdad para ventas y anulaciones.
+      // obtenerVentasTurnoActual y obtenerAnulacionesTurno (cancelaciones.ts)
+      // devuelven VentaAgrupada completa con producto_id, que es el tipo correcto.
       const [listaVentas, listaAnulaciones] = await Promise.all([
         obtenerVentasTurnoActual(turnoId),
         obtenerAnulacionesTurno(turnoId),

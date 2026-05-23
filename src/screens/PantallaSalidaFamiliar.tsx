@@ -106,6 +106,12 @@ export default function PantallaSalidaFamiliar() {
     return items;
   }
 
+  // Función centralizada de reset de estado
+  function resetearEstadoProcesando() {
+    procesandoRef.current = false;
+    setProcesando(false);
+  }
+
   // Confirmar y registrar la salida familiar
   function handleConfirmarSalida() {
     const items = obtenerItemsCesta();
@@ -128,14 +134,14 @@ export default function PantallaSalidaFamiliar() {
     );
   }
 
-  function resetearEstadoProcesando() {
-    procesandoRef.current = false;
-    setProcesando(false);
-  }
-
+  // Guard con return temprano y finally consistente
   async function ejecutarSalida() {
     const items = obtenerItemsCesta();
+    
+    // Guard: si ya se está procesando, no hacer nada.
+    // El ref garantiza que no haya doble ejecución aunque el componente re-renderice.
     if (procesandoRef.current) return;
+
     procesandoRef.current = true;
     setProcesando(true);
 
@@ -143,6 +149,7 @@ export default function PantallaSalidaFamiliar() {
       const turno = await obtenerTurnoAbierto();
       if (!turno) {
         Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de operar.');
+        // Importante: el finally se ejecutará igual, reseteando el estado
         return;
       }
       
@@ -170,7 +177,9 @@ export default function PantallaSalidaFamiliar() {
       });
       console.error(error);
     } finally {
-      resetearEstadoProcesando(); 
+      // Este bloque SIEMPRE se ejecuta, incluso si hay return dentro del try.
+      // Es el único lugar donde se debe resetear el estado de procesamiento.
+      resetearEstadoProcesando();
     }
   }
 
@@ -215,7 +224,7 @@ export default function PantallaSalidaFamiliar() {
         />
       ) : (
         <FlatList
-          data={productosConSeparador} // Usar lista con separador 
+          data={productosConSeparador}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
             // Render del separador 
@@ -244,14 +253,14 @@ export default function PantallaSalidaFamiliar() {
         />
       )}
 
-      {/* Cesta flotante específica para salida familiar */}
-        <CestaFlotante 
-          items={itemsCesta} 
-          onCobrar={handleConfirmarSalida} 
-          label="REGISTRAR SALIDA"
-          showTotal={false}
-          procesando={procesando}
-        />
+      {/* CestaFlotante — el reset lo maneja el finally de ejecutarSalida */}
+      <CestaFlotante 
+        items={itemsCesta} 
+        onCobrar={handleConfirmarSalida} 
+        label="REGISTRAR SALIDA"
+        showTotal={false}
+        procesando={procesando}
+      />
     </SafeAreaView>
   );
 }
@@ -291,7 +300,6 @@ const estilos = StyleSheet.create({
     color: '#718096',
     textAlign: 'center',
   },
-  // Estilos del separador de agotados (Paso 5)
   separadorAgotados: {
     flexDirection: 'row',
     alignItems: 'center',

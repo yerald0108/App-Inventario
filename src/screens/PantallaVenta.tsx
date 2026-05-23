@@ -153,6 +153,7 @@ export default function PantallaVenta({ navigation }: Props) {
     cambio: number
   ) {
     // Guard: si ya se está procesando, no hacer nada.
+    // El ref garantiza que no haya doble ejecución aunque el componente re-renderice.
     if (procesandoRef.current) return;
 
     procesandoRef.current = true;
@@ -162,6 +163,8 @@ export default function PantallaVenta({ navigation }: Props) {
       const turno = await obtenerTurnoAbierto();
       if (!turno) {
         Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de vender.');
+        // Importante: resetear aquí también, porque hacemos return implícito
+        // al llegar al finally después de este bloque.
         return;
       }
 
@@ -195,6 +198,8 @@ export default function PantallaVenta({ navigation }: Props) {
       });
       console.error(error);
     } finally {
+      // Este bloque SIEMPRE se ejecuta, incluso si hay return dentro del try.
+      // Es el único lugar donde se debe resetear el estado de procesamiento.
       resetearEstadoProcesando();
     }
   }
@@ -288,6 +293,8 @@ export default function PantallaVenta({ navigation }: Props) {
           confirmarVenta(itemsCesta, metodo, monto, cambio)
         }
         onCancelar={() => {
+          // Siempre limpiar el estado al cerrar, independientemente de si
+          // se estaba procesando o no. Es idempotente y seguro.
           setModalCobroVisible(false);
           resetearEstadoProcesando();
         }}
