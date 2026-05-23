@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { useState, useCallback, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -15,6 +15,8 @@ type Props = {
 export default function PantallaInicio({ navigation }: Props) {
   const [turnoActual, setTurnoActual] = useState<Turno | null>(null);
   const [totalesActuales, setTotalesActuales] = useState({ efectivo: 0, transferencia: 0 });
+  const [abriendoTurno, setAbriendoTurno] = useState(false);
+  const abriendoTurnoRef = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -38,6 +40,11 @@ export default function PantallaInicio({ navigation }: Props) {
   );
 
   async function handleAbrirTurno() {
+    // Guard contra doble tap
+    if (abriendoTurnoRef.current) return;
+    abriendoTurnoRef.current = true;
+    setAbriendoTurno(true);
+
     try {
       await crearTurno();
       const turno = await obtenerTurnoAbierto();
@@ -47,6 +54,10 @@ export default function PantallaInicio({ navigation }: Props) {
       }
     } catch (error) {
       console.error('Error al abrir turno:', error);
+      Alert.alert('Error', 'No se pudo iniciar el turno. Intenta de nuevo.');
+    } finally {
+      abriendoTurnoRef.current = false;
+      setAbriendoTurno(false);
     }
   }
 
@@ -107,11 +118,25 @@ export default function PantallaInicio({ navigation }: Props) {
 
         {!turnoActual && (
           <TouchableOpacity 
-            style={estilos.botonAbrirTurno} 
+            style={[
+              estilos.botonAbrirTurno,
+              abriendoTurno && estilos.botonAbrirTurnoDeshabilitado
+            ]}
             onPress={handleAbrirTurno}
+            disabled={abriendoTurno}
+            activeOpacity={0.8}
           >
-            <Ionicons name="play" size={24} color="#ffffff" />
-            <Text style={estilos.textoBotonAbrir}>INICIAR NUEVO TURNO</Text>
+            {abriendoTurno ? (
+              <>
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text style={estilos.textoBotonAbrir}>INICIANDO...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="play" size={24} color="#ffffff" />
+                <Text style={estilos.textoBotonAbrir}>INICIAR NUEVO TURNO</Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
 
@@ -251,6 +276,10 @@ const estilos = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  botonAbrirTurnoDeshabilitado: {
+    backgroundColor: '#2c7cc1', // azul más apagado para indicar procesando
+    elevation: 1,
   },
   textoBotonAbrir: {
     color: '#ffffff',

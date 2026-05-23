@@ -34,7 +34,23 @@ export default function PantallaVenta({ navigation }: Props) {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
+  const [ultimoMetodoPago, setUltimoMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
   const procesandoRef = useRef(false);
+
+  // Actualizar el badge del header cada vez que cambia la cesta
+  useEffect(() => {
+    const totalItems = Array.from(cesta.values()).reduce((acc, qty) => acc + qty, 0);
+
+    navigation.setOptions({
+      headerRight: () =>
+        totalItems > 0 ? (
+          <View style={estilos.badgeHeader}>
+            <Text style={estilos.textoBadgeHeader}>{totalItems}</Text>
+            <Text style={estilos.textoUnidadesBadge}> ud.</Text>
+          </View>
+        ) : null,
+    });
+  }, [cesta, navigation]);
 
   // Productos con separador entre disponibles y agotados
   const productosConSeparador = useMemo((): ItemLista[] => {
@@ -170,6 +186,9 @@ export default function PantallaVenta({ navigation }: Props) {
 
       await registrarVenta(items, metodoPago, turno.id);
 
+      // Recordar el método para la próxima venta
+      setUltimoMetodoPago(metodoPago);
+
       setModalCobroVisible(false);
       setCesta(new Map());
       await cargarProductos();
@@ -289,6 +308,7 @@ export default function PantallaVenta({ navigation }: Props) {
       <ModalCobro
         visible={modalCobroVisible}
         items={itemsCesta}
+        metodoPagoInicial={ultimoMetodoPago}
         onConfirmar={(metodo, monto, cambio) =>
           confirmarVenta(itemsCesta, metodo, monto, cambio)
         }
@@ -342,6 +362,26 @@ const estilos = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#2d3748',
+  },
+  // Estilos del badge del header
+  badgeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2b6cb0',
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 8,
+  },
+  textoBadgeHeader: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  textoUnidadesBadge: {
+    color: '#bee3f8',
+    fontSize: 12,
+    fontWeight: '600',
   },
   // Estilos del separador de agotados
   separadorAgotados: {

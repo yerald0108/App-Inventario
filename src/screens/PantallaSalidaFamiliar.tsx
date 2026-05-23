@@ -6,7 +6,9 @@ import {
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
 import { obtenerProductos } from '../database/productos';
 import { registrarSalidaFamiliar } from '../database/salidas_familiares';
@@ -20,6 +22,9 @@ import EstadoVacio from '../components/EstadoVacio';
 type ItemLista = Producto | { __tipo: 'separador'; id: number };
 
 export default function PantallaSalidaFamiliar() {
+  // Obtener navigation hook
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'SalidaFamiliar'>>();
+  
   const [productos, setProductos] = useState<Producto[]>([]);
   const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
   const [busqueda, setBusqueda] = useState('');
@@ -27,6 +32,21 @@ export default function PantallaSalidaFamiliar() {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const procesandoRef = useRef(false);
+
+  // Actualizar el badge del header cada vez que cambia la cesta
+  useEffect(() => {
+    const totalItems = Array.from(cesta.values()).reduce((acc, qty) => acc + qty, 0);
+
+    navigation.setOptions({
+      headerRight: () =>
+        totalItems > 0 ? (
+          <View style={estilos.badgeHeader}>
+            <Text style={estilos.textoBadgeHeader}>{totalItems}</Text>
+            <Text style={estilos.textoUnidadesBadge}> ud.</Text>
+          </View>
+        ) : null,
+    });
+  }, [cesta, navigation]);
 
   // Productos con separador entre disponibles y agotados
   const productosConSeparador = useMemo((): ItemLista[] => {
@@ -299,6 +319,26 @@ const estilos = StyleSheet.create({
     fontSize: 16,
     color: '#718096',
     textAlign: 'center',
+  },
+  // Estilos del badge del header (rosa temático)
+  badgeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ed64a6', // rosa consistente con el botón de esa pantalla
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 8,
+  },
+  textoBadgeHeader: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  textoUnidadesBadge: {
+    color: '#fbb6ce', // rosa claro para contraste
+    fontSize: 12,
+    fontWeight: '600',
   },
   separadorAgotados: {
     flexDirection: 'row',

@@ -17,6 +17,7 @@ interface Props {
   ) => void;
   onCancelar: () => void;
   procesando?: boolean;
+  metodoPagoInicial?: 'efectivo' | 'transferencia'; // ← nueva prop, opcional
 }
 
 export default function ModalCobro({ 
@@ -24,7 +25,8 @@ export default function ModalCobro({
   items, 
   onConfirmar, 
   onCancelar,
-  procesando = false
+  procesando = false,
+  metodoPagoInicial = 'efectivo', // ← añade con default
 }: Props) {
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
   const [montoRecibido, setMontoRecibido] = useState('');
@@ -96,15 +98,14 @@ export default function ModalCobro({
         toValue: 0,
         useNativeDriver: true,
         tension: 50,
-        friction: 8
+        friction: 8,
       }).start();
-      // Resetear estado al abrir
       setMontoRecibido('');
-      setMetodoPago('efectivo');
+      setMetodoPago(metodoPagoInicial); // ← usa la prop
     } else {
       slideAnim.setValue(600);
     }
-  }, [visible]);
+  }, [visible, metodoPagoInicial]);
 
   function handleTextChange(text: string) {
     // Solo permitir números y un punto decimal

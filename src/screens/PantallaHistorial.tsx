@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, TextInput
+  StyleSheet, ScrollView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,7 +20,18 @@ type Props = {
 export default function PantallaHistorial({ navigation }: Props) {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [filtroBusqueda, setFiltroBusqueda] = useState('');
+  const [filtroMes, setFiltroMes] = useState<number | null>(null);   // 0-11 (como Date)
+  const [filtroAnio, setFiltroAnio] = useState<number | null>(null);
+  const [selectorVisible, setSelectorVisible] = useState(false);
+
+  // Obtener años disponibles dinámicamente de los turnos
+  const aniosDisponibles = useMemo(() => {
+    const set = new Set<number>();
+    turnos.forEach(t => {
+      if (t.fecha_cierre) set.add(new Date(t.fecha_cierre).getFullYear());
+    });
+    return Array.from(set).sort((a, b) => b - a); // más reciente primero
+  }, [turnos]);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,7 +58,7 @@ export default function PantallaHistorial({ navigation }: Props) {
     });
   }
 
-  // Calcular duración del turno (Task 7)
+  // Calcular duración del turno
   function calcularDuracion(inicio: string, cierre: string | null): string {
     if (!cierre) return '';
     const dInicio = new Date(inicio);
@@ -62,18 +73,15 @@ export default function PantallaHistorial({ navigation }: Props) {
     return `${hours} h ${mins} min`;
   }
 
-  const turnosFiltrados = filtroBusqueda.trim() === ''
+  // Filtrar turnos por mes y año
+  const turnosFiltrados = (filtroMes === null && filtroAnio === null)
     ? turnos
     : turnos.filter(turno => {
         if (!turno.fecha_cierre) return false;
         const fecha = new Date(turno.fecha_cierre);
-        // Busca en formato dd/mm/yyyy — permite buscar "05/2025", "12/05", etc.
-        const fechaTexto = fecha.toLocaleDateString('es-CU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        });
-        return fechaTexto.includes(filtroBusqueda.trim());
+        const mesCoincide = filtroMes === null || fecha.getMonth() === filtroMes;
+        const anioCoincide = filtroAnio === null || fecha.getFullYear() === filtroAnio;
+        return mesCoincide && anioCoincide;
       });
 
   // Calcular si el turno cuadró
@@ -102,23 +110,81 @@ export default function PantallaHistorial({ navigation }: Props) {
           <View style={estilos.encabezado}>
             <Text style={estilos.textoEncabezado}>
               {turnosFiltrados.length} {turnosFiltrados.length === 1 ? 'turno' : 'turnos'}
-              {filtroBusqueda !== '' ? ` para "${filtroBusqueda}"` : ' cerrados'}
+              {(filtroMes !== null || filtroAnio !== null)
+                ? ` · ${filtroMes !== null
+                    ? new Date(2000, filtroMes).toLocaleString('es-CU', { month: 'long' })
+                    : ''}${filtroMes !== null && filtroAnio !== null ? ' ' : ''}${filtroAnio ?? ''}`
+                : ' cerrados'}
             </Text>
           </View>
-          <View style={estilos.contenedorFiltro}>
-            <Ionicons name="calendar-outline" size={18} color="#718096" />
-            <TextInput
-              style={estilos.inputFiltro}
-              placeholder="Filtrar por fecha (ej: 05/2025)"
-              placeholderTextColor="#a0aec0"
-              value={filtroBusqueda}
-              onChangeText={setFiltroBusqueda}
-              keyboardType="numeric"
-            />
-            {filtroBusqueda !== '' && (
-              <TouchableOpacity onPress={() => setFiltroBusqueda('')}>
-                <Ionicons name="close-circle" size={20} color="#a0aec0" />
+          
+          {/* Filtros por mes y año */}
+          <View style={estilos.contenedorFiltros}>
+            {/* Chips de mes */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={estilos.scrollChips}
+            >
+              {/* Chip "Todos" para limpiar el filtro de mes */}
+              <TouchableOpacity
+                style={[estilos.chip, filtroMes === null && estilos.chipActivo]}
+                onPress={() => setFiltroMes(null)}
+              >
+                <Text style={[estilos.textoChip, filtroMes === null && estilos.textoChipActivo]}>
+                  Todos
+                </Text>
               </TouchableOpacity>
+
+              {/* Chips de meses que tienen turnos */}
+              {Array.from(
+                new Set(
+                  turnos
+                    .filter(t => t.fecha_cierre)
+                    .map(t => new Date(t.fecha_cierre!).getMonth())
+                )
+              )
+                .sort((a, b) => a - b)
+                .map(mes => (
+                  <TouchableOpacity
+                    key={mes}
+                    style={[estilos.chip, filtroMes === mes && estilos.chipActivo]}
+                    onPress={() => setFiltroMes(filtroMes === mes ? null : mes)}
+                  >
+                    <Text style={[estilos.textoChip, filtroMes === mes && estilos.textoChipActivo]}>
+                      {new Date(2000, mes).toLocaleString('es-CU', { month: 'short' })}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+
+            {/* Chips de año */}
+            {aniosDisponibles.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={estilos.scrollChips}
+              >
+                <TouchableOpacity
+                  style={[estilos.chip, filtroAnio === null && estilos.chipActivo]}
+                  onPress={() => setFiltroAnio(null)}
+                >
+                  <Text style={[estilos.textoChip, filtroAnio === null && estilos.textoChipActivo]}>
+                    Todos
+                  </Text>
+                </TouchableOpacity>
+                {aniosDisponibles.map(anio => (
+                  <TouchableOpacity
+                    key={anio}
+                    style={[estilos.chip, filtroAnio === anio && estilos.chipActivo]}
+                    onPress={() => setFiltroAnio(filtroAnio === anio ? null : anio)}
+                  >
+                    <Text style={[estilos.textoChip, filtroAnio === anio && estilos.textoChipActivo]}>
+                      {anio}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             )}
           </View>
         </>
@@ -204,6 +270,34 @@ const estilos = StyleSheet.create({
     color: '#a0aec0', 
     fontWeight: '600' 
   },
+  contenedorFiltros: {
+    paddingBottom: 4,
+  },
+  scrollChips: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#ffffff',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+  },
+  chipActivo: {
+    backgroundColor: '#1a1a2e',
+    borderColor: '#1a1a2e',
+  },
+  textoChip: {
+    fontSize: 14,
+    color: '#4a5568',
+    fontWeight: '600',
+  },
+  textoChipActivo: {
+    color: '#ffffff',
+  },
   tarjeta: {
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
@@ -254,24 +348,5 @@ const estilos = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#edf2f7',
-  },
-  contenedorFiltro: {
-  flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-    gap: 8,
-    borderRadius: 12,
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  inputFiltro: {
-    flex: 1,
-    fontSize: 15,
-    color: '#2d3748',
   },
 });

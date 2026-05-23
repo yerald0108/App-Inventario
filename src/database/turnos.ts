@@ -10,6 +10,16 @@ export async function obtenerTurnoAbierto(): Promise<Turno | null> {
 
 // Crear un nuevo turno
 export async function crearTurno(): Promise<number> {
+  // Verificar que no haya un turno abierto antes de crear uno nuevo.
+  // Esto es una segunda línea de defensa contra el doble tap u otras
+  // condiciones de carrera.
+  const turnoExistente = await obtenerTurnoAbierto();
+  if (turnoExistente) {
+    // Si ya existe un turno abierto, devolver su ID en lugar de crear otro.
+    // El comportamiento es idempotente: la operación es segura de llamar dos veces.
+    return turnoExistente.id;
+  }
+
   const fechaInicio = new Date().toISOString();
   const resultado = await db.runAsync(
     'INSERT INTO turnos (fecha_inicio, cerrado) VALUES (?, 0)',
@@ -73,12 +83,30 @@ export async function obtenerResumenTurno(turnoId: number) {
     'SELECT nombre, existencia, alerta_minima FROM productos ORDER BY nombre ASC'
   );
 
+  // Contar ventas únicas (agrupadas por venta_id, no canceladas)
+  const conteoVentas = await db.getFirstAsync<{ cantidad: number }>(
+    `SELECT COUNT(DISTINCT venta_id) as cantidad
+     FROM movimientos
+     WHERE turno_id = ? AND tipo = 'venta'`,
+    [turnoId]
+  );
+
+  // Contar anulaciones únicas
+  const conteoAnulaciones = await db.getFirstAsync<{ cantidad: number }>(
+    `SELECT COUNT(DISTINCT venta_id) as cantidad
+     FROM movimientos
+     WHERE turno_id = ? AND tipo = 'cancelacion'`,
+    [turnoId]
+  );
+
   return {
     totalEfectivo: efectivo?.total ?? 0,
     totalTransferencia: transferencia?.total ?? 0,
     entradas,
     salidasFamiliares,
     inventario,
+    cantidadVentas: conteoVentas?.cantidad ?? 0,
+    cantidadAnulaciones: conteoAnulaciones?.cantidad ?? 0,
   };
 }
 

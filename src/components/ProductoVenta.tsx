@@ -1,5 +1,8 @@
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import {
+  View, Text, TouchableOpacity, TextInput,
+  StyleSheet, Animated
+} from 'react-native';
 import { Producto } from '../types';
 
 interface Props {
@@ -11,14 +14,30 @@ interface Props {
 export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCantidad }: Props) {
   const [editando, setEditando] = useState(false);
   const [valorInput, setValorInput] = useState('');
+  const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const agotado = producto.existencia <= 0;
   const colorStock = agotado ? '#e53e3e' : (producto.existencia < producto.alerta_minima ? '#e53e3e' : '#38a169');
   const enCesta = cantidadEnCesta > 0;
 
+  function ejecutarShake() {
+    // Resetear posición antes de animar
+    shakeAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 6,  duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -6, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 4,  duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -4, duration: 50, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0,  duration: 40, useNativeDriver: true }),
+    ]).start();
+  }
+
   function incrementar() {
     if (cantidadEnCesta < producto.existencia) {
       onCambiarCantidad(cantidadEnCesta + 1);
+    } else {
+      // Ya está al límite: animar para dar feedback sin molestar con un Alert
+      ejecutarShake();
     }
   }
 
@@ -63,12 +82,19 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
         </View>
       </View>
 
-      {/* Controles de cantidad */}
-      <View style={estilos.controles}>
+      {/* Controles de cantidad envueltos en Animated.View para el efecto shake */}
+      <Animated.View
+        style={[
+          estilos.controles,
+          { transform: [{ translateX: shakeAnim }] }
+        ]}
+      >
+        {/* Botón - (decrementar) */}
         <TouchableOpacity
-          style={[estilos.botonControl, (cantidadEnCesta === 0 || agotado) && estilos.botonDeshabilitado]}
+          style={[estilos.botonControl, cantidadEnCesta === 0 && estilos.botonDeshabilitado]}
           onPress={decrementar}
-          disabled={cantidadEnCesta === 0 || agotado}
+          disabled={cantidadEnCesta === 0}
+          activeOpacity={0.7}
         >
           <Text style={estilos.textoControl}>−</Text>
         </TouchableOpacity>
@@ -101,14 +127,20 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
           )}
         </TouchableOpacity>
 
+        {/* Botón + (incrementar) */}
         <TouchableOpacity
-          style={[estilos.botonControl, (cantidadEnCesta >= producto.existencia || agotado) && estilos.botonDeshabilitado]}
+          style={[
+            estilos.botonControl,
+            agotado && estilos.botonDeshabilitado,
+            (!agotado && cantidadEnCesta >= producto.existencia) && estilos.botonLimite
+          ]}
           onPress={incrementar}
-          disabled={cantidadEnCesta >= producto.existencia || agotado}
+          disabled={agotado}
+          activeOpacity={0.7}
         >
           <Text style={estilos.textoControl}>+</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -175,6 +207,9 @@ const estilos = StyleSheet.create({
   },
   botonDeshabilitado: {
     backgroundColor: '#cbd5e0',
+  },
+  botonLimite: {
+    backgroundColor: '#dd6b20', // naranja: indica límite alcanzado
   },
   textoControl: {
     color: '#ffffff',
