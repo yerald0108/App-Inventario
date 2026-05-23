@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
   Text, TextInput, TouchableOpacity, LayoutAnimation
@@ -16,6 +16,9 @@ import CestaFlotante from '../components/CestaFlotante';
 import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
+// Tipo unión para los items de la lista
+type ItemLista = Producto | { __tipo: 'separador'; id: number };
+
 export default function PantallaSalidaFamiliar() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
@@ -24,6 +27,24 @@ export default function PantallaSalidaFamiliar() {
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const procesandoRef = useRef(false);
+
+  // Productos con separador entre disponibles y agotados
+  const productosConSeparador = useMemo((): ItemLista[] => {
+    if (productosFiltrados.length === 0) return [];
+
+    const disponibles = productosFiltrados.filter(p => p.existencia > 0);
+    const agotados = productosFiltrados.filter(p => p.existencia <= 0);
+
+    // Si no hay agotados, devolver solo disponibles sin separador
+    if (agotados.length === 0) return disponibles;
+
+    // Si hay agotados, insertar un item especial de separador
+    return [
+      ...disponibles,
+      { __tipo: 'separador', id: -1 },
+      ...agotados,
+    ];
+  }, [productosFiltrados]);
 
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
@@ -107,6 +128,11 @@ export default function PantallaSalidaFamiliar() {
     );
   }
 
+  function resetearEstadoProcesando() {
+    procesandoRef.current = false;
+    setProcesando(false);
+  }
+
   async function ejecutarSalida() {
     const items = obtenerItemsCesta();
     if (procesandoRef.current) return;
@@ -144,8 +170,7 @@ export default function PantallaSalidaFamiliar() {
       });
       console.error(error);
     } finally {
-      procesandoRef.current = false;
-      setProcesando(false);
+      resetearEstadoProcesando(); 
     }
   }
 
@@ -190,15 +215,28 @@ export default function PantallaSalidaFamiliar() {
         />
       ) : (
         <FlatList
-          data={productosFiltrados}
+          data={productosConSeparador} // Usar lista con separador 
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <ProductoVenta
-              producto={item}
-              cantidadEnCesta={cesta.get(item.id) ?? 0}
-              onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
-            />
-          )}
+          renderItem={({ item }) => {
+            // Render del separador 
+            if ('__tipo' in item && item.__tipo === 'separador') {
+              return (
+                <View style={estilos.separadorAgotados}>
+                  <View style={estilos.lineaSeparador} />
+                  <Text style={estilos.textoSeparador}>Sin existencia</Text>
+                  <View style={estilos.lineaSeparador} />
+                </View>
+              );
+            }
+            // Render normal del producto
+            return (
+              <ProductoVenta
+                producto={item as Producto}
+                cantidadEnCesta={cesta.get(item.id) ?? 0}
+                onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
+              />
+            );
+          }}
           contentContainerStyle={{ 
             paddingBottom: itemsCesta.length > 0 ? 140 : 20 
           }}
@@ -252,6 +290,26 @@ const estilos = StyleSheet.create({
     fontSize: 16,
     color: '#718096',
     textAlign: 'center',
+  },
+  // Estilos del separador de agotados (Paso 5)
+  separadorAgotados: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    gap: 8,
+  },
+  lineaSeparador: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e2e8f0',
+  },
+  textoSeparador: {
+    fontSize: 12,
+    color: '#a0aec0',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   skeletonCard: {
     backgroundColor: '#ffffff',

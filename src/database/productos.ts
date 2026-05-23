@@ -1,10 +1,13 @@
 import db from './database';
 import { Producto } from '../types';
 
-// Obtener todos los productos ordenados por nombre
+// los productos con existencia > 0 primero, luego los agotados, ambos grupos por nombre
 export async function obtenerProductos(): Promise<Producto[]> {
   return await db.getAllAsync<Producto>(
-    'SELECT * FROM productos ORDER BY nombre ASC'
+    `SELECT * FROM productos 
+     ORDER BY 
+       CASE WHEN existencia > 0 THEN 0 ELSE 1 END ASC,
+       nombre ASC`
   );
 }
 

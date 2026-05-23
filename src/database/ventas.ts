@@ -14,16 +14,30 @@ export async function registrarVenta(
   metodoPago: 'efectivo' | 'transferencia',
   turnoId: number
 ): Promise<void> {
-  // Generar ID único robusto (Bug 8)
   const ventaId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();
 
-  // Ejecutar todo dentro de una transacción para asegurar la integridad de los datos
   await db.withTransactionAsync(async () => {
     for (const item of items) {
-      const total = item.producto.precio * item.cantidad;
+      // Validar que precio y cantidad son números finitos antes de operar.
+      // Esto previene que un dato corrupto propague NaN a la BD.
+      const precio = typeof item.producto.precio === 'number' && isFinite(item.producto.precio)
+        ? item.producto.precio
+        : 0;
+      const cantidad = typeof item.cantidad === 'number' && isFinite(item.cantidad) && item.cantidad > 0
+        ? item.cantidad
+        : 0;
 
-      // 1. Registrar el movimiento de venta
+      // Si la validación falla (cantidad 0 o precio 0), no tiene sentido registrar.
+      // Lanzar un error explícito es mejor que insertar un movimiento inválido.
+      if (precio <= 0 || cantidad <= 0) {
+        throw new Error(
+          `Datos inválidos para el producto "${item.producto.nombre}": precio=${precio}, cantidad=${cantidad}`
+        );
+      }
+
+      const total = precio * cantidad;
+
       await db.runAsync(
         `INSERT INTO movimientos 
           (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total, metodo_pago, turno_id, venta_id)
@@ -32,8 +46,8 @@ export async function registrarVenta(
           'venta',
           fechaHora,
           item.producto.id,
-          item.cantidad,
-          item.producto.precio,
+          cantidad,
+          precio,
           total,
           metodoPago,
           turnoId,
@@ -41,10 +55,9 @@ export async function registrarVenta(
         ]
       );
 
-      // 2. Descontar del inventario
       await db.runAsync(
         'UPDATE productos SET existencia = existencia - ? WHERE id = ?',
-        [item.cantidad, item.producto.id]
+        [cantidad, item.producto.id]
       );
     }
   });

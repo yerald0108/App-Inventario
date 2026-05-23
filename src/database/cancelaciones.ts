@@ -1,5 +1,6 @@
 import db from './database';
 import { VentaAgrupada } from '../types';
+import { sumaSegura } from '../utils/formatters';
 
 // Obtener todas las ventas del turno actual agrupadas por venta_id
 export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAgrupada[]> {
@@ -45,15 +46,17 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
     }
 
     const venta = mapaVentas.get(mov.venta_id)!;
-    // Asegurar que el total sea un número válido (Bug 1)
-    const totalMovimiento = (typeof mov.total === 'number' && isFinite(mov.total)) ? mov.total : 0;
-    venta.total += totalMovimiento;
     venta.items.push({
       producto_id: mov.producto_id,
       nombre_producto: mov.nombre_producto,
       cantidad: mov.cantidad,
       precio_aplicado: mov.precio_aplicado,
     });
+  }
+
+  // Recalcular totales desde los items validados (no confiar en el campo total de BD)
+  for (const venta of mapaVentas.values()) {
+    venta.total = sumaSegura(venta.items.map(i => i.precio_aplicado * i.cantidad));
   }
 
   return Array.from(mapaVentas.values());
@@ -101,15 +104,17 @@ export async function obtenerAnulacionesTurno(turnoId: number): Promise<VentaAgr
     }
 
     const venta = mapaVentas.get(mov.venta_id)!;
-    // Asegurar que el total sea un número válido (Bug 1)
-    const totalMovimiento = (typeof mov.total === 'number' && isFinite(mov.total)) ? mov.total : 0;
-    venta.total += totalMovimiento;
     venta.items.push({
       producto_id: mov.producto_id,
       nombre_producto: mov.nombre_producto,
       cantidad: mov.cantidad,
       precio_aplicado: mov.precio_aplicado,
     });
+  }
+
+  // Recalcular totales desde los items validados (no confiar en el campo total de BD)
+  for (const venta of mapaVentas.values()) {
+    venta.total = sumaSegura(venta.items.map(i => i.precio_aplicado * i.cantidad));
   }
 
   return Array.from(mapaVentas.values());

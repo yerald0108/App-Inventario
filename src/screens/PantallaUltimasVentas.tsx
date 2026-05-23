@@ -11,6 +11,7 @@ import { obtenerVentasTurnoActual, cancelarVenta, cambiarMetodoPagoVenta } from 
 import { obtenerTurnoAbierto } from '../database/turnos';
 import Skeleton, { SkeletonVenta } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
+import { formatCUP } from '../utils/formatters';
 
 export default function PantallaUltimasVentas() {
   const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
@@ -46,7 +47,7 @@ export default function PantallaUltimasVentas() {
 
     Alert.alert(
       '¿Anular esta venta?',
-      `Se devolverán los productos al inventario:\n\n${resumenItems}\n\nTotal: ${venta.total.toFixed(2)} CUP`,
+      `Se devolverán los productos al inventario:\n\n${resumenItems}\n\nTotal: ${formatCUP(venta.total)} CUP`,
       [
         { text: 'Mantener venta', style: 'cancel' },
         {
@@ -168,14 +169,14 @@ export default function PantallaUltimasVentas() {
                     {item.metodo_pago === 'efectivo' ? 'Efectivo' : 'Transferencia'}
                   </Text>
                 </View>
-                <Text style={estilos.total}>{item.total.toFixed(2)} CUP</Text>
+                <Text style={estilos.total}>{formatCUP(item.total)} CUP</Text>
               </View>
 
               {/* Lista de productos de la venta */}
               <View style={estilos.items}>
                 {item.items.map((prod, index) => (
                   <Text key={index} style={estilos.itemTexto}>
-                    {prod.cantidad}x {prod.nombre_producto} — {(prod.cantidad * prod.precio_aplicado).toFixed(2)} CUP
+                    {prod.cantidad}x {prod.nombre_producto} — {formatCUP(prod.cantidad * prod.precio_aplicado)} CUP
                   </Text>
                 ))}
               </View>

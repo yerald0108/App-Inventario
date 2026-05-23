@@ -7,9 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
-import { obtenerDetalleTurno, obtenerVentasDetalleTurno } from '../database/turnos';
+import { obtenerDetalleTurno } from '../database/turnos';
 import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
 import { Turno, VentaAgrupada } from '../types';
+import { formatCUP } from '../utils/formatters';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;
@@ -23,13 +24,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
   const [totalTransferencia, setTotalTransferencia] = useState(0);
   const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
   const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
-  const [ventas, setVentas] = useState<{
-    venta_id: string;
-    fecha_hora: string;
-    metodo_pago: 'efectivo' | 'transferencia';
-    total: number;
-    items: { nombre_producto: string; cantidad: number; precio_aplicado: number }[];
-  }[]>([]);
+  const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
   const [ventasExpandidas, setVentasExpandidas] = useState<Set<string>>(new Set());
   const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
@@ -40,8 +35,13 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
   async function cargarDetalle() {
     setCargando(true);
-    const detalle = await obtenerDetalleTurno(turnoId);
-    if (detalle) {
+    try {
+      const detalle = await obtenerDetalleTurno(turnoId);
+      if (!detalle) {
+        setCargando(false);
+        return;
+      }
+
       setTurno(detalle.turno);
       setTotalEfectivo(detalle.totalEfectivo);
       setTotalTransferencia(detalle.totalTransferencia);
@@ -49,17 +49,18 @@ export default function PantallaDetalleTurno({ route }: Props) {
       setSalidasFamiliares(detalle.salidasFamiliares);
       setInventario(detalle.inventario);
 
-      // Cargar ventas y anulaciones
-      const listaVentas = await obtenerVentasTurnoActual(turnoId);
-      const listaAnulaciones = await obtenerAnulacionesTurno(turnoId);
+      const [listaVentas, listaAnulaciones] = await Promise.all([
+        obtenerVentasTurnoActual(turnoId),
+        obtenerAnulacionesTurno(turnoId),
+      ]);
+
       setVentas(listaVentas);
       setAnulaciones(listaAnulaciones);
+    } catch (error) {
+      console.error('Error al cargar detalle del turno:', error);
+    } finally {
+      setCargando(false);
     }
-
-    const listaVentas = await obtenerVentasDetalleTurno(turnoId);
-    setVentas(listaVentas);
-
-    setCargando(false);
   }
 
   function toggleVenta(ventaId: string) {
@@ -123,11 +124,11 @@ export default function PantallaDetalleTurno({ route }: Props) {
     cuadreColor = '#38a169';
     cuadreIcono = 'checkmark-circle';
   } else if (diferencia > 0) {
-    cuadreTexto = `Faltante: ${diferencia.toFixed(2)} CUP`;
+    cuadreTexto = `Faltante: ${formatCUP(diferencia)} CUP`; 
     cuadreColor = '#e53e3e';
     cuadreIcono = 'warning';
   } else {
-    cuadreTexto = `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP`;
+    cuadreTexto = `Sobrante: ${formatCUP(Math.abs(diferencia))} CUP`; 
     cuadreColor = '#d69e2e';
     cuadreIcono = 'information-circle';
   }
@@ -165,18 +166,18 @@ export default function PantallaDetalleTurno({ route }: Props) {
             <Ionicons name="cash-outline" size={16} color="#718096" />
             <Text style={estilos.etiqueta}>Efectivo:</Text>
           </View>
-          <Text style={estilos.valor}>{totalEfectivo.toFixed(2)} CUP</Text>
+          <Text style={estilos.valor}>{formatCUP(totalEfectivo)} CUP</Text> 
         </View>
         <View style={estilos.fila}>
           <View style={estilos.filaIcono}>
             <Ionicons name="card-outline" size={16} color="#718096" />
             <Text style={estilos.etiqueta}>Transferencia:</Text>
           </View>
-          <Text style={estilos.valor}>{totalTransferencia.toFixed(2)} CUP</Text>
+          <Text style={estilos.valor}>{formatCUP(totalTransferencia)} CUP</Text> 
         </View>
         <View style={[estilos.fila, estilos.filaTotal]}>
           <Text style={estilos.etiquetaTotal}>Total general:</Text>
-          <Text style={estilos.valorTotal}>{totalGeneral.toFixed(2)} CUP</Text>
+          <Text style={estilos.valorTotal}>{formatCUP(totalGeneral)} CUP</Text> 
         </View>
       </View>
 
@@ -188,11 +189,11 @@ export default function PantallaDetalleTurno({ route }: Props) {
         </View>
         <View style={estilos.fila}>
           <Text style={estilos.etiqueta}>Esperado:</Text>
-          <Text style={estilos.valor}>{totalEfectivo.toFixed(2)} CUP</Text>
+          <Text style={estilos.valor}>{formatCUP(totalEfectivo)} CUP</Text>
         </View>
         <View style={estilos.fila}>
           <Text style={estilos.etiqueta}>Real contado:</Text>
-          <Text style={estilos.valor}>{efectivoReal.toFixed(2)} CUP</Text>
+          <Text style={estilos.valor}>{formatCUP(efectivoReal)} CUP</Text> 
         </View>
         <View style={[estilos.resultadoCuadre, { borderColor: cuadreColor }]}>
           <Ionicons name={cuadreIcono} size={18} color={cuadreColor} />
@@ -238,7 +239,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
                       {venta.metodo_pago === 'efectivo' ? 'Efectivo' : 'Transfer.'}
                     </Text>
                   </View>
-                  <Text style={estilos.totalVenta}>{venta.total.toFixed(2)} CUP</Text>
+                  <Text style={estilos.totalVenta}>{formatCUP(venta.total)} CUP</Text> 
                   <Ionicons 
                     name={expandida ? 'chevron-up' : 'chevron-down'} 
                     size={16} 
@@ -250,7 +251,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
                   <View style={estilos.itemsVenta}>
                     {venta.items.map((item, idx) => (
                       <Text key={idx} style={estilos.textoItemVenta}>
-                        {item.cantidad}x {item.nombre_producto} — {(item.cantidad * item.precio_aplicado).toFixed(2)} CUP
+                        {item.cantidad}x {item.nombre_producto} — {formatCUP(item.cantidad * item.precio_aplicado)} CUP
                       </Text>
                     ))}
                   </View>
@@ -274,7 +275,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
                 <Text style={[estilos.horaVenta, { textDecorationLine: 'line-through' }]}>
                   {formatearHora(venta.fecha_hora)}
                 </Text>
-                <Text style={estilos.totalVentaFila}>{venta.total.toFixed(2)}</Text>
+                <Text style={estilos.totalVentaFila}>{formatCUP(venta.total)} CUP</Text>
               </View>
               <View style={estilos.detallesVentaFila}>
                 {venta.items.map((item, idx) => (
@@ -485,7 +486,6 @@ const estilos = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  // Estilos para la sección de ventas expandibles
   filaVenta: {
     borderBottomWidth: 1,
     borderBottomColor: '#f0f4f8',
@@ -528,7 +528,6 @@ const estilos = StyleSheet.create({
     fontSize: 13,
     color: '#718096',
   },
-  // Estilos para la sección de anulaciones
   filaHistorialVenta: {
     marginBottom: 12,
     paddingBottom: 12,

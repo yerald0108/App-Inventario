@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
   Text, TextInput, TouchableOpacity, LayoutAnimation
@@ -19,6 +19,9 @@ import ModalCobro from '../components/ModalCobro';
 import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
+// Tipo unión para los items de la lista
+type ItemLista = Producto | { __tipo: 'separador'; id: number };
+
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Venta'>;
 };
@@ -32,6 +35,24 @@ export default function PantallaVenta({ navigation }: Props) {
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
   const procesandoRef = useRef(false);
+
+  // Productos con separador entre disponibles y agotados
+  const productosConSeparador = useMemo((): ItemLista[] => {
+    if (productosFiltrados.length === 0) return [];
+
+    const disponibles = productosFiltrados.filter(p => p.existencia > 0);
+    const agotados = productosFiltrados.filter(p => p.existencia <= 0);
+
+    // Si no hay agotados, devolver solo disponibles sin separador
+    if (agotados.length === 0) return disponibles;
+
+    // Si hay agotados, insertar un item especial de separador
+    return [
+      ...disponibles,
+      { __tipo: 'separador', id: -1 },
+      ...agotados,
+    ];
+  }, [productosFiltrados]);
 
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
@@ -112,6 +133,11 @@ export default function PantallaVenta({ navigation }: Props) {
     return items;
   }
 
+  function resetearEstadoProcesando() {
+    procesandoRef.current = false;
+    setProcesando(false);
+  }
+
   // Al pulsar COBRAR — mostrar modal de cobro
   function handleCobrar() {
     const items = obtenerItemsCesta();
@@ -126,7 +152,9 @@ export default function PantallaVenta({ navigation }: Props) {
     montoRecibido: number,
     cambio: number
   ) {
+    // Guard: si ya se está procesando, no hacer nada.
     if (procesandoRef.current) return;
+
     procesandoRef.current = true;
     setProcesando(true);
 
@@ -136,26 +164,25 @@ export default function PantallaVenta({ navigation }: Props) {
         Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de vender.');
         return;
       }
-      
+
       await registrarVenta(items, metodoPago, turno.id);
 
-      // Cerrar modal
       setModalCobroVisible(false);
-
-      // Limpiar cesta y recargar inventario
       setCesta(new Map());
       await cargarProductos();
 
-      // Confirmación profesional con Toast
       const textoMetodo = metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia';
-      const textoCambio = metodoPago === 'efectivo' && cambio > 0
-        ? ` · Vuelto: ${cambio.toFixed(2)} CUP`
-        : '';
+      const textoCambio =
+        metodoPago === 'efectivo' && cambio > 0
+          ? ` · Vuelto: ${cambio.toFixed(2)} CUP`
+          : '';
 
       Toast.show({
         type: 'success',
         text1: `Venta registrada · ${textoMetodo}`,
-        text2: `Total: ${items.reduce((acc, i) => acc + i.producto.precio * i.cantidad, 0).toFixed(2)} CUP${textoCambio}`,
+        text2: `Total: ${items
+          .reduce((acc, i) => acc + i.producto.precio * i.cantidad, 0)
+          .toFixed(2)} CUP${textoCambio}`,
         position: 'top',
         visibilityTime: 4000,
       });
@@ -168,8 +195,7 @@ export default function PantallaVenta({ navigation }: Props) {
       });
       console.error(error);
     } finally {
-      procesandoRef.current = false;
-      setProcesando(false);
+      resetearEstadoProcesando();
     }
   }
 
@@ -218,15 +244,28 @@ export default function PantallaVenta({ navigation }: Props) {
         />
       ) : (
         <FlatList
-          data={productosFiltrados}
+          data={productosConSeparador}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <ProductoVenta
-              producto={item}
-              cantidadEnCesta={cantidadEnCesta(item.id)}
-              onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
-            />
-          )}
+          renderItem={({ item }) => {
+            // Render del separador
+            if ('__tipo' in item && item.__tipo === 'separador') {
+              return (
+                <View style={estilos.separadorAgotados}>
+                  <View style={estilos.lineaSeparador} />
+                  <Text style={estilos.textoSeparador}>Sin existencia</Text>
+                  <View style={estilos.lineaSeparador} />
+                </View>
+              );
+            }
+            // Render normal del producto
+            return (
+              <ProductoVenta
+                producto={item as Producto}
+                cantidadEnCesta={cantidadEnCesta(item.id)}
+                onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
+              />
+            );
+          }}
           contentContainerStyle={{ 
             paddingBottom: itemsCesta.length > 0 ? 140 : 20 
           }}
@@ -245,8 +284,13 @@ export default function PantallaVenta({ navigation }: Props) {
       <ModalCobro
         visible={modalCobroVisible}
         items={itemsCesta}
-        onConfirmar={(metodo, monto, cambio) => confirmarVenta(itemsCesta, metodo, monto, cambio)}
-        onCancelar={() => setModalCobroVisible(false)}
+        onConfirmar={(metodo, monto, cambio) =>
+          confirmarVenta(itemsCesta, metodo, monto, cambio)
+        }
+        onCancelar={() => {
+          setModalCobroVisible(false);
+          resetearEstadoProcesando();
+        }}
         procesando={procesando}
       />
     </SafeAreaView>
@@ -291,6 +335,26 @@ const estilos = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#2d3748',
+  },
+  // Estilos del separador de agotados
+  separadorAgotados: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    gap: 8,
+  },
+  lineaSeparador: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e2e8f0',
+  },
+  textoSeparador: {
+    fontSize: 12,
+    color: '#a0aec0',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   skeletonCard: {
     backgroundColor: '#ffffff',

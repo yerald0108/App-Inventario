@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TextInput, TouchableOpacity, Alert, ActivityIndicator,
@@ -10,6 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno } from '../database/turnos';
+import { formatCUP } from '../utils/formatters';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
@@ -26,6 +27,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const [efectivoReal, setEfectivoReal] = useState('');
   const [procesando, setProcesando] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
+  const [sinTurno, setSinTurno] = useState(false);
   const procesandoRef = useRef(false);
 
   useFocusEffect(
@@ -34,13 +36,26 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     }, [])
   );
 
+  useEffect(() => {
+    if (sinTurno) {
+      const timer = setTimeout(() => {
+        Alert.alert(
+          'Sin turno abierto',
+          'No hay un turno abierto. Inicia uno desde la pantalla de inicio.',
+          [{ text: 'Volver', onPress: () => navigation.goBack() }]
+        );
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [sinTurno]);
+
   async function cargarResumen() {
     setCargando(true);
+    setSinTurno(false);
     try {
       const turno = await obtenerTurnoAbierto();
       if (!turno) {
-        Alert.alert('Sin turno', 'No hay un turno abierto actualmente.');
-        navigation.goBack();
+        setSinTurno(true);
         return;
       }
       setTurnoId(turno.id);
@@ -65,12 +80,9 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   }
 
   function handleCambioEfectivo(texto: string) {
-    // Solo permite dígitos y un punto decimal
     const filtrado = texto.replace(/[^0-9.]/g, '');
-    // Evita múltiples puntos
     const partes = filtrado.split('.');
     if (partes.length > 2) return;
-    // Máximo 2 decimales
     if (partes[1] && partes[1].length > 2) return;
     setEfectivoReal(filtrado);
   }
@@ -82,14 +94,13 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     }
   }
 
-  // Calcular diferencia entre efectivo esperado y real
   function calcularDiferencia(): { diferencia: number; mensaje: string; color: string; icono: any } | null {
     const real = parseFloat(efectivoReal);
     if (isNaN(real)) return null;
     const diferencia = totalEfectivo - real;
     if (diferencia === 0) return { diferencia: 0, mensaje: 'Caja cuadrada', color: '#38a169', icono: 'checkmark-circle' };
-    if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${diferencia.toFixed(2)} CUP`, color: '#e53e3e', icono: 'warning' };
-    return { diferencia, mensaje: `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP`, color: '#d69e2e', icono: 'information-circle' };
+    if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${formatCUP(diferencia)} CUP`, color: '#e53e3e', icono: 'warning' }; 
+    return { diferencia, mensaje: `Sobrante: ${formatCUP(Math.abs(diferencia))} CUP`, color: '#d69e2e', icono: 'information-circle' }; 
   }
 
   function handleCerrarTurno() {
@@ -130,13 +141,12 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     }
   }
 
-  // Formatear fecha legible
   function formatearFecha(iso: string): string {
     const fecha = new Date(iso);
     return fecha.toLocaleTimeString('es-CU', { hour: '2-digit', minute: '2-digit' });
   }
 
-  if (cargando) {
+  if (cargando || sinTurno) {
     return (
       <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
         <View style={estilos.centrado}>
@@ -182,18 +192,18 @@ export default function PantallaCierreTurno({ navigation }: Props) {
             <Ionicons name="cash-outline" size={16} color="#718096" />
             <Text style={estilos.etiquetaResumen}>Efectivo:</Text>
           </View>
-          <Text style={estilos.valorResumen}>{totalEfectivo.toFixed(2)} CUP</Text>
+          <Text style={estilos.valorResumen}>{formatCUP(totalEfectivo)} CUP</Text>
         </View>
         <View style={estilos.filaResumen}>
           <View style={estilos.filaIcono}>
             <Ionicons name="card-outline" size={16} color="#718096" />
             <Text style={estilos.etiquetaResumen}>Transferencia:</Text>
           </View>
-          <Text style={estilos.valorResumen}>{totalTransferencia.toFixed(2)} CUP</Text>
+          <Text style={estilos.valorResumen}>{formatCUP(totalTransferencia)} CUP</Text>
         </View>
         <View style={[estilos.filaResumen, estilos.filaTotal]}>
           <Text style={estilos.etiquetaTotal}>Total general:</Text>
-          <Text style={estilos.valorTotal}>{totalGeneral.toFixed(2)} CUP</Text>
+          <Text style={estilos.valorTotal}>{formatCUP(totalGeneral)} CUP</Text> 
         </View>
       </View>
 
@@ -233,7 +243,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
               </Text>
             </View>
             <Text style={estilos.detalleResultado}>
-              Esperado: {totalEfectivo.toFixed(2)} CUP · Real: {parseFloat(efectivoReal).toFixed(2)} CUP
+              Esperado: {formatCUP(totalEfectivo)} CUP · Real: {formatCUP(parseFloat(efectivoReal))} CUP
             </Text>
           </View>
         )}
