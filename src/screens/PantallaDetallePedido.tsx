@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Alert, TextInput, Modal, ScrollView,
@@ -44,11 +44,19 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 
   const [modalActivo, setModalActivo] = useState<ModalActivo>('ninguno');
 
-  // Estado del modal "Agregar Producto"
+  // ── Estado del modal "Agregar Producto" ───────────────────────────────────
+  // productos: fuente de verdad. productosFiltrados se deriva via useMemo.
+  // No hay useEffect de filtrado — elimina por completo las carreras de estado.
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
   const [busqueda, setBusqueda] = useState('');
-  const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
+
+  // Filtrado derivado — nunca queda desincronizado con productos
+  const productosFiltrados = useMemo(() => {
+    if (!busqueda.trim()) return productos;
+    const t = busqueda.toLowerCase();
+    return productos.filter(p => p.nombre.toLowerCase().includes(t));
+  }, [busqueda, productos]);
 
   // Estado del modal "Cobro"
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
@@ -91,15 +99,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
     }
   }, [montoRecibido, metodoPago, pedido?.total]);
 
-  useEffect(() => {
-    if (!busqueda.trim()) {
-      setProductosFiltrados(productos);
-    } else {
-      const t = busqueda.toLowerCase();
-      setProductosFiltrados(productos.filter(p => p.nombre.toLowerCase().includes(t)));
-    }
-  }, [busqueda, productos]);
-
   useFocusEffect(
     useCallback(() => {
       cargarPedido();
@@ -118,17 +117,21 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 
   // ── Abrir modal de agregar productos ──────────────────────────────────────
   async function abrirModalAgregar() {
+    // 1. Limpiar búsqueda y lista antes de abrir
     setBusqueda('');
     setProductos([]);
-    setProductosFiltrados([]);
+    // 2. Abrir el modal (muestra spinner porque cargandoProductos=true)
+    setCargandoProductos(true);
     setModalActivo('agregarProducto');
     Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
-    // Cargar productos DESPUÉS de que el modal ya está abierto
-    setCargandoProductos(true);
+    // 3. Cargar productos — al hacer setProductos(lista), useMemo recalcula
+    //    productosFiltrados automáticamente. Sin carreras posibles.
     try {
       const lista = await obtenerProductos();
       setProductos(lista);
-      setProductosFiltrados(lista);
+    } catch (e) {
+      console.error('Error cargando productos:', e);
+      setProductos([]);
     } finally {
       setCargandoProductos(false);
     }
