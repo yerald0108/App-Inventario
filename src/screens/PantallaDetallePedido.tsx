@@ -45,8 +45,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   const [modalActivo, setModalActivo] = useState<ModalActivo>('ninguno');
 
   // ── Estado del modal "Agregar Producto" ───────────────────────────────────
-  // productos: fuente de verdad. productosFiltrados se deriva via useMemo.
-  // No hay useEffect de filtrado — elimina por completo las carreras de estado.
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargandoProductos, setCargandoProductos] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -117,20 +115,27 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 
   // ── Abrir modal de agregar productos ──────────────────────────────────────
   async function abrirModalAgregar() {
-    // 1. Limpiar búsqueda y lista antes de abrir
+    // 1. Limpiar búsqueda y mostrar spinner
     setBusqueda('');
     setProductos([]);
-    // 2. Abrir el modal (muestra spinner porque cargandoProductos=true)
     setCargandoProductos(true);
+
+    // 2. Abrir el modal con animación
     setModalActivo('agregarProducto');
     Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
-    // 3. Cargar productos — al hacer setProductos(lista), useMemo recalcula
-    //    productosFiltrados automáticamente. Sin carreras posibles.
+
+    // 3. Cargar productos en segundo plano
     try {
       const lista = await obtenerProductos();
       setProductos(lista);
     } catch (e) {
       console.error('Error cargando productos:', e);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No se pudieron cargar los productos.',
+        position: 'top',
+      });
       setProductos([]);
     } finally {
       setCargandoProductos(false);
@@ -388,15 +393,21 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 
       {/* ════════════════════════════════════════
           MODAL: AGREGAR PRODUCTOS
+          — FIX 1: pointerEvents="box-none" en KeyboardAvoidingView
+          — FIX 2: height fija en modalGrande (no maxHeight)
       ════════════════════════════════════════ */}
       <Modal
         visible={modalActivo === 'agregarProducto'}
         transparent
         animationType="fade"
       >
+        {/* FIX 1: pointerEvents="box-none" permite que los toques atraviesen
+            el KeyboardAvoidingView y lleguen al contenido del modal,
+            sin que el Pressable de dismiss los intercepte */}
         <KeyboardAvoidingView
           style={estilos.overlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          pointerEvents="box-none"
         >
           <Pressable style={StyleSheet.absoluteFillObject} onPress={cerrarModal} />
           <Animated.View
@@ -465,6 +476,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
         <KeyboardAvoidingView
           style={estilos.overlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          pointerEvents="box-none"
         >
           <Pressable style={StyleSheet.absoluteFillObject} onPress={cerrarModal} />
           <Animated.View
@@ -700,11 +712,13 @@ const estilos = StyleSheet.create({
   tituloModal: { fontSize: 22, fontWeight: 'bold', color: '#1a1a2e', textAlign: 'center' },
   subtituloModal: { fontSize: 14, color: '#2b6cb0', textAlign: 'center', fontWeight: '600', marginTop: 4 },
 
+  // FIX 2: height en lugar de maxHeight para que el FlatList interno
+  // pueda calcular su dimensión y renderizar los items correctamente.
   modalGrande: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
     paddingHorizontal: 20, paddingTop: 12,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    maxHeight: '88%', elevation: 20,
+    height: '88%', elevation: 20,
   },
   contenedorBusqueda: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
