@@ -42,7 +42,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   const [procesando, setProcesando] = useState(false);
   const procesandoRef = useRef(false);
 
-  // Modal activo
   const [modalActivo, setModalActivo] = useState<ModalActivo>('ninguno');
 
   // Estado del modal "Agregar Producto"
@@ -77,14 +76,12 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
     })
   ).current;
 
-  // Actualizar header con el nombre del pedido
   useEffect(() => {
     if (pedido) {
       navigation.setOptions({ title: pedido.nombre });
     }
   }, [pedido?.nombre]);
 
-  // Calcular cambio en tiempo real
   useEffect(() => {
     if (metodoPago === 'efectivo' && pedido) {
       const recibido = parseFloat(montoRecibido);
@@ -94,7 +91,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
     }
   }, [montoRecibido, metodoPago, pedido?.total]);
 
-  // Filtrar productos por búsqueda
   useEffect(() => {
     if (!busqueda.trim()) {
       setProductosFiltrados(productos);
@@ -120,24 +116,14 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
     }
   }
 
-  function abrirModal(modal: ModalActivo) {
-    if (modal === 'agregarProducto') {
-      setBusqueda('');
-      cargarProductosParaModal();
-    }
-    if (modal === 'cobro') {
-      setMontoRecibido('');
-      setMetodoPago('efectivo');
-    }
-    setModalActivo(modal);
+  // ── Abrir modal de agregar productos ──────────────────────────────────────
+  async function abrirModalAgregar() {
+    setBusqueda('');
+    setProductos([]);
+    setProductosFiltrados([]);
+    setModalActivo('agregarProducto');
     Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
-  }
-
-  function cerrarModal() {
-    Animated.timing(slideAnim, { toValue: 600, duration: 250, useNativeDriver: true }).start(() => setModalActivo('ninguno'));
-  }
-
-  async function cargarProductosParaModal() {
+    // Cargar productos DESPUÉS de que el modal ya está abierto
     setCargandoProductos(true);
     try {
       const lista = await obtenerProductos();
@@ -146,6 +132,17 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
     } finally {
       setCargandoProductos(false);
     }
+  }
+
+  function abrirModalCobro() {
+    setMontoRecibido('');
+    setMetodoPago('efectivo');
+    setModalActivo('cobro');
+    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
+  }
+
+  function cerrarModal() {
+    Animated.timing(slideAnim, { toValue: 600, duration: 250, useNativeDriver: true }).start(() => setModalActivo('ninguno'));
   }
 
   async function handleAgregarProducto(producto: Producto, cantidad: number) {
@@ -249,14 +246,11 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
     }
   }
 
-  // ─── Estado de botón de cobro deshabilitado ───────────────────────────────
   const botonCobroDeshabilitado =
     procesando ||
     !pedido ||
     pedido.items.length === 0 ||
     (metodoPago === 'efectivo' && (montoRecibido === '' || parseFloat(montoRecibido) < (pedido?.total ?? 0)));
-
-  // ─── Render ───────────────────────────────────────────────────────────────
 
   if (cargando) {
     return (
@@ -321,7 +315,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
           <View style={estilos.emptyItems}>
             <Ionicons name="cart-outline" size={48} color="#cbd5e0" />
             <Text style={estilos.textoEmptyItems}>
-              El pedido está vacío.{'\n'}Toca "Agregar productos" para empezar.
+              El pedido está vacío.{'\n'}Toca "Agregar" para añadir productos.
             </Text>
           </View>
         }
@@ -331,8 +325,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
               <Text style={estilos.nombreItem} numberOfLines={1}>{item.nombre_producto}</Text>
               <Text style={estilos.precioUnitItem}>{formatCUP(item.precio_aplicado)} CUP/u</Text>
             </View>
-
-            {/* Controles de cantidad */}
             <View style={estilos.controlesItem}>
               <TouchableOpacity
                 style={[estilos.botonCantidad, item.cantidad <= 1 && estilos.botonCantidadRojo]}
@@ -350,9 +342,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                   color="#ffffff"
                 />
               </TouchableOpacity>
-
               <Text style={estilos.cantidadItem}>{item.cantidad}</Text>
-
               <TouchableOpacity
                 style={estilos.botonCantidad}
                 onPress={() => handleCambiarCantidad(item, 1)}
@@ -360,8 +350,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                 <Ionicons name="add" size={16} color="#ffffff" />
               </TouchableOpacity>
             </View>
-
-            {/* Subtotal */}
             <Text style={estilos.subtotalItem}>{formatCUP(item.subtotal)} CUP</Text>
           </View>
         )}
@@ -369,30 +357,24 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 
       {/* ── Barra inferior fija ── */}
       <View style={estilos.barraInferior}>
-        {/* Total acumulado */}
         <View style={estilos.seccionTotal}>
           <Text style={estilos.etiquetaTotalBar}>Total</Text>
           <Text style={estilos.valorTotalBar}>{formatCUP(pedido.total)} CUP</Text>
         </View>
-
-        {/* Botones de acción */}
         <View style={estilos.botonesBar}>
-          {/* Agregar productos */}
           <TouchableOpacity
             style={estilos.botonAgregar}
-            onPress={() => abrirModal('agregarProducto')}
+            onPress={abrirModalAgregar}
           >
             <Ionicons name="add-circle-outline" size={20} color="#2b6cb0" />
             <Text style={estilos.textoBotonAgregar}>Agregar</Text>
           </TouchableOpacity>
-
-          {/* Cerrar cuenta */}
           <TouchableOpacity
             style={[
               estilos.botonCerrarCuenta,
               pedido.items.length === 0 && estilos.botonDeshabilitado,
             ]}
-            onPress={() => abrirModal('cobro')}
+            onPress={abrirModalCobro}
             disabled={pedido.items.length === 0}
           >
             <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
@@ -419,13 +401,11 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
           >
             <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
 
-            {/* Cabecera del modal */}
             <View style={estilos.cabeceraModal}>
               <Text style={estilos.tituloModal}>Agregar productos</Text>
               <Text style={estilos.subtituloModal}>{pedido.nombre}</Text>
             </View>
 
-            {/* Búsqueda */}
             <View style={estilos.contenedorBusqueda}>
               <Ionicons name="search" size={18} color="#718096" />
               <TextInput
@@ -438,10 +418,10 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
               />
             </View>
 
-            {/* Lista de productos */}
             {cargandoProductos ? (
               <View style={estilos.centradoModal}>
                 <ActivityIndicator size="large" color="#2b6cb0" />
+                <Text style={estilos.textoCargando}>Cargando inventario...</Text>
               </View>
             ) : (
               <FlatList
@@ -453,7 +433,9 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                 ListEmptyComponent={
                   <View style={estilos.centradoModal}>
                     <Text style={estilos.textoSinResultados}>
-                      {busqueda ? `Sin resultados para "${busqueda}"` : 'Sin productos en inventario'}
+                      {busqueda
+                        ? `Sin resultados para "${busqueda}"`
+                        : 'Sin productos en inventario'}
                     </Text>
                   </View>
                 }
@@ -488,14 +470,12 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
             <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Total del pedido */}
               <View style={estilos.seccionTotalCobro}>
                 <Text style={estilos.etiquetaTotalCobro}>TOTAL A COBRAR</Text>
                 <Text style={estilos.valorTotalCobro}>{formatCUP(pedido.total)} CUP</Text>
                 <Text style={estilos.nombreEnCobro}>{pedido.nombre}</Text>
               </View>
 
-              {/* Método de pago */}
               <Text style={estilos.subtituloCobro}>Método de Pago</Text>
               <View style={estilos.gridMetodos}>
                 {(['efectivo', 'transferencia'] as const).map((m) => (
@@ -516,7 +496,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                 ))}
               </View>
 
-              {/* Monto recibido (solo efectivo) */}
               {metodoPago === 'efectivo' && (
                 <View style={estilos.seccionEfectivo}>
                   <Text style={estilos.etiquetaInput}>Monto recibido</Text>
@@ -543,7 +522,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                 </View>
               )}
 
-              {/* Resumen del pedido */}
               <Text style={estilos.subtituloCobro}>Resumen ({pedido.items.length} productos)</Text>
               {pedido.items.map((item) => (
                 <View key={item.id} style={estilos.filaResumenItem}>
@@ -555,7 +533,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
               ))}
             </ScrollView>
 
-            {/* Botón confirmar cobro */}
             <TouchableOpacity
               style={[estilos.botonConfirmarCobro, botonCobroDeshabilitado && estilos.botonDeshabilitado]}
               onPress={handleCerrarCuenta}
@@ -585,7 +562,8 @@ interface ProductoParaAgregarProps {
 function ProductoParaAgregar({ producto, onAgregar }: ProductoParaAgregarProps) {
   const [cantidad, setCantidad] = useState(1);
   const agotado = producto.existencia <= 0;
-  const colorStock = agotado ? '#e53e3e' : producto.existencia < producto.alerta_minima ? '#d69e2e' : '#38a169';
+  const stockBajo = !agotado && producto.existencia < producto.alerta_minima;
+  const colorStock = agotado ? '#e53e3e' : stockBajo ? '#d69e2e' : '#38a169';
 
   return (
     <View style={[estilosPA.tarjeta, agotado && estilosPA.tarjetaAgotada]}>
@@ -624,7 +602,7 @@ function ProductoParaAgregar({ producto, onAgregar }: ProductoParaAgregarProps) 
           onPress={() => {
             if (!agotado) {
               onAgregar(producto, cantidad);
-              setCantidad(1); // Reset para el siguiente toque
+              setCantidad(1);
             }
           }}
           disabled={agotado}
@@ -642,7 +620,6 @@ const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
   centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Header nombre pedido
   headerPedido: {
     backgroundColor: '#ffffff',
     paddingHorizontal: 16, paddingVertical: 12,
@@ -661,14 +638,12 @@ const estilos = StyleSheet.create({
     backgroundColor: '#f0fff4', alignItems: 'center', justifyContent: 'center',
   },
 
-  // Lista de items
   listaItems: { padding: 12, paddingBottom: 8 },
   emptyItems: { alignItems: 'center', justifyContent: 'center', padding: 48, gap: 16 },
   textoEmptyItems: {
     fontSize: 15, color: '#a0aec0', textAlign: 'center', lineHeight: 22,
   },
 
-  // Tarjeta de item
   tarjetaItem: {
     backgroundColor: '#ffffff', borderRadius: 12, padding: 14,
     marginBottom: 8, flexDirection: 'row', alignItems: 'center',
@@ -688,7 +663,6 @@ const estilos = StyleSheet.create({
   cantidadItem: { fontSize: 16, fontWeight: 'bold', color: '#1a1a2e', minWidth: 24, textAlign: 'center' },
   subtotalItem: { fontSize: 14, fontWeight: '800', color: '#2b6cb0', minWidth: 80, textAlign: 'right' },
 
-  // Barra inferior
   barraInferior: {
     backgroundColor: '#1a1a2e',
     paddingHorizontal: 16, paddingVertical: 14, paddingBottom: 28,
@@ -714,7 +688,6 @@ const estilos = StyleSheet.create({
   textoBotonCerrarCuenta: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
   botonDeshabilitado: { backgroundColor: '#4a5568', opacity: 0.5 },
 
-  // Modal compartido
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   barraArrastre: {
     width: 40, height: 5, backgroundColor: '#e2e8f0',
@@ -724,7 +697,6 @@ const estilos = StyleSheet.create({
   tituloModal: { fontSize: 22, fontWeight: 'bold', color: '#1a1a2e', textAlign: 'center' },
   subtituloModal: { fontSize: 14, color: '#2b6cb0', textAlign: 'center', fontWeight: '600', marginTop: 4 },
 
-  // Modal agregar productos
   modalGrande: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
     paddingHorizontal: 20, paddingTop: 12,
@@ -738,7 +710,8 @@ const estilos = StyleSheet.create({
   },
   inputBusqueda: { flex: 1, fontSize: 15, color: '#2d3748' },
   listaProductosModal: { flex: 1 },
-  centradoModal: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  centradoModal: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
+  textoCargando: { fontSize: 14, color: '#718096' },
   textoSinResultados: { fontSize: 15, color: '#a0aec0', textAlign: 'center' },
   botonCerrarModal: {
     alignItems: 'center', padding: 14,
@@ -746,7 +719,6 @@ const estilos = StyleSheet.create({
   },
   textoBotonCerrarModal: { fontSize: 15, color: '#718096', fontWeight: '600' },
 
-  // Modal cobro
   modalCobro: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
     paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
@@ -797,7 +769,6 @@ const estilos = StyleSheet.create({
   textoBotonConfirmarCobro: { color: '#ffffff', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
 });
 
-// Estilos del subcomponente ProductoParaAgregar
 const estilosPA = StyleSheet.create({
   tarjeta: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff',

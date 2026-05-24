@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Alert, TextInput, Modal, ScrollView,
+  Alert, Modal,
   Animated, Pressable, PanResponder, Platform,
   KeyboardAvoidingView, ActivityIndicator,
 } from 'react-native';
@@ -24,18 +24,14 @@ type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Pedidos'>;
 };
 
-// Nombres de mesa predefinidos para sugerencias rápidas
-const SUGERENCIAS_NOMBRE = [
-  'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5',
-  'Barra', 'Para llevar', 'Terraza', 'VIP',
-];
+const MESAS = ['Mesa 1', 'Mesa 2', 'Mesa 3'];
 
 export default function PantallaPedidos({ navigation }: Props) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [turnoId, setTurnoId] = useState<number | null>(null);
   const [cargando, setCargando] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [nombreNuevo, setNombreNuevo] = useState('');
+  const [mesaSeleccionada, setMesaSeleccionada] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
   const creandoRef = useRef(false);
   const slideAnim = useRef(new Animated.Value(600)).current;
@@ -78,19 +74,25 @@ export default function PantallaPedidos({ navigation }: Props) {
     }
   }
 
+  // Saber qué mesas ya tienen pedido abierto
+  function mesasOcupadas(): string[] {
+    return pedidos.map(p => p.nombre);
+  }
+
   function abrirModal() {
-    setNombreNuevo('');
+    setMesaSeleccionada(null);
     setModalVisible(true);
     Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
   }
 
   function cerrarModal() {
     setModalVisible(false);
+    setMesaSeleccionada(null);
   }
 
   async function handleCrearPedido() {
-    if (!nombreNuevo.trim()) {
-      Alert.alert('Error', 'Pon un nombre para identificar el pedido (ej: Mesa 1).');
+    if (!mesaSeleccionada) {
+      Alert.alert('Selecciona una mesa', 'Elige una de las mesas disponibles para abrir el pedido.');
       return;
     }
     if (!turnoId) {
@@ -102,12 +104,11 @@ export default function PantallaPedidos({ navigation }: Props) {
     setCreando(true);
 
     try {
-      const id = await crearPedido(nombreNuevo, turnoId);
+      const id = await crearPedido(mesaSeleccionada, turnoId);
       cerrarModal();
-      // Navegar directamente al nuevo pedido
       navigation.navigate('DetallePedido', {
         pedidoId: id,
-        pedidoNombre: nombreNuevo.trim(),
+        pedidoNombre: mesaSeleccionada,
       });
     } catch (e) {
       Alert.alert('Error', 'No se pudo crear el pedido.');
@@ -150,7 +151,6 @@ export default function PantallaPedidos({ navigation }: Props) {
     return `${h}h ${m}m`;
   }
 
-  // Color del indicador de tiempo (verde < 30min, amarillo < 60min, rojo >= 60min)
   function colorTiempo(iso: string): string {
     const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
     if (diffMin < 30) return '#38a169';
@@ -169,6 +169,8 @@ export default function PantallaPedidos({ navigation }: Props) {
       </SafeAreaView>
     );
   }
+
+  const ocupadas = mesasOcupadas();
 
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
@@ -211,11 +213,8 @@ export default function PantallaPedidos({ navigation }: Props) {
                 }
                 activeOpacity={0.8}
               >
-                {/* Franja lateral de color-tiempo */}
                 <View style={[estilos.franjaLateral, { backgroundColor: colorT }]} />
-
                 <View style={estilos.cuerpoTarjeta}>
-                  {/* Fila superior: nombre + tiempo */}
                   <View style={estilos.filaSuperior}>
                     <View style={estilos.iconoMesa}>
                       <Ionicons name="restaurant-outline" size={20} color="#2b6cb0" />
@@ -228,8 +227,6 @@ export default function PantallaPedidos({ navigation }: Props) {
                       <Text style={[estilos.textoTiempo, { color: colorT }]}>{tiempo}</Text>
                     </View>
                   </View>
-
-                  {/* Fila inferior: total + acciones */}
                   <View style={estilos.filaInferior}>
                     <View>
                       <Text style={estilos.etiquetaTotal}>Total acumulado</Text>
@@ -273,13 +270,15 @@ export default function PantallaPedidos({ navigation }: Props) {
         />
       )}
 
-      {/* FAB — Nuevo Pedido */}
-      <TouchableOpacity style={estilos.fab} onPress={abrirModal} activeOpacity={0.85}>
-        <Ionicons name="add" size={28} color="#ffffff" />
-        <Text style={estilos.textoFab}>Nuevo Pedido</Text>
-      </TouchableOpacity>
+      {/* FAB — Nuevo Pedido (solo si hay mesas disponibles) */}
+      {ocupadas.length < MESAS.length && (
+        <TouchableOpacity style={estilos.fab} onPress={abrirModal} activeOpacity={0.85}>
+          <Ionicons name="add" size={28} color="#ffffff" />
+          <Text style={estilos.textoFab}>Nuevo Pedido</Text>
+        </TouchableOpacity>
+      )}
 
-      {/* Modal: Nombre del nuevo pedido */}
+      {/* Modal: Selección de mesa */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <KeyboardAvoidingView
           style={estilos.overlay}
@@ -290,66 +289,66 @@ export default function PantallaPedidos({ navigation }: Props) {
             <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
 
             <Text style={estilos.tituloModal}>Nuevo Pedido</Text>
-            <Text style={estilos.subtituloModal}>
-              Dale un nombre para identificar fácilmente esta cuenta
-            </Text>
+            <Text style={estilos.subtituloModal}>Selecciona una mesa</Text>
 
-            {/* Input de nombre */}
-            <TextInput
-              style={estilos.inputNombre}
-              value={nombreNuevo}
-              onChangeText={setNombreNuevo}
-              placeholder="Ej: Mesa 3, Barra, Para llevar..."
-              placeholderTextColor="#a0aec0"
-              autoCapitalize="words"
-              autoFocus
-              onSubmitEditing={handleCrearPedido}
-              returnKeyType="done"
-            />
-
-            {/* Sugerencias rápidas */}
-            <Text style={estilos.etiquetaSugerencias}>Sugerencias rápidas</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={estilos.scrollSugerencias}
-            >
-              {SUGERENCIAS_NOMBRE.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={[
-                    estilos.chipSugerencia,
-                    nombreNuevo === s && estilos.chipSugerenciaActivo,
-                  ]}
-                  onPress={() => setNombreNuevo(s)}
-                >
-                  <Text
+            {/* Botones de mesa */}
+            <View style={estilos.gridMesas}>
+              {MESAS.map((mesa) => {
+                const ocupada = ocupadas.includes(mesa);
+                const seleccionada = mesaSeleccionada === mesa;
+                return (
+                  <TouchableOpacity
+                    key={mesa}
                     style={[
-                      estilos.textoChipSugerencia,
-                      nombreNuevo === s && estilos.textoChipActivo,
+                      estilos.botonMesa,
+                      seleccionada && estilos.botonMesaSeleccionada,
+                      ocupada && estilos.botonMesaOcupada,
                     ]}
+                    onPress={() => !ocupada && setMesaSeleccionada(mesa)}
+                    disabled={ocupada}
+                    activeOpacity={ocupada ? 1 : 0.7}
                   >
-                    {s}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                    <Ionicons
+                      name="restaurant"
+                      size={28}
+                      color={ocupada ? '#cbd5e0' : seleccionada ? '#ffffff' : '#2b6cb0'}
+                    />
+                    <Text
+                      style={[
+                        estilos.textoBotonMesa,
+                        seleccionada && estilos.textoBotonMesaSeleccionada,
+                        ocupada && estilos.textoBotonMesaOcupada,
+                      ]}
+                    >
+                      {mesa}
+                    </Text>
+                    {ocupada && (
+                      <View style={estilos.badgeOcupada}>
+                        <Text style={estilos.textoBadgeOcupada}>Abierta</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             {/* Botón confirmar */}
             <TouchableOpacity
               style={[
                 estilos.botonConfirmar,
-                (!nombreNuevo.trim() || creando) && estilos.botonDeshabilitado,
+                (!mesaSeleccionada || creando) && estilos.botonDeshabilitado,
               ]}
               onPress={handleCrearPedido}
-              disabled={!nombreNuevo.trim() || creando}
+              disabled={!mesaSeleccionada || creando}
             >
               {creando ? (
                 <ActivityIndicator size="small" color="#ffffff" />
               ) : (
                 <>
                   <Ionicons name="add-circle" size={20} color="#ffffff" />
-                  <Text style={estilos.textoBotonConfirmar}>ABRIR PEDIDO</Text>
+                  <Text style={estilos.textoBotonConfirmar}>
+                    {mesaSeleccionada ? `ABRIR ${mesaSeleccionada.toUpperCase()}` : 'SELECCIONA UNA MESA'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -368,7 +367,6 @@ const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
   centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  // Cabecera
   cabecera: {
     backgroundColor: '#1a1a2e',
     paddingHorizontal: 20,
@@ -382,10 +380,8 @@ const estilos = StyleSheet.create({
   textoCabecera: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
   subtextoCabecera: { fontSize: 13, color: '#a0aec0' },
 
-  // Lista
   lista: { padding: 16, paddingBottom: 120 },
 
-  // Tarjeta de pedido
   tarjeta: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -429,7 +425,6 @@ const estilos = StyleSheet.create({
   },
   textoBotonVerPedido: { fontSize: 13, fontWeight: '700', color: '#2b6cb0' },
 
-  // FAB extendido
   fab: {
     position: 'absolute', bottom: 24, right: 16, left: 16,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
@@ -441,7 +436,6 @@ const estilos = StyleSheet.create({
   },
   textoFab: { color: '#ffffff', fontSize: 17, fontWeight: 'bold' },
 
-  // Modal
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   modal: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
@@ -456,26 +450,56 @@ const estilos = StyleSheet.create({
     fontSize: 24, fontWeight: 'bold', color: '#1a1a2e', textAlign: 'center', marginBottom: 6,
   },
   subtituloModal: {
-    fontSize: 14, color: '#718096', textAlign: 'center', marginBottom: 20,
+    fontSize: 14, color: '#718096', textAlign: 'center', marginBottom: 24,
   },
-  inputNombre: {
-    borderWidth: 2, borderColor: '#2b6cb0', borderRadius: 14,
-    padding: 16, fontSize: 18, color: '#1a1a2e', backgroundColor: '#f8fafc',
-    marginBottom: 16,
+
+  // Grid de mesas
+  gridMesas: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 28,
   },
-  etiquetaSugerencias: {
-    fontSize: 13, color: '#718096', fontWeight: '600', marginBottom: 10,
+  botonMesa: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#bee3f8',
+    backgroundColor: '#ebf8ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    position: 'relative',
   },
-  scrollSugerencias: { gap: 8, paddingBottom: 4, marginBottom: 20 },
-  chipSugerencia: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: '#f7fafc', borderWidth: 1.5, borderColor: '#e2e8f0',
+  botonMesaSeleccionada: {
+    backgroundColor: '#2b6cb0',
+    borderColor: '#2b6cb0',
   },
-  chipSugerenciaActivo: {
-    backgroundColor: '#2b6cb0', borderColor: '#2b6cb0',
+  botonMesaOcupada: {
+    backgroundColor: '#f7fafc',
+    borderColor: '#e2e8f0',
   },
-  textoChipSugerencia: { fontSize: 14, color: '#4a5568', fontWeight: '600' },
-  textoChipActivo: { color: '#ffffff' },
+  textoBotonMesa: {
+    fontSize: 14, fontWeight: '700', color: '#2b6cb0',
+  },
+  textoBotonMesaSeleccionada: {
+    color: '#ffffff',
+  },
+  textoBotonMesaOcupada: {
+    color: '#cbd5e0',
+  },
+  badgeOcupada: {
+    position: 'absolute',
+    bottom: 8,
+    backgroundColor: '#fed7d7',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  textoBadgeOcupada: {
+    fontSize: 10, fontWeight: '700', color: '#e53e3e',
+  },
+
   botonConfirmar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     backgroundColor: '#2b6cb0', borderRadius: 14, padding: 18, marginBottom: 12,
