@@ -50,3 +50,13 @@ export interface ItemCesta {
   producto: Producto;
   cantidad: number;
 }
+
+// Resumen de ventas externas de un despacho (para cierre de turno)
+export interface ResumenDespachoExterno {
+  despacho_id: number;
+  despacho_nombre: string;
+  despacho_color: string;
+  total_efectivo: number;
+  total_transferencia: number;
+  cantidad_ventas: number;
+}

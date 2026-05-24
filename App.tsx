@@ -17,6 +17,9 @@ import PantallaUltimasVentas from './src/screens/PantallaUltimasVentas';
 import PantallaHistorial from './src/screens/PantallaHistorial';
 import PantallaDetalleTurno from './src/screens/PantallaDetalleTurno';
 import PantallaSalidaFamiliar from './src/screens/PantallaSalidaFamiliar';
+import PantallaDespachos from './src/screens/PantallaDespachos';
+import PantallaVentaExterna from './src/screens/PantallaVentaExterna';
+import PantallaProductosDespacho from './src/screens/PantallaProductosDespacho';
 
 export type RootStackParamList = {
   Inicio: undefined;
@@ -28,16 +31,15 @@ export type RootStackParamList = {
   Historial: undefined;
   DetalleTurno: { turnoId: number; fechaCierre?: string };
   SalidaFamiliar: undefined;
+  Despachos: undefined;
+  VentaExterna: { despachoId: number; despachoNombre: string; despachoColor: string };
+  ProductosDespacho: { despachoId: number; despachoNombre: string };
 };
 
-// TODO: Migrar a Bottom Tab Navigator en la siguiente versión.
-// Rutas candidatas para tabs: Venta, UltimasVentas, Inventario, Historial.
-// La pantalla Inicio pasaría a ser el tab de "Inicio" con estado del turno.
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   useEffect(() => {
-    // LayoutAnimation para Android (New Arch está desactivada en app.json)
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
@@ -56,10 +58,10 @@ export default function App() {
             headerTitleStyle: { fontWeight: 'bold' },
           }}
         >
-          <Stack.Screen 
-            name="Inicio" 
-            component={PantallaInicio} 
-            options={{ headerShown: false }} 
+          <Stack.Screen
+            name="Inicio"
+            component={PantallaInicio}
+            options={{ headerShown: false }}
           />
           <Stack.Screen name="Inventario" component={PantallaInventario} options={{ title: 'Inventario' }} />
           <Stack.Screen name="Venta" component={PantallaVenta} options={{ title: 'Nueva Venta' }} />
@@ -67,9 +69,9 @@ export default function App() {
           <Stack.Screen name="CierreTurno" component={PantallaCierreTurno} options={{ title: 'Cierre de Turno' }} />
           <Stack.Screen name="UltimasVentas" component={PantallaUltimasVentas} options={{ title: 'Últimas Ventas' }} />
           <Stack.Screen name="Historial" component={PantallaHistorial} options={{ title: 'Historial de Turnos' }} />
-          <Stack.Screen 
-            name="DetalleTurno" 
-            component={PantallaDetalleTurno} 
+          <Stack.Screen
+            name="DetalleTurno"
+            component={PantallaDetalleTurno}
             options={({ route }) => {
               const { fechaCierre } = route.params;
               let titulo = 'Detalle del Turno';
@@ -80,9 +82,24 @@ export default function App() {
                 titulo = `Turno · ${dia} ${mes}`;
               }
               return { title: titulo };
-            }} 
+            }}
           />
           <Stack.Screen name="SalidaFamiliar" component={PantallaSalidaFamiliar} options={{ title: 'Salida Familiar' }} />
+          <Stack.Screen
+            name="Despachos"
+            component={PantallaDespachos}
+            options={{ title: 'Despachos Externos' }}
+          />
+          <Stack.Screen
+            name="VentaExterna"
+            component={PantallaVentaExterna}
+            options={({ route }) => ({ title: route.params.despachoNombre })}
+          />
+          <Stack.Screen
+            name="ProductosDespacho"
+            component={PantallaProductosDespacho}
+            options={({ route }) => ({ title: `Catálogo · ${route.params.despachoNombre}` })}
+          />
         </Stack.Navigator>
       </NavigationContainer>
       <Toast config={toastConfig} />

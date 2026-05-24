@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TextInput, TouchableOpacity, Alert, ActivityIndicator,
-  RefreshControl
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,10 +10,20 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno } from '../database/turnos';
+import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils/formatters';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
+};
+
+type ResumenDespacho = {
+  despacho_id: number;
+  despacho_nombre: string;
+  despacho_color: string;
+  total_efectivo: number;
+  total_transferencia: number;
+  cantidad_ventas: number;
 };
 
 export default function PantallaCierreTurno({ navigation }: Props) {
@@ -26,6 +36,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [cantidadVentas, setCantidadVentas] = useState(0);
   const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
+  const [resumenDespachos, setResumenDespachos] = useState<ResumenDespacho[]>([]);
   const [efectivoReal, setEfectivoReal] = useState('');
   const [procesando, setProcesando] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
@@ -61,7 +72,12 @@ export default function PantallaCierreTurno({ navigation }: Props) {
         return;
       }
       setTurnoId(turno.id);
-      const resumen = await obtenerResumenTurno(turno.id);
+
+      const [resumen, despachos] = await Promise.all([
+        obtenerResumenTurno(turno.id),
+        obtenerResumenExternoPorDespacho(turno.id),
+      ]);
+
       setTotalEfectivo(resumen.totalEfectivo);
       setTotalTransferencia(resumen.totalTransferencia);
       setEntradas(resumen.entradas);
@@ -69,6 +85,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       setInventario(resumen.inventario);
       setCantidadVentas(resumen.cantidadVentas);
       setCantidadAnulaciones(resumen.cantidadAnulaciones);
+      setResumenDespachos(despachos as ResumenDespacho[]);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar el resumen del turno.');
       console.error(error);
@@ -103,8 +120,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     if (isNaN(real)) return null;
     const diferencia = totalEfectivo - real;
     if (diferencia === 0) return { diferencia: 0, mensaje: 'Caja cuadrada', color: '#38a169', icono: 'checkmark-circle' };
-    if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${formatCUP(diferencia)} CUP`, color: '#e53e3e', icono: 'warning' }; 
-    return { diferencia, mensaje: `Sobrante: ${formatCUP(Math.abs(diferencia))} CUP`, color: '#d69e2e', icono: 'information-circle' }; 
+    if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${formatCUP(diferencia)} CUP`, color: '#e53e3e', icono: 'warning' };
+    return { diferencia, mensaje: `Sobrante: ${formatCUP(Math.abs(diferencia))} CUP`, color: '#d69e2e', icono: 'information-circle' };
   }
 
   function handleCerrarTurno() {
@@ -113,9 +130,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       Alert.alert('Error', 'Ingresa el efectivo físico contado para cerrar el turno.');
       return;
     }
-
     const resultado = calcularDiferencia();
-
     Alert.alert(
       'Cerrar turno',
       `${resultado?.mensaje}\n\n¿Confirmas el cierre del turno?`,
@@ -163,197 +178,228 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const totalGeneral = totalEfectivo + totalTransferencia;
   const resultadoCuadre = calcularDiferencia();
 
+  // Totales de despachos externos
+  const totalExternoEfectivo = resumenDespachos.reduce((acc, d) => acc + d.total_efectivo, 0);
+  const totalExternoTransferencia = resumenDespachos.reduce((acc, d) => acc + d.total_transferencia, 0);
+  const totalExterno = totalExternoEfectivo + totalExternoTransferencia;
+
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      <ScrollView 
-        style={estilos.scroll} 
+      <ScrollView
+        style={estilos.scroll}
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
           <RefreshControl refreshing={refrescando} onRefresh={handleRefresh} tintColor="#2b6cb0" />
         }
       >
+        {/* ── Resumen de ventas propias ── */}
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="stats-chart-outline" size={20} color="#38a169" />
+            <Text style={estilos.tituloSeccion}>Resumen de ventas</Text>
+            <TouchableOpacity onPress={cargarResumen} style={estilos.botonRefrescar} disabled={cargando}>
+              <Ionicons name="refresh" size={18} color={cargando ? '#cbd5e0' : '#2b6cb0'} />
+            </TouchableOpacity>
+          </View>
 
-      {/* Resumen de ventas */}
-      <View style={estilos.seccion}>
-        <View style={estilos.cabeceraSeccion}>
-          <Ionicons name="stats-chart-outline" size={20} color="#38a169" />
-          <Text style={estilos.tituloSeccion}>Resumen de ventas</Text>
-          <TouchableOpacity 
-            onPress={cargarResumen} 
-            style={estilos.botonRefrescar}
-            disabled={cargando}
-          >
-            <Ionicons 
-              name="refresh" 
-              size={18} 
-              color={cargando ? "#cbd5e0" : "#2b6cb0"} 
-            />
-          </TouchableOpacity>
+          <View style={estilos.filasConteo}>
+            <View style={estilos.chipConteo}>
+              <Ionicons name="checkmark-circle" size={14} color="#38a169" />
+              <Text style={estilos.textoChipConteo}>
+                {cantidadVentas} {cantidadVentas === 1 ? 'venta' : 'ventas'}
+              </Text>
+            </View>
+            {cantidadAnulaciones > 0 && (
+              <View style={[estilos.chipConteo, estilos.chipConteoAnulacion]}>
+                <Ionicons name="close-circle" size={14} color="#e53e3e" />
+                <Text style={[estilos.textoChipConteo, { color: '#e53e3e' }]}>
+                  {cantidadAnulaciones} anulada{cantidadAnulaciones > 1 ? 's' : ''}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={estilos.filaResumen}>
+            <View style={estilos.filaIcono}>
+              <Ionicons name="cash-outline" size={16} color="#718096" />
+              <Text style={estilos.etiquetaResumen}>Efectivo:</Text>
+            </View>
+            <Text style={estilos.valorResumen}>{formatCUP(totalEfectivo)} CUP</Text>
+          </View>
+          <View style={estilos.filaResumen}>
+            <View style={estilos.filaIcono}>
+              <Ionicons name="card-outline" size={16} color="#718096" />
+              <Text style={estilos.etiquetaResumen}>Transferencia:</Text>
+            </View>
+            <Text style={estilos.valorResumen}>{formatCUP(totalTransferencia)} CUP</Text>
+          </View>
+          <View style={[estilos.filaResumen, estilos.filaTotal]}>
+            <Text style={estilos.etiquetaTotal}>Total general:</Text>
+            <Text style={estilos.valorTotal}>{formatCUP(totalGeneral)} CUP</Text>
+          </View>
         </View>
 
-        {/* Conteos de ventas y anulaciones */}
-        <View style={estilos.filasConteo}>
-          <View style={estilos.chipConteo}>
-            <Ionicons name="checkmark-circle" size={14} color="#38a169" />
-            <Text style={estilos.textoChipConteo}>
-              {cantidadVentas} {cantidadVentas === 1 ? 'venta' : 'ventas'}
-            </Text>
+        {/* ── Despachos externos ── */}
+        {resumenDespachos.length > 0 && (
+          <View style={estilos.seccion}>
+            <View style={estilos.cabeceraSeccion}>
+              <Ionicons name="storefront-outline" size={20} color="#319795" />
+              <Text style={estilos.tituloSeccion}>Ventas de despachos externos</Text>
+            </View>
+
+            {/* Aviso: este dinero NO es tuyo */}
+            <View style={estilos.alertaExterna}>
+              <Ionicons name="information-circle-outline" size={16} color="#2c7a7b" />
+              <Text style={estilos.textoAlertaExterna}>
+                Este dinero <Text style={{ fontWeight: 'bold' }}>no pertenece a tu caja</Text>.
+                Debes depositarlo a cada despacho por separado.
+              </Text>
+            </View>
+
+            {resumenDespachos.map((d) => (
+              <View key={d.despacho_id} style={estilos.filaDespacho}>
+                <View style={[estilos.puntoCColor, { backgroundColor: d.despacho_color }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={estilos.nombreDespacho}>{d.despacho_nombre}</Text>
+                  <Text style={estilos.detailDespacho}>
+                    {d.cantidad_ventas} venta{d.cantidad_ventas !== 1 ? 's' : ''}
+                    {d.total_efectivo > 0 ? `  ·  Ef: ${formatCUP(d.total_efectivo)}` : ''}
+                    {d.total_transferencia > 0 ? `  ·  Tr: ${formatCUP(d.total_transferencia)}` : ''}
+                  </Text>
+                </View>
+                <Text style={[estilos.totalDespacho, { color: d.despacho_color }]}>
+                  {formatCUP(d.total_efectivo + d.total_transferencia)} CUP
+                </Text>
+              </View>
+            ))}
+
+            {/* Total externo */}
+            <View style={[estilos.filaResumen, estilos.filaTotal, { marginTop: 12 }]}>
+              <Text style={estilos.etiquetaTotal}>Total a depositar:</Text>
+              <Text style={[estilos.valorTotal, { color: '#319795' }]}>
+                {formatCUP(totalExterno)} CUP
+              </Text>
+            </View>
           </View>
-          {cantidadAnulaciones > 0 && (
-            <View style={[estilos.chipConteo, estilos.chipConteoAnulacion]}>
-              <Ionicons name="close-circle" size={14} color="#e53e3e" />
-              <Text style={[estilos.textoChipConteo, { color: '#e53e3e' }]}>
-                {cantidadAnulaciones} anulada{cantidadAnulaciones > 1 ? 's' : ''}
+        )}
+
+        {/* ── Cuadre de caja ── */}
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="receipt-outline" size={20} color="#d69e2e" />
+            <Text style={estilos.tituloSeccion}>Cuadre de caja</Text>
+          </View>
+
+          <Text style={estilos.etiquetaCuadre}>Efectivo físico contado (CUP)</Text>
+          <TextInput
+            style={[
+              estilos.inputEfectivo,
+              efectivoReal !== '' && !isNaN(parseFloat(efectivoReal)) && {
+                borderColor:
+                  calcularDiferencia()?.diferencia === 0
+                    ? '#38a169'
+                    : (calcularDiferencia()?.diferencia ?? 0) > 0
+                    ? '#e53e3e'
+                    : '#d69e2e',
+              },
+            ]}
+            value={efectivoReal}
+            onChangeText={handleCambioEfectivo}
+            onBlur={handleBlurEfectivo}
+            keyboardType="numeric"
+            placeholder="0.00"
+            placeholderTextColor="#a0aec0"
+          />
+
+          {resultadoCuadre && (
+            <View style={[estilos.resultadoCuadre, { borderColor: resultadoCuadre.color }]}>
+              <View style={estilos.filaResultado}>
+                <Ionicons name={resultadoCuadre.icono} size={20} color={resultadoCuadre.color} />
+                <Text style={[estilos.textoResultado, { color: resultadoCuadre.color }]}>
+                  {resultadoCuadre.mensaje}
+                </Text>
+              </View>
+              <Text style={estilos.detalleResultado}>
+                Esperado: {formatCUP(totalEfectivo)} CUP · Real: {formatCUP(parseFloat(efectivoReal))} CUP
               </Text>
             </View>
           )}
         </View>
 
-        <View style={estilos.filaResumen}>
-          <View style={estilos.filaIcono}>
-            <Ionicons name="cash-outline" size={16} color="#718096" />
-            <Text style={estilos.etiquetaResumen}>Efectivo:</Text>
-          </View>
-          <Text style={estilos.valorResumen}>{formatCUP(totalEfectivo)} CUP</Text>
-        </View>
-        <View style={estilos.filaResumen}>
-          <View style={estilos.filaIcono}>
-            <Ionicons name="card-outline" size={16} color="#718096" />
-            <Text style={estilos.etiquetaResumen}>Transferencia:</Text>
-          </View>
-          <Text style={estilos.valorResumen}>{formatCUP(totalTransferencia)} CUP</Text>
-        </View>
-        <View style={[estilos.filaResumen, estilos.filaTotal]}>
-          <Text style={estilos.etiquetaTotal}>Total general:</Text>
-          <Text style={estilos.valorTotal}>{formatCUP(totalGeneral)} CUP</Text> 
-        </View>
-      </View>
-
-      {/* Cuadre de caja */}
-      <View style={estilos.seccion}>
-        <View style={estilos.cabeceraSeccion}>
-          <Ionicons name="receipt-outline" size={20} color="#d69e2e" />
-          <Text style={estilos.tituloSeccion}>Cuadre de caja</Text>
-        </View>
-        
-        <Text style={estilos.etiquetaCuadre}>Efectivo físico contado (CUP)</Text>
-        <TextInput
-          style={[
-            estilos.inputEfectivo,
-            efectivoReal !== '' && !isNaN(parseFloat(efectivoReal)) && {
-              borderColor: calcularDiferencia()?.diferencia === 0
-                ? '#38a169'
-                : calcularDiferencia()?.diferencia ?? 0 > 0
-                  ? '#e53e3e'
-                  : '#d69e2e'
-            }
-          ]}
-          value={efectivoReal}
-          onChangeText={handleCambioEfectivo}
-          onBlur={handleBlurEfectivo}
-          keyboardType="numeric"
-          placeholder="0.00"
-          placeholderTextColor="#a0aec0"
-        />
-
-        {resultadoCuadre && (
-          <View style={[estilos.resultadoCuadre, { borderColor: resultadoCuadre.color }]}>
-            <View style={estilos.filaResultado}>
-              <Ionicons name={resultadoCuadre.icono} size={20} color={resultadoCuadre.color} />
-              <Text style={[estilos.textoResultado, { color: resultadoCuadre.color }]}>
-                {resultadoCuadre.mensaje}
-              </Text>
+        {/* ── Entradas del turno ── */}
+        {entradas.length > 0 && (
+          <View style={estilos.seccion}>
+            <View style={estilos.cabeceraSeccion}>
+              <Ionicons name="download-outline" size={20} color="#2b6cb0" />
+              <Text style={estilos.tituloSeccion}>Entradas del turno</Text>
             </View>
-            <Text style={estilos.detalleResultado}>
-              Esperado: {formatCUP(totalEfectivo)} CUP · Real: {formatCUP(parseFloat(efectivoReal))} CUP
-            </Text>
+            {entradas.map((entrada, index) => (
+              <View key={index} style={estilos.filaEntrada}>
+                <Text style={estilos.nombreEntrada}>{entrada.nombre}</Text>
+                <Text style={estilos.cantidadEntrada}>+{entrada.cantidad} unid.</Text>
+                <Text style={estilos.horaEntrada}>{formatearFecha(entrada.fecha_hora)}</Text>
+              </View>
+            ))}
           </View>
         )}
-      </View>
 
-      {/* Entradas del turno */}
-      {entradas.length > 0 && (
+        {/* ── Salidas familiares ── */}
+        {salidasFamiliares.length > 0 && (
+          <View style={estilos.seccion}>
+            <View style={estilos.cabeceraSeccion}>
+              <Ionicons name="people-outline" size={20} color="#ed64a6" />
+              <Text style={estilos.tituloSeccion}>Consumo familiar</Text>
+            </View>
+            {salidasFamiliares.map((salida, index) => (
+              <View key={index} style={estilos.filaEntrada}>
+                <Text style={estilos.nombreEntrada}>{salida.nombre}</Text>
+                <Text style={[estilos.cantidadEntrada, { color: '#ed64a6' }]}>
+                  -{salida.cantidad} unid.
+                </Text>
+                <Text style={estilos.horaEntrada}>{formatearFecha(salida.fecha_hora)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ── Inventario final ── */}
         <View style={estilos.seccion}>
           <View style={estilos.cabeceraSeccion}>
-            <Ionicons name="download-outline" size={20} color="#2b6cb0" />
-            <Text style={estilos.tituloSeccion}>Entradas del turno</Text>
+            <Ionicons name="cube-outline" size={20} color="#805ad5" />
+            <Text style={estilos.tituloSeccion}>Inventario para el próximo turno</Text>
           </View>
-          {entradas.map((entrada, index) => (
-            <View key={index} style={estilos.filaEntrada}>
-              <Text style={estilos.nombreEntrada}>{entrada.nombre}</Text>
-              <Text style={estilos.cantidadEntrada}>+{entrada.cantidad} unid.</Text>
-              <Text style={estilos.horaEntrada}>{formatearFecha(entrada.fecha_hora)}</Text>
-            </View>
-          ))}
+          {inventario.map((item, index) => {
+            const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
+            return (
+              <View key={index} style={estilos.filaInventario}>
+                <Text style={estilos.nombreInventario} numberOfLines={1}>{item.nombre}</Text>
+                <Text style={[estilos.stockInventario, { color: colorStock }]}>
+                  {item.existencia} unid.
+                </Text>
+              </View>
+            );
+          })}
         </View>
-      )}
 
-      {/* Salidas familiares (Bug 9) */}
-      {salidasFamiliares.length > 0 && (
-        <View style={estilos.seccion}>
-          <View style={estilos.cabeceraSeccion}>
-            <Ionicons name="people-outline" size={20} color="#ed64a6" />
-            <Text style={estilos.tituloSeccion}>Consumo familiar</Text>
-          </View>
-          {salidasFamiliares.map((salida, index) => (
-            <View key={index} style={estilos.filaEntrada}>
-              <Text style={estilos.nombreEntrada}>{salida.nombre}</Text>
-              <Text style={[estilos.cantidadEntrada, { color: '#ed64a6' }]}>
-                -{salida.cantidad} unid.
-              </Text>
-              <Text style={estilos.horaEntrada}>{formatearFecha(salida.fecha_hora)}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Inventario final */}
-      <View style={estilos.seccion}>
-        <View style={estilos.cabeceraSeccion}>
-          <Ionicons name="cube-outline" size={20} color="#805ad5" />
-          <Text style={estilos.tituloSeccion}>Inventario para el próximo turno</Text>
-        </View>
-        {inventario.map((item, index) => {
-          const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
-          return (
-            <View key={index} style={estilos.filaInventario}>
-              <Text style={estilos.nombreInventario} numberOfLines={1}>{item.nombre}</Text>
-              <Text style={[estilos.stockInventario, { color: colorStock }]}>
-                {item.existencia} unid.
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-
-      {/* Botón cerrar turno */}
-      <TouchableOpacity
-        style={[estilos.botonCerrar, procesando && estilos.botonDeshabilitado]}
-        onPress={handleCerrarTurno}
-        disabled={procesando}
-      >
-        <Text style={estilos.textoBotonCerrar}>
-          {procesando ? 'Cerrando turno...' : 'CERRAR TURNO'}
-        </Text>
-      </TouchableOpacity>
+        {/* ── Botón cerrar turno ── */}
+        <TouchableOpacity
+          style={[estilos.botonCerrar, procesando && estilos.botonDeshabilitado]}
+          onPress={handleCerrarTurno}
+          disabled={procesando}
+        >
+          <Text style={estilos.textoBotonCerrar}>
+            {procesando ? 'Cerrando turno...' : 'CERRAR TURNO'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const estilos = StyleSheet.create({
-  contenedor: {
-    flex: 1,
-    backgroundColor: '#f0f4f8',
-  },
-  centrado: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scroll: {
-    flex: 1,
-  },
+  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
+  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
   cabeceraSeccion: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -363,15 +409,8 @@ const estilos = StyleSheet.create({
     borderBottomColor: '#edf2f7',
     paddingBottom: 8,
   },
-  tituloSeccion: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
-    flex: 1,
-  },
-  botonRefrescar: {
-    padding: 4,
-  },
+  tituloSeccion: { fontSize: 16, fontWeight: 'bold', color: '#1a1a2e', flex: 1 },
+  botonRefrescar: { padding: 4 },
   seccion: {
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
@@ -384,12 +423,7 @@ const estilos = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
-  filasConteo: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-    flexWrap: 'wrap',
-  },
+  filasConteo: { flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' },
   chipConteo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -401,57 +435,52 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  chipConteoAnulacion: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#feb2b2',
-  },
-  textoChipConteo: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#2f855a',
-  },
+  chipConteoAnulacion: { backgroundColor: '#fff5f5', borderColor: '#feb2b2' },
+  textoChipConteo: { fontSize: 13, fontWeight: '700', color: '#2f855a' },
   filaResumen: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-  filaIcono: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  etiquetaResumen: {
-    fontSize: 14,
-    color: '#718096',
-  },
-  valorResumen: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2d3748',
-  },
+  filaIcono: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  etiquetaResumen: { fontSize: 14, color: '#718096' },
+  valorResumen: { fontSize: 14, fontWeight: '600', color: '#2d3748' },
   filaTotal: {
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#edf2f7',
   },
-  etiquetaTotal: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
+  etiquetaTotal: { fontSize: 15, fontWeight: 'bold', color: '#1a1a2e' },
+  valorTotal: { fontSize: 18, fontWeight: '900', color: '#2b6cb0' },
+  // Despachos externos
+  alertaExterna: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#e6fffa',
+    borderWidth: 1,
+    borderColor: '#81e6d9',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
   },
-  valorTotal: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#2b6cb0',
+  textoAlertaExterna: { flex: 1, fontSize: 13, color: '#2c7a7b', lineHeight: 18 },
+  filaDespacho: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f4f8',
   },
-  etiquetaCuadre: {
-    fontSize: 14,
-    color: '#4a5568',
-    marginBottom: 8,
-    fontWeight: '600',
-  },
+  puntoCColor: { width: 12, height: 12, borderRadius: 6 },
+  nombreDespacho: { fontSize: 15, fontWeight: '600', color: '#1a1a2e' },
+  detailDespacho: { fontSize: 12, color: '#718096', marginTop: 1 },
+  totalDespacho: { fontSize: 15, fontWeight: 'bold' },
+  // Cuadre
+  etiquetaCuadre: { fontSize: 14, color: '#4a5568', marginBottom: 8, fontWeight: '600' },
   inputEfectivo: {
     borderWidth: 1.5,
     borderColor: '#cbd5e0',
@@ -468,21 +497,10 @@ const estilos = StyleSheet.create({
     borderWidth: 1.5,
     backgroundColor: '#f8fafc',
   },
-  filaResultado: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  textoResultado: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  detalleResultado: {
-    fontSize: 13,
-    color: '#718096',
-    marginLeft: 28,
-  },
+  filaResultado: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  textoResultado: { fontSize: 16, fontWeight: 'bold' },
+  detalleResultado: { fontSize: 13, color: '#718096', marginLeft: 28 },
+  // Entradas / salidas
   filaEntrada: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,22 +509,10 @@ const estilos = StyleSheet.create({
     borderBottomColor: '#f0f4f8',
     gap: 8,
   },
-  nombreEntrada: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1a1a2e',
-  },
-  cantidadEntrada: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#38a169',
-  },
-  horaEntrada: {
-    fontSize: 13,
-    color: '#a0aec0',
-    width: 48,
-    textAlign: 'right',
-  },
+  nombreEntrada: { flex: 1, fontSize: 15, color: '#1a1a2e' },
+  cantidadEntrada: { fontSize: 15, fontWeight: '600', color: '#38a169' },
+  horaEntrada: { fontSize: 13, color: '#a0aec0', width: 48, textAlign: 'right' },
+  // Inventario
   filaInventario: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -515,16 +521,9 @@ const estilos = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f4f8',
   },
-  nombreInventario: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1a1a2e',
-    marginRight: 8,
-  },
-  stockInventario: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
+  nombreInventario: { flex: 1, fontSize: 15, color: '#1a1a2e', marginRight: 8 },
+  stockInventario: { fontSize: 15, fontWeight: '600' },
+  // Botón cerrar
   botonCerrar: {
     backgroundColor: '#e53e3e',
     borderRadius: 16,
@@ -534,12 +533,6 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     elevation: 3,
   },
-  botonDeshabilitado: {
-    backgroundColor: '#a0aec0',
-  },
-  textoBotonCerrar: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  botonDeshabilitado: { backgroundColor: '#a0aec0' },
+  textoBotonCerrar: { color: '#ffffff', fontSize: 18, fontWeight: 'bold' },
 });

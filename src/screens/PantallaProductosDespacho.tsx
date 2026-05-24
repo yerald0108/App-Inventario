@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Alert, TextInput, Modal, ScrollView,
   Animated, Pressable, PanResponder, Platform, KeyboardAvoidingView,
-  ActivityIndicator
+  ActivityIndicator, Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -34,6 +34,11 @@ export default function PantallaProductosDespacho({ route }: Props) {
   const [guardando, setGuardando] = useState(false);
   const guardandoRef = useRef(false);
   const slideAnim = useRef(new Animated.Value(600)).current;
+
+  // Refs para los inputs — permiten leer el valor actual sin depender del estado
+  // (evita el problema de que onBlur vacíe el valor antes de que handleGuardar lo lea)
+  const nombreRef = useRef('');
+  const precioRef = useRef('');
 
   const panResponder = useRef(
     PanResponder.create({
@@ -68,6 +73,8 @@ export default function PantallaProductosDespacho({ route }: Props) {
 
   function abrirCrear() {
     setProductoEditando(null);
+    nombreRef.current = '';
+    precioRef.current = '';
     setNombre('');
     setPrecio('');
     setModalVisible(true);
@@ -76,6 +83,8 @@ export default function PantallaProductosDespacho({ route }: Props) {
 
   function abrirEditar(producto: ProductoDespacho) {
     setProductoEditando(producto);
+    nombreRef.current = producto.nombre;
+    precioRef.current = producto.precio.toString();
     setNombre(producto.nombre);
     setPrecio(producto.precio.toString());
     setModalVisible(true);
@@ -83,34 +92,51 @@ export default function PantallaProductosDespacho({ route }: Props) {
   }
 
   function cerrarModal() {
+    Keyboard.dismiss();
     setModalVisible(false);
     setProductoEditando(null);
   }
 
-  async function handleGuardar() {
-    if (!nombre.trim()) {
+  // Usamos onPressIn en lugar de onPress para capturar el tap ANTES de que
+  // el teclado se cierre y dispare onBlur en los inputs.
+  function handleGuardarPressIn() {
+    // Leer los valores desde los refs (siempre actualizados, no afectados por onBlur)
+    const nombreVal = nombreRef.current.trim();
+    const precioVal = precioRef.current.trim();
+
+    if (!nombreVal) {
+      Keyboard.dismiss();
       Alert.alert('Error', 'El nombre del producto es obligatorio.');
       return;
     }
-    const precioNum = parseFloat(precio);
+    const precioNum = parseFloat(precioVal);
     if (isNaN(precioNum) || precioNum <= 0) {
+      Keyboard.dismiss();
       Alert.alert('Error', 'El precio debe ser mayor que 0.');
       return;
     }
     if (guardandoRef.current) return;
+
+    // Si las validaciones pasan, ejecutar guardado
+    ejecutarGuardado(nombreVal, precioNum);
+  }
+
+  async function ejecutarGuardado(nombreVal: string, precioNum: number) {
     guardandoRef.current = true;
     setGuardando(true);
+    Keyboard.dismiss();
 
     try {
       if (productoEditando) {
-        await actualizarProductoDespacho(productoEditando.id, nombre.trim(), precioNum);
+        await actualizarProductoDespacho(productoEditando.id, nombreVal, precioNum);
       } else {
-        await crearProductoDespacho(despachoId, nombre.trim(), precioNum);
+        await crearProductoDespacho(despachoId, nombreVal, precioNum);
       }
       cerrarModal();
       await cargarProductos();
     } catch (error) {
       Alert.alert('Error', 'No se pudo guardar el producto.');
+      console.error(error);
     } finally {
       guardandoRef.current = false;
       setGuardando(false);
@@ -160,16 +186,10 @@ export default function PantallaProductosDespacho({ route }: Props) {
                 <Text style={estilos.precioProducto}>{item.precio.toFixed(2)} CUP</Text>
               </View>
               <View style={estilos.botonesProducto}>
-                <TouchableOpacity
-                  style={estilos.botonEditar}
-                  onPress={() => abrirEditar(item)}
-                >
+                <TouchableOpacity style={estilos.botonEditar} onPress={() => abrirEditar(item)}>
                   <Ionicons name="pencil-outline" size={16} color="#2b6cb0" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={estilos.botonEliminar}
-                  onPress={() => confirmarEliminar(item)}
-                >
+                <TouchableOpacity style={estilos.botonEliminar} onPress={() => confirmarEliminar(item)}>
                   <Ionicons name="trash-outline" size={16} color="#e53e3e" />
                 </TouchableOpacity>
               </View>
@@ -198,7 +218,10 @@ export default function PantallaProductosDespacho({ route }: Props) {
           <Animated.View style={[estilos.modal, { transform: [{ translateY: slideAnim }] }]}>
             <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <Text style={estilos.tituloModal}>
                 {productoEditando ? 'Editar producto' : 'Nuevo producto'}
               </Text>
@@ -208,10 +231,14 @@ export default function PantallaProductosDespacho({ route }: Props) {
               <TextInput
                 style={estilos.input}
                 value={nombre}
-                onChangeText={setNombre}
+                onChangeText={(v) => {
+                  setNombre(v);
+                  nombreRef.current = v;
+                }}
                 placeholder="Ej: Cerveza Bucanero"
                 placeholderTextColor="#a0aec0"
                 autoCapitalize="words"
+                returnKeyType="next"
               />
 
               <Text style={estilos.etiqueta}>Precio</Text>
@@ -219,18 +246,24 @@ export default function PantallaProductosDespacho({ route }: Props) {
                 <TextInput
                   style={estilos.inputSufijo}
                   value={precio}
-                  onChangeText={setPrecio}
+                  onChangeText={(v) => {
+                    setPrecio(v);
+                    precioRef.current = v;
+                  }}
                   placeholder="0.00"
                   placeholderTextColor="#a0aec0"
                   keyboardType="numeric"
+                  returnKeyType="done"
                 />
                 <Text style={estilos.sufijo}>CUP</Text>
               </View>
 
+              {/* onPressIn para que el tap se registre ANTES de que el teclado se cierre */}
               <TouchableOpacity
                 style={[estilos.botonGuardar, guardando && { opacity: 0.7 }]}
-                onPress={handleGuardar}
+                onPressIn={handleGuardarPressIn}
                 disabled={guardando}
+                activeOpacity={0.8}
               >
                 {guardando
                   ? <ActivityIndicator size="small" color="#ffffff" />

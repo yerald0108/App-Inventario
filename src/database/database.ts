@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { inicializarTablaDespachos } from './despachos';
 
 // Abrir (o crear) la base de datos local
 const db = SQLite.openDatabaseSync('micaja.db');
@@ -33,29 +34,28 @@ export async function inicializarDB(): Promise<void> {
     );
   `);
 
-  // 2. Tabla movimientos (podría requerir migración)
+  // 2. Tabla movimientos (puede requerir migración)
   await aplicarMigraciones();
+
+  // 3. Tablas de despachos externos
+  await inicializarTablaDespachos();
 }
 
 async function aplicarMigraciones() {
   try {
-    // Verificar versión actual
     const versionRow = await db.getFirstAsync<{ valor: string }>(
       "SELECT valor FROM meta WHERE clave = 'schema_version'"
     );
     const version = versionRow ? parseInt(versionRow.valor) : 0;
 
-    // Migración 1: Crear tabla movimientos con soporte para salida_familiar
     if (version < 1) {
       console.log('Ejecutando migración v1: Crear tabla movimientos...');
-      
-      // Intentar detectar si ya existe una tabla movimientos antigua (sin el CHECK correcto)
+
       const tableInfo = await db.getAllAsync<{ sql: string }>(
         "SELECT sql FROM sqlite_master WHERE type='table' AND name='movimientos'"
       );
 
       if (tableInfo.length > 0 && !tableInfo[0].sql.includes('salida_familiar')) {
-        // Migrar datos de tabla antigua
         await db.withTransactionAsync(async () => {
           await db.execAsync(`
             CREATE TABLE movimientos_new (
@@ -77,7 +77,6 @@ async function aplicarMigraciones() {
           `);
         });
       } else if (tableInfo.length === 0) {
-        // Crear desde cero si no existe
         await db.execAsync(`
           CREATE TABLE movimientos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,7 +94,6 @@ async function aplicarMigraciones() {
         `);
       }
 
-      // Actualizar versión
       await db.runAsync(
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '1')"
       );
@@ -103,12 +101,8 @@ async function aplicarMigraciones() {
     }
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
-    // No relanzamos para permitir que la app intente arrancar si es posible,
-    // o al menos no crashee en el splash screen infinitamente.
-    // Limpieza de emergencia si quedó una tabla temporal
     await db.execAsync('DROP TABLE IF EXISTS movimientos_new;').catch(() => {});
   }
 }
 
-// Exportar la instancia de la base de datos para usarla en toda la app
 export default db;
