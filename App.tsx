@@ -21,6 +21,10 @@ import PantallaDespachos from './src/screens/PantallaDespachos';
 import PantallaVentaExterna from './src/screens/PantallaVentaExterna';
 import PantallaProductosDespacho from './src/screens/PantallaProductosDespacho';
 
+// ── Nuevas pantallas de pedidos ──
+import PantallaPedidos from './src/screens/PantallaPedidos';
+import PantallaDetallePedido from './src/screens/PantallaDetallePedido';
+
 export type RootStackParamList = {
   Inicio: undefined;
   Inventario: undefined;
@@ -34,6 +38,9 @@ export type RootStackParamList = {
   Despachos: undefined;
   VentaExterna: { despachoId: number; despachoNombre: string; despachoColor: string };
   ProductosDespacho: { despachoId: number; despachoNombre: string };
+  // ── Nuevas rutas ──
+  Pedidos: undefined;
+  DetallePedido: { pedidoId: number; pedidoNombre: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -63,12 +70,36 @@ export default function App() {
             component={PantallaInicio}
             options={{ headerShown: false }}
           />
-          <Stack.Screen name="Inventario" component={PantallaInventario} options={{ title: 'Inventario' }} />
-          <Stack.Screen name="Venta" component={PantallaVenta} options={{ title: 'Nueva Venta' }} />
-          <Stack.Screen name="Entrada" component={PantallaEntrada} options={{ title: 'Entrada de Mercancía' }} />
-          <Stack.Screen name="CierreTurno" component={PantallaCierreTurno} options={{ title: 'Cierre de Turno' }} />
-          <Stack.Screen name="UltimasVentas" component={PantallaUltimasVentas} options={{ title: 'Últimas Ventas' }} />
-          <Stack.Screen name="Historial" component={PantallaHistorial} options={{ title: 'Historial de Turnos' }} />
+          <Stack.Screen
+            name="Inventario"
+            component={PantallaInventario}
+            options={{ title: 'Inventario' }}
+          />
+          <Stack.Screen
+            name="Venta"
+            component={PantallaVenta}
+            options={{ title: 'Nueva Venta' }}
+          />
+          <Stack.Screen
+            name="Entrada"
+            component={PantallaEntrada}
+            options={{ title: 'Entrada de Mercancía' }}
+          />
+          <Stack.Screen
+            name="CierreTurno"
+            component={PantallaCierreTurno}
+            options={{ title: 'Cierre de Turno' }}
+          />
+          <Stack.Screen
+            name="UltimasVentas"
+            component={PantallaUltimasVentas}
+            options={{ title: 'Últimas Ventas' }}
+          />
+          <Stack.Screen
+            name="Historial"
+            component={PantallaHistorial}
+            options={{ title: 'Historial de Turnos' }}
+          />
           <Stack.Screen
             name="DetalleTurno"
             component={PantallaDetalleTurno}
@@ -78,13 +109,19 @@ export default function App() {
               if (fechaCierre) {
                 const fecha = new Date(fechaCierre);
                 const dia = fecha.getDate();
-                const mes = fecha.toLocaleString('es-CU', { month: 'short' }).replace('.', '');
+                const mes = fecha
+                  .toLocaleString('es-CU', { month: 'short' })
+                  .replace('.', '');
                 titulo = `Turno · ${dia} ${mes}`;
               }
               return { title: titulo };
             }}
           />
-          <Stack.Screen name="SalidaFamiliar" component={PantallaSalidaFamiliar} options={{ title: 'Salida Familiar' }} />
+          <Stack.Screen
+            name="SalidaFamiliar"
+            component={PantallaSalidaFamiliar}
+            options={{ title: 'Salida Familiar' }}
+          />
           <Stack.Screen
             name="Despachos"
             component={PantallaDespachos}
@@ -98,7 +135,21 @@ export default function App() {
           <Stack.Screen
             name="ProductosDespacho"
             component={PantallaProductosDespacho}
-            options={({ route }) => ({ title: `Catálogo · ${route.params.despachoNombre}` })}
+            options={({ route }) => ({
+              title: `Catálogo · ${route.params.despachoNombre}`,
+            })}
+          />
+
+          {/* ── Pedidos ── */}
+          <Stack.Screen
+            name="Pedidos"
+            component={PantallaPedidos}
+            options={{ title: 'Pedidos' }}
+          />
+          <Stack.Screen
+            name="DetallePedido"
+            component={PantallaDetallePedido}
+            options={({ route }) => ({ title: route.params.pedidoNombre })}
           />
         </Stack.Navigator>
       </NavigationContainer>

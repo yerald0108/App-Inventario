@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { inicializarTablaDespachos } from './despachos';
+import { inicializarTablaPedidos } from './pedidos';
 
 // Abrir (o crear) la base de datos local
 const db = SQLite.openDatabaseSync('micaja.db');
@@ -39,6 +40,9 @@ export async function inicializarDB(): Promise<void> {
 
   // 3. Tablas de despachos externos
   await inicializarTablaDespachos();
+
+  // 4. Tablas de pedidos (nuevo módulo)
+  await inicializarTablaPedidos();
 }
 
 async function aplicarMigraciones() {
