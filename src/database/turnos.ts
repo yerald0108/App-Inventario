@@ -1,4 +1,5 @@
 import db from './database';
+import { sumaSegura } from '../utils/formatters';
 import { Turno } from '../types';
 
 // Obtener el turno actualmente abierto
@@ -118,16 +119,28 @@ export async function cerrarTurno(
   efectivoReal: number
 ): Promise<void> {
   const fechaCierre = new Date().toISOString();
-  await db.runAsync(
-    `UPDATE turnos SET
-      cerrado = 1,
-      fecha_cierre = ?,
-      total_esperado_efectivo = ?,
-      total_esperado_transferencia = ?,
-      efectivo_real = ?
-     WHERE id = ?`,
-    [fechaCierre, totalEfectivo, totalTransferencia, efectivoReal, turnoId]
-  );
+
+  await db.withTransactionAsync(async () => {
+    // 1. Cancelar los pedidos abiertos que pertenecen a este turno
+    await db.runAsync(
+      `UPDATE pedidos
+       SET estado = 'cancelado', fecha_cierre = ?
+       WHERE turno_id = ? AND estado = 'abierto'`,
+      [fechaCierre, turnoId]
+    );
+
+    // 2. Cerrar el turno
+    await db.runAsync(
+      `UPDATE turnos SET
+        cerrado = 1,
+        fecha_cierre = ?,
+        total_esperado_efectivo = ?,
+        total_esperado_transferencia = ?,
+        efectivo_real = ?
+       WHERE id = ?`,
+      [fechaCierre, totalEfectivo, totalTransferencia, efectivoReal, turnoId]
+    );
+  });
 }
 
 // Obtener todos los turnos cerrados ordenados por fecha (más reciente primero)
@@ -163,7 +176,7 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
     cantidad: number;
     precio_aplicado: number;
   }>(
-    `SELECT 
+    `SELECT
       m.venta_id,
       m.fecha_hora,
       m.metodo_pago,
@@ -198,12 +211,17 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
       });
     }
     const venta = mapaVentas.get(mov.venta_id)!;
-    venta.total += mov.total ?? 0;
     venta.items.push({
       nombre_producto: mov.nombre_producto,
       cantidad: mov.cantidad,
       precio_aplicado: mov.precio_aplicado,
     });
+  }
+
+  // Recalcular totales desde los items (igual que cancelaciones.ts)
+  // NO confiar en la columna `total` de BD, puede contener valores corruptos.
+  for (const venta of mapaVentas.values()) {
+    venta.total = sumaSegura(venta.items.map(i => i.precio_aplicado * i.cantidad));
   }
 
   return Array.from(mapaVentas.values());
