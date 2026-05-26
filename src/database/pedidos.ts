@@ -122,12 +122,36 @@ export async function agregarItemPedido(
   producto: Producto,
   cantidad: number
 ): Promise<void> {
-  await db.withTransactionAsync(async () => {
-    // Verificar si ya existe ese producto en el pedido
+  try {
+    // ── Validación de stock en tiempo real ────────────────────────────────
+    // Leer la existencia actual directamente de la BD (no confiar en el
+    // objeto producto que puede estar desactualizado en memoria)
+    const stockActual = await db.getFirstAsync<{ existencia: number }>(
+      'SELECT existencia FROM productos WHERE id = ?',
+      [producto.id]
+    );
+
+    if (!stockActual) {
+      throw new Error(`El producto "${producto.nombre}" ya no existe en el inventario.`);
+    }
+
+    // Calcular cuántas unidades ya están en este pedido
     const existente = await db.getFirstAsync<PedidoItem>(
       'SELECT * FROM pedidos_items WHERE pedido_id = ? AND producto_id = ?',
       [pedidoId, producto.id]
     );
+
+    const cantidadYaEnPedido = existente ? existente.cantidad : 0;
+    const totalSolicitado = cantidadYaEnPedido + cantidad;
+
+    if (totalSolicitado > stockActual.existencia) {
+      const disponible = stockActual.existencia - cantidadYaEnPedido;
+      throw new Error(
+        `Stock insuficiente para "${producto.nombre}".\n` +
+        `En pedido: ${cantidadYaEnPedido} · Intentas agregar: ${cantidad} · Disponible: ${Math.max(0, disponible)}`
+      );
+    }
+    // ── Fin validación ────────────────────────────────────────────────────
 
     if (existente) {
       const nuevaCantidad = existente.cantidad + cantidad;
@@ -146,7 +170,10 @@ export async function agregarItemPedido(
     }
 
     await recalcularTotalPedidoInterno(pedidoId);
-  });
+  } catch (error) {
+    console.error('agregarItemPedido: error', error);
+    throw error;
+  }
 }
 
 async function recalcularTotalPedidoInterno(pedidoId: number): Promise<void> {

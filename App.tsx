@@ -1,15 +1,12 @@
-import { useEffect } from 'react';
-import { Platform, UIManager } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, UIManager, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { inicializarDB } from './src/database/database';
 import { toastConfig } from './src/components/ToastConfig';
-
-// Importar el nuevo ProductosProvider
-import { ProductosProvider } from './src/context/ProductosContext';
 
 import PantallaInicio from './src/screens/PantallaInicio';
 import PantallaInventario from './src/screens/PantallaInventario';
@@ -23,8 +20,6 @@ import PantallaSalidaFamiliar from './src/screens/PantallaSalidaFamiliar';
 import PantallaDespachos from './src/screens/PantallaDespachos';
 import PantallaVentaExterna from './src/screens/PantallaVentaExterna';
 import PantallaProductosDespacho from './src/screens/PantallaProductosDespacho';
-
-// ── Nuevas pantallas de pedidos ──
 import PantallaPedidos from './src/screens/PantallaPedidos';
 import PantallaDetallePedido from './src/screens/PantallaDetallePedido';
 
@@ -41,26 +36,71 @@ export type RootStackParamList = {
   Despachos: undefined;
   VentaExterna: { despachoId: number; despachoNombre: string; despachoColor: string };
   ProductosDespacho: { despachoId: number; despachoNombre: string };
-  // ── Nuevas rutas ──
   Pedidos: undefined;
   DetallePedido: { pedidoId: number; pedidoNombre: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// ── Tipos de estado de la DB ──────────────────────────────────────────────────
+type EstadoDB = 'cargando' | 'listo' | 'error';
+
 export default function App() {
+  const [estadoDB, setEstadoDB] = useState<EstadoDB>('cargando');
+
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
-    inicializarDB().catch(console.error);
+    arrancarDB();
   }, []);
 
+  async function arrancarDB() {
+    try {
+      await inicializarDB();
+      setEstadoDB('listo');
+    } catch (error) {
+      console.error('App: error crítico al inicializar DB', error);
+      setEstadoDB('error');
+    }
+  }
+
+  // ── Pantalla de carga mientras la DB arranca ──────────────────────────────
+  if (estadoDB === 'cargando') {
+    return (
+      <SafeAreaProvider>
+        <View style={estilosApp.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+          <Text style={estilosApp.textoCargando}>Iniciando MiCaja...</Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
+  // ── Pantalla de error crítico ─────────────────────────────────────────────
+  if (estadoDB === 'error') {
+    return (
+      <SafeAreaProvider>
+        <View style={estilosApp.centrado}>
+          <Text style={estilosApp.iconoError}>⚠️</Text>
+          <Text style={estilosApp.tituloError}>Error al iniciar la app</Text>
+          <Text style={estilosApp.descripcionError}>
+            No se pudo preparar la base de datos.{'\n'}
+            Cierra la app completamente y vuelve a abrirla.{'\n'}
+            Si el problema persiste, contacta al soporte.
+          </Text>
+          <TouchableOpacity style={estilosApp.botonReintentar} onPress={arrancarDB}>
+            <Text style={estilosApp.textoBotonReintentar}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
+  // ── App normal ────────────────────────────────────────────────────────────
   return (
-    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      {/* Envolver la aplicación con ProductosProvider */}
-      <ProductosProvider>
-        <NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer>
         <StatusBar style="light" />
         <Stack.Navigator
           initialRouteName="Inicio"
@@ -144,8 +184,6 @@ export default function App() {
               title: `Catálogo · ${route.params.despachoNombre}`,
             })}
           />
-
-          {/* ── Pedidos ── */}
           <Stack.Screen
             name="Pedidos"
             component={PantallaPedidos}
@@ -158,8 +196,52 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
-        <Toast config={toastConfig} />
-      </ProductosProvider>
+      <Toast config={toastConfig} />
     </SafeAreaProvider>
   );
 }
+
+const estilosApp = StyleSheet.create({
+  centrado: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0f4f8',
+    padding: 32,
+  },
+  textoCargando: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#4a5568',
+    fontWeight: '600',
+  },
+  iconoError: {
+    fontSize: 56,
+    marginBottom: 16,
+  },
+  tituloError: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  descripcionError: {
+    fontSize: 15,
+    color: '#718096',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  botonReintentar: {
+    backgroundColor: '#2b6cb0',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  textoBotonReintentar: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});

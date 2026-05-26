@@ -7,37 +7,43 @@ const db = SQLite.openDatabaseSync('micaja.db');
 
 // Inicializar tablas y esquema base
 export async function inicializarDB(): Promise<void> {
-  // 1. Tablas core siempre presentes
-  await db.execAsync(`
-    PRAGMA journal_mode = WAL;
+  try {
+    // 1. Tablas core siempre presentes
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
 
-    CREATE TABLE IF NOT EXISTS meta (
-      clave TEXT PRIMARY KEY,
-      valor TEXT
-    );
+      CREATE TABLE IF NOT EXISTS meta (
+        clave TEXT PRIMARY KEY,
+        valor TEXT
+      );
 
-    CREATE TABLE IF NOT EXISTS productos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre TEXT NOT NULL,
-      precio REAL NOT NULL,
-      existencia REAL NOT NULL,
-      alerta_minima REAL DEFAULT 5
-    );
+      CREATE TABLE IF NOT EXISTS productos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        precio REAL NOT NULL,
+        existencia REAL NOT NULL,
+        alerta_minima REAL DEFAULT 5
+      );
 
-    CREATE TABLE IF NOT EXISTS turnos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      fecha_inicio TEXT NOT NULL,
-      fecha_cierre TEXT,
-      total_esperado_efectivo REAL,
-      total_esperado_transferencia REAL,
-      efectivo_real REAL,
-      cerrado INTEGER DEFAULT 0
-    );
-  `);
+      CREATE TABLE IF NOT EXISTS turnos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fecha_inicio TEXT NOT NULL,
+        fecha_cierre TEXT,
+        total_esperado_efectivo REAL,
+        total_esperado_transferencia REAL,
+        efectivo_real REAL,
+        cerrado INTEGER DEFAULT 0
+      );
+    `);
 
-  // 2. Tabla movimientos (puede requerir migración)
-  await aplicarMigraciones();
+    // 2. Migraciones
+    await aplicarMigraciones();
 
+  } catch (error) {
+    console.error('inicializarDB: fallo crítico al inicializar la base de datos', error);
+    // Re-lanzar para que App.tsx lo capture y muestre pantalla de error
+    throw error;
+  }
 }
 
 async function aplicarMigraciones() {
@@ -50,10 +56,47 @@ async function aplicarMigraciones() {
     // Migración de tabla movimientos (ya existía) ──
     if (version < 1) {
       console.log('Ejecutando migración v1: tabla movimientos...');
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS movimientos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tipo TEXT NOT NULL CHECK(tipo IN ('venta', 'entrada', 'cancelacion', 'salida_familiar')),
+          fecha_hora TEXT NOT NULL,
+          producto_id INTEGER NOT NULL,
+          cantidad REAL NOT NULL,
+          precio_aplicado REAL,
+          total REAL,
+          metodo_pago TEXT CHECK(metodo_pago IN ('efectivo', 'transferencia')),
+          turno_id INTEGER,
+          venta_id TEXT,
+          FOREIGN KEY (producto_id) REFERENCES productos(id),
+          FOREIGN KEY (turno_id) REFERENCES turnos(id)
+        );
+      `);
       await db.runAsync(
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '1')"
       );
       console.log('Migración v1 completada.');
+    }
+
+    // ── Rescate: dispositivos que ya tenían v1 sin la tabla ──────────────
+    // IF NOT EXISTS hace esto seguro en cualquier arranque
+    if (version >= 1) {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS movimientos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tipo TEXT NOT NULL CHECK(tipo IN ('venta', 'entrada', 'cancelacion', 'salida_familiar')),
+          fecha_hora TEXT NOT NULL,
+          producto_id INTEGER NOT NULL,
+          cantidad REAL NOT NULL,
+          precio_aplicado REAL,
+          total REAL,
+          metodo_pago TEXT CHECK(metodo_pago IN ('efectivo', 'transferencia')),
+          turno_id INTEGER,
+          venta_id TEXT,
+          FOREIGN KEY (producto_id) REFERENCES productos(id),
+          FOREIGN KEY (turno_id) REFERENCES turnos(id)
+        );
+      `);
     }
 
     // Tablas de despachos externos ──

@@ -273,13 +273,48 @@ export default function PantallaCierreTurno({ navigation }: Props) {
               </View>
             ))}
 
-            {/* Total externo */}
+            {/* Total a depositar por despacho */}
             <View style={[estilos.filaResumen, estilos.filaTotal, { marginTop: 12 }]}>
               <Text style={estilos.etiquetaTotal}>Total a depositar:</Text>
               <Text style={[estilos.valorTotal, { color: '#319795' }]}>
                 {formatCUP(totalExterno)} CUP
               </Text>
             </View>
+          </View>
+        )}
+
+        {/* ── Gran total del día ── */}
+        {resumenDespachos.length > 0 && (
+          <View style={estilos.seccion}>
+            <View style={estilos.cabeceraSeccion}>
+              <Ionicons name="calculator-outline" size={20} color="#1a1a2e" />
+              <Text style={estilos.tituloSeccion}>Gran total del día</Text>
+            </View>
+
+            <View style={estilos.filaResumen}>
+              <Text style={estilos.etiquetaResumen}>Ventas propias:</Text>
+              <Text style={estilos.valorResumen}>{formatCUP(totalGeneral)} CUP</Text>
+            </View>
+            <View style={estilos.filaResumen}>
+              <Text style={estilos.etiquetaResumen}>Ventas de despachos:</Text>
+              <Text style={estilos.valorResumen}>{formatCUP(totalExterno)} CUP</Text>
+            </View>
+
+            {/* Divisor */}
+            <View style={{ height: 1, backgroundColor: '#edf2f7', marginVertical: 8 }} />
+
+            <View style={estilos.filaResumen}>
+              <Text style={[estilos.etiquetaTotal, { fontSize: 16 }]}>
+                Total movido hoy:
+              </Text>
+              <Text style={[estilos.valorTotal, { fontSize: 20, color: '#1a1a2e' }]}>
+                {formatCUP(totalGeneral + totalExterno)} CUP
+              </Text>
+            </View>
+
+            <Text style={estilosLocal.notaGranTotal}>
+              * Las ventas de despachos no son tuyas. Tu dinero real es {formatCUP(totalGeneral)} CUP.
+            </Text>
           </View>
         )}
 
@@ -535,4 +570,15 @@ const estilos = StyleSheet.create({
   },
   botonDeshabilitado: { backgroundColor: '#a0aec0' },
   textoBotonCerrar: { color: '#ffffff', fontSize: 18, fontWeight: 'bold' },
+});
+
+const estilosLocal = StyleSheet.create({
+  notaGranTotal: {
+    fontSize: 12,
+    color: '#a0aec0',
+    fontStyle: 'italic',
+    marginTop: 10,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
 });
