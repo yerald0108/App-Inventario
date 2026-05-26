@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, LayoutAnimation
@@ -15,11 +15,14 @@ import Skeleton, { SkeletonVenta } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import { formatCUP } from '../utils/formatters';
 
+type FlatListType = FlatList<VentaAgrupada>;
+
 export default function PantallaUltimasVentas() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
   const [cargando, setCargando] = useState(true);
   const [turnoId, setTurnoId] = useState<number | null>(null);
+  const flatListRef = useRef<FlatListType>(null);
 
   // Añadir botón en el header para ir a Venta
   useEffect(() => {
@@ -79,8 +82,25 @@ export default function PantallaUltimasVentas() {
 
   async function ejecutarCancelacion(ventaId: string) {
     try {
+      // Guardar el índice actual antes de recargar
+      const indiceActual = ventas.findIndex(v => v.venta_id === ventaId);
+      
       await cancelarVenta(ventaId);
       await cargarVentas();
+      
+      // Si la venta no era la primera, hacer scroll al elemento anterior
+      // para que el usuario no pierda el contexto
+      if (indiceActual > 0 && flatListRef.current) {
+        // Pequeño delay para que el FlatList haya renderizado la nueva lista
+        setTimeout(() => {
+          flatListRef.current?.scrollToIndex({
+            index: Math.max(0, indiceActual - 1),
+            animated: true,
+            viewPosition: 0,
+          });
+        }, 150);
+      }
+      
       Alert.alert('✅ Venta anulada', 'Los productos fueron devueltos al inventario.');
     } catch (error) {
       Alert.alert('Error', 'No se pudo anular la venta.');
@@ -164,8 +184,10 @@ export default function PantallaUltimasVentas() {
         renderSkeleton()
       ) : (
         <FlatList
+          ref={flatListRef}
           data={ventas}
           keyExtractor={(item) => item.venta_id}
+          onScrollToIndexFailed={() => {}}
           renderItem={({ item }) => (
             <View style={estilos.tarjeta}>
               {/* Encabezado de la venta */}

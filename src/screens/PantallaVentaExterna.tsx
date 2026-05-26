@@ -2,8 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, FlatList, StyleSheet, Alert,
   TextInput, TouchableOpacity, LayoutAnimation,
-  Modal, ScrollView, KeyboardAvoidingView, Platform,
-  Animated, Pressable, ActivityIndicator
+  ActivityIndicator
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +20,7 @@ import {
 } from '../database/despachos';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import { formatCUP } from '../utils/formatters';
+import ModalCobro from '../components/ModalCobro';
 import EstadoVacio from '../components/EstadoVacio';
 
 type Props = {
@@ -49,10 +49,6 @@ export default function PantallaVentaExterna({ route }: Props) {
 
   // Modal de cobro
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
-  const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
-  const [montoRecibido, setMontoRecibido] = useState('');
-  const [cambio, setCambio] = useState(0);
-  const slideAnim = useRef(new Animated.Value(600)).current;
 
   // Historial
   const [ventas, setVentas] = useState<VentaExternaAgrupada[]>([]);
@@ -79,16 +75,6 @@ export default function PantallaVentaExterna({ route }: Props) {
     () => itemsCesta.reduce((acc, i) => acc + i.precio * i.cantidad, 0),
     [itemsCesta]
   );
-
-  // Efecto del modal de cobro: calcular cambio
-  useEffect(() => {
-    if (metodoPago === 'efectivo') {
-      const recibido = parseFloat(montoRecibido);
-      setCambio(!isNaN(recibido) && recibido >= totalCesta ? recibido - totalCesta : 0);
-    } else {
-      setCambio(0);
-    }
-  }, [montoRecibido, metodoPago, totalCesta]);
 
   useFocusEffect(
     useCallback(() => {
@@ -141,61 +127,7 @@ export default function PantallaVentaExterna({ route }: Props) {
 
   function abrirCobro() {
     if (itemsCesta.length === 0) return;
-    setMontoRecibido('');
-    setMetodoPago('efectivo');
     setModalCobroVisible(true);
-    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
-  }
-
-  function cerrarCobro() {
-    setModalCobroVisible(false);
-    Animated.timing(slideAnim, { toValue: 600, duration: 200, useNativeDriver: true }).start();
-  }
-
-  const botonCobroDeshabilitado =
-    procesando ||
-    (metodoPago === 'efectivo' && (montoRecibido === '' || parseFloat(montoRecibido) < totalCesta));
-
-  async function handleConfirmarVenta() {
-    if (procesandoRef.current) return;
-    procesandoRef.current = true;
-    setProcesando(true);
-
-    try {
-      const turno = await obtenerTurnoAbierto();
-      if (!turno) {
-        Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de operar.');
-        return;
-      }
-
-      await registrarVentaExterna(
-        itemsCesta.map(i => ({ productoId: i.productoId, nombre: i.nombre, precio: i.precio, cantidad: i.cantidad })),
-        metodoPago,
-        despachoId,
-        turno.id
-      );
-
-      cerrarCobro();
-      setCesta(new Map());
-
-      const textoCambio = metodoPago === 'efectivo' && cambio > 0
-        ? ` · Vuelto: ${cambio.toFixed(2)} CUP`
-        : '';
-
-      Toast.show({
-        type: 'success',
-        text1: `Venta externa · ${metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia'}`,
-        text2: `${despachoNombre} — ${formatCUP(totalCesta)} CUP${textoCambio}`,
-        position: 'top',
-        visibilityTime: 4000,
-      });
-    } catch (error) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo registrar la venta.', position: 'top' });
-      console.error(error);
-    } finally {
-      procesandoRef.current = false;
-      setProcesando(false);
-    }
   }
 
   async function handleCancelarVenta(ventaId: string) {
@@ -406,107 +338,65 @@ export default function PantallaVentaExterna({ route }: Props) {
         />
       )}
 
-      {/* Modal de cobro */}
-      <Modal visible={modalCobroVisible} transparent animationType="fade">
-        <KeyboardAvoidingView
-          style={estilos.overlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={cerrarCobro} />
-          <Animated.View style={[estilos.modalCobro, { transform: [{ translateY: slideAnim }] }]}>
-            <View style={estilos.barraArrastre} />
-            <ScrollView showsVerticalScrollIndicator={false}>
-
-              {/* Total */}
-              <View style={[estilos.seccionTotal, { borderColor: despachoColor + '40' }]}>
-                <Text style={estilos.etiquetaTotal}>TOTAL A COBRAR</Text>
-                <Text style={[estilos.valorTotal, { color: despachoColor }]}>
-                  {formatCUP(totalCesta)} CUP
-                </Text>
-                <View style={[estilos.badgeExterno, { backgroundColor: despachoColor + '18' }]}>
-                  <Ionicons name="storefront-outline" size={12} color={despachoColor} />
-                  <Text style={[estilos.textoExterno, { color: despachoColor }]}>
-                    {despachoNombre} — dinero NO entra a tu caja
-                  </Text>
-                </View>
-              </View>
-
-              {/* Método de pago */}
-              <Text style={estilos.subtituloCobro}>Método de Pago</Text>
-              <View style={estilos.gridMetodos}>
-                {(['efectivo', 'transferencia'] as const).map((metodo) => (
-                  <TouchableOpacity
-                    key={metodo}
-                    style={[
-                      estilos.botonMetodo,
-                      metodoPago === metodo && [estilos.botonMetodoActivo, { borderColor: despachoColor, backgroundColor: despachoColor }]
-                    ]}
-                    onPress={() => setMetodoPago(metodo)}
-                  >
-                    <Ionicons
-                      name={metodo === 'efectivo' ? 'cash' : 'card'}
-                      size={28}
-                      color={metodoPago === metodo ? '#ffffff' : '#718096'}
-                    />
-                    <Text style={[estilos.textoMetodoPago, metodoPago === metodo && { color: '#ffffff' }]}>
-                      {metodo === 'efectivo' ? 'Efectivo' : 'Transferencia'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* Monto recibido (efectivo) */}
-              {metodoPago === 'efectivo' && (
-                <View style={estilos.seccionEfectivo}>
-                  <Text style={estilos.etiquetaInput}>Monto recibido</Text>
-                  <View style={estilos.contenedorInputMonto}>
-                    <TextInput
-                      style={estilos.inputMonto}
-                      placeholder="0.00"
-                      keyboardType="numeric"
-                      value={montoRecibido}
-                      onChangeText={setMontoRecibido}
-                      autoFocus
-                    />
-                    <Text style={estilos.sufijoMonto}>CUP</Text>
-                  </View>
-                  {cambio > 0 && (
-                    <View style={estilos.contenedorCambio}>
-                      <Text style={estilos.etiquetaCambio}>VUELTO</Text>
-                      <Text style={estilos.valorCambio}>{formatCUP(cambio)} CUP</Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Resumen productos */}
-              <Text style={estilos.subtituloCobro}>Productos ({itemsCesta.length})</Text>
-              {itemsCesta.map((item, i) => (
-                <View key={i} style={estilos.filaProductoCobro}>
-                  <Text style={estilos.nombreProductoCobro}>{item.cantidad}x {item.nombre}</Text>
-                  <Text style={estilos.precioProductoCobro}>{formatCUP(item.precio * item.cantidad)} CUP</Text>
-                </View>
-              ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[
-                estilos.botonConfirmarCobro,
-                { backgroundColor: botonCobroDeshabilitado ? '#a0aec0' : despachoColor }
-              ]}
-              onPress={handleConfirmarVenta}
-              disabled={botonCobroDeshabilitado}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                {procesando && <ActivityIndicator size="small" color="#ffffff" />}
-                <Text style={estilos.textoBotonConfirmarCobro}>
-                  {procesando ? 'PROCESANDO...' : 'CONFIRMAR COBRO'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* Modal de cobro usando el componente reutilizable */}
+      <ModalCobro
+        visible={modalCobroVisible}
+        items={itemsCesta.map(i => ({
+          producto: {
+            id: i.productoId ?? 0,
+            nombre: i.nombre,
+            precio: i.precio,
+            existencia: 999,
+            alerta_minima: 0,
+          },
+          cantidad: i.cantidad,
+        }))}
+        metodoPagoInicial="efectivo"
+        onConfirmar={async (metodo, monto, cambioCalculado) => {
+          if (procesandoRef.current) return;
+          procesandoRef.current = true;
+          setProcesando(true);
+          try {
+            const turno = await obtenerTurnoAbierto();
+            if (!turno) {
+              Alert.alert('Error', 'No hay un turno abierto.');
+              return;
+            }
+            await registrarVentaExterna(
+              itemsCesta.map(i => ({
+                productoId: i.productoId,
+                nombre: i.nombre,
+                precio: i.precio,
+                cantidad: i.cantidad,
+              })),
+              metodo,
+              despachoId,
+              turno.id
+            );
+            setModalCobroVisible(false);
+            setCesta(new Map());
+            const textoCambio =
+              metodo === 'efectivo' && cambioCalculado > 0
+                ? ` · Vuelto: ${cambioCalculado.toFixed(2)} CUP`
+                : '';
+            Toast.show({
+              type: 'success',
+              text1: `Venta externa · ${metodo === 'efectivo' ? 'Efectivo' : 'Transferencia'}`,
+              text2: `${despachoNombre} — ${formatCUP(totalCesta)} CUP${textoCambio}`,
+              position: 'top',
+              visibilityTime: 4000,
+            });
+          } catch (error) {
+            Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo registrar la venta.', position: 'top' });
+            console.error(error);
+          } finally {
+            procesandoRef.current = false;
+            setProcesando(false);
+          }
+        }}
+        onCancelar={() => setModalCobroVisible(false)}
+        procesando={procesando}
+      />
     </SafeAreaView>
   );
 }
@@ -595,60 +485,4 @@ const estilos = StyleSheet.create({
     padding: 10, alignItems: 'center', backgroundColor: '#fff5f5',
   },
   textoBotonAnular: { color: '#e53e3e', fontSize: 13, fontWeight: 'bold' },
-
-  // Modal cobro
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCobro: {
-    backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    paddingTop: 12, maxHeight: '92%', elevation: 20,
-  },
-  barraArrastre: {
-    width: 40, height: 5, backgroundColor: '#e2e8f0',
-    borderRadius: 3, alignSelf: 'center', marginBottom: 16,
-  },
-  seccionTotal: {
-    borderWidth: 1, borderRadius: 16, padding: 18,
-    alignItems: 'center', marginBottom: 20,
-  },
-  etiquetaTotal: { fontSize: 11, color: '#718096', fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
-  valorTotal: { fontSize: 34, fontWeight: '900', marginBottom: 8 },
-  badgeExterno: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
-  },
-  textoExterno: { fontSize: 12, fontWeight: '600' },
-  subtituloCobro: { fontSize: 14, fontWeight: 'bold', color: '#718096', marginBottom: 10 },
-  gridMetodos: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  botonMetodo: {
-    flex: 1, height: 88, borderRadius: 14, borderWidth: 2,
-    borderColor: '#e2e8f0', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#ffffff',
-  },
-  botonMetodoActivo: {},
-  textoMetodoPago: { fontSize: 13, fontWeight: 'bold', color: '#718096', marginTop: 6 },
-  seccionEfectivo: { marginBottom: 18 },
-  etiquetaInput: { fontSize: 13, color: '#718096', marginBottom: 6 },
-  contenedorInputMonto: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 2,
-    borderColor: '#cbd5e0', borderRadius: 12, backgroundColor: '#f7fafc', paddingRight: 14,
-  },
-  inputMonto: { flex: 1, padding: 14, fontSize: 22, fontWeight: 'bold', color: '#1a1a2e' },
-  sufijoMonto: { fontSize: 14, fontWeight: 'bold', color: '#a0aec0' },
-  contenedorCambio: {
-    marginTop: 12, backgroundColor: '#f0fff4', padding: 14,
-    borderRadius: 10, borderWidth: 1, borderColor: '#c6f6d5', alignItems: 'center',
-  },
-  etiquetaCambio: { fontSize: 11, color: '#2f855a', fontWeight: 'bold', marginBottom: 2 },
-  valorCambio: { fontSize: 22, fontWeight: '900', color: '#22543d' },
-  filaProductoCobro: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    marginBottom: 6, paddingBottom: 6, borderBottomWidth: 1, borderBottomColor: '#f0f4f8',
-  },
-  nombreProductoCobro: { fontSize: 13, color: '#718096', flex: 1 },
-  precioProductoCobro: { fontSize: 13, fontWeight: '600', color: '#1a1a2e' },
-  botonConfirmarCobro: {
-    padding: 18, borderRadius: 16, alignItems: 'center', marginTop: 20,
-  },
-  textoBotonConfirmarCobro: { color: '#ffffff', fontSize: 17, fontWeight: 'bold', letterSpacing: 1 },
 });

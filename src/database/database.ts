@@ -38,11 +38,6 @@ export async function inicializarDB(): Promise<void> {
   // 2. Tabla movimientos (puede requerir migración)
   await aplicarMigraciones();
 
-  // 3. Tablas de despachos externos
-  await inicializarTablaDespachos();
-
-  // 4. Tablas de pedidos (nuevo módulo)
-  await inicializarTablaPedidos();
 }
 
 async function aplicarMigraciones() {
@@ -52,57 +47,95 @@ async function aplicarMigraciones() {
     );
     const version = versionRow ? parseInt(versionRow.valor) : 0;
 
+    // Migración de tabla movimientos (ya existía) ──
     if (version < 1) {
-      console.log('Ejecutando migración v1: Crear tabla movimientos...');
-
-      const tableInfo = await db.getAllAsync<{ sql: string }>(
-        "SELECT sql FROM sqlite_master WHERE type='table' AND name='movimientos'"
-      );
-
-      if (tableInfo.length > 0 && !tableInfo[0].sql.includes('salida_familiar')) {
-        await db.withTransactionAsync(async () => {
-          await db.execAsync(`
-            CREATE TABLE movimientos_new (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              tipo TEXT NOT NULL CHECK(tipo IN ('venta', 'entrada', 'cancelacion', 'salida_familiar')),
-              fecha_hora TEXT NOT NULL,
-              producto_id INTEGER NOT NULL,
-              cantidad REAL NOT NULL,
-              precio_aplicado REAL,
-              total REAL,
-              metodo_pago TEXT CHECK(metodo_pago IN ('efectivo', 'transferencia')),
-              turno_id INTEGER,
-              venta_id TEXT,
-              FOREIGN KEY (producto_id) REFERENCES productos(id)
-            );
-            INSERT INTO movimientos_new SELECT * FROM movimientos;
-            DROP TABLE movimientos;
-            ALTER TABLE movimientos_new RENAME TO movimientos;
-          `);
-        });
-      } else if (tableInfo.length === 0) {
-        await db.execAsync(`
-          CREATE TABLE movimientos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tipo TEXT NOT NULL CHECK(tipo IN ('venta', 'entrada', 'cancelacion', 'salida_familiar')),
-            fecha_hora TEXT NOT NULL,
-            producto_id INTEGER NOT NULL,
-            cantidad REAL NOT NULL,
-            precio_aplicado REAL,
-            total REAL,
-            metodo_pago TEXT CHECK(metodo_pago IN ('efectivo', 'transferencia')),
-            turno_id INTEGER,
-            venta_id TEXT,
-            FOREIGN KEY (producto_id) REFERENCES productos(id)
-          );
-        `);
-      }
-
+      console.log('Ejecutando migración v1: tabla movimientos...');
       await db.runAsync(
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '1')"
       );
       console.log('Migración v1 completada.');
     }
+
+    // Tablas de despachos externos ──
+    if (version < 2) {
+      console.log('Ejecutando migración v2: tablas de despachos...');
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS despachos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL,
+          descripcion TEXT,
+          color TEXT NOT NULL DEFAULT '#805ad5',
+          activo INTEGER DEFAULT 1,
+          fecha_creacion TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS productos_despacho (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          despacho_id INTEGER NOT NULL,
+          nombre TEXT NOT NULL,
+          precio REAL NOT NULL,
+          activo INTEGER DEFAULT 1,
+          FOREIGN KEY (despacho_id) REFERENCES despachos(id)
+        );
+        CREATE TABLE IF NOT EXISTS ventas_externas (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          despacho_id INTEGER NOT NULL,
+          turno_id INTEGER NOT NULL,
+          fecha_hora TEXT NOT NULL,
+          metodo_pago TEXT NOT NULL CHECK(metodo_pago IN ('efectivo', 'transferencia')),
+          total REAL NOT NULL,
+          venta_id TEXT NOT NULL,
+          FOREIGN KEY (despacho_id) REFERENCES despachos(id),
+          FOREIGN KEY (turno_id) REFERENCES turnos(id)
+        );
+        CREATE TABLE IF NOT EXISTS ventas_externas_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          venta_externa_id INTEGER NOT NULL,
+          producto_despacho_id INTEGER,
+          nombre_producto TEXT NOT NULL,
+          precio_aplicado REAL NOT NULL,
+          cantidad REAL NOT NULL,
+          FOREIGN KEY (venta_externa_id) REFERENCES ventas_externas(id)
+        );
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '2')"
+      );
+      console.log('Migración v2 completada.');
+    }
+
+    // Tablas de pedidos ──
+    if (version < 3) {
+      console.log('Ejecutando migración v3: tablas de pedidos...');
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS pedidos (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT NOT NULL,
+          fecha_apertura TEXT NOT NULL,
+          fecha_cierre TEXT,
+          estado TEXT NOT NULL DEFAULT 'abierto'
+            CHECK(estado IN ('abierto', 'cerrado', 'cancelado')),
+          turno_id INTEGER NOT NULL,
+          total REAL NOT NULL DEFAULT 0,
+          FOREIGN KEY (turno_id) REFERENCES turnos(id)
+        );
+        CREATE TABLE IF NOT EXISTS pedidos_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          pedido_id INTEGER NOT NULL,
+          producto_id INTEGER NOT NULL,
+          nombre_producto TEXT NOT NULL,
+          precio_aplicado REAL NOT NULL,
+          cantidad REAL NOT NULL,
+          subtotal REAL NOT NULL,
+          FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
+          FOREIGN KEY (producto_id) REFERENCES productos(id)
+        );
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '3')"
+      );
+      console.log('Migración v3 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     await db.execAsync('DROP TABLE IF EXISTS movimientos_new;').catch(() => {});

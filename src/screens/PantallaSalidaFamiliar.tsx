@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
-  Text, TextInput, TouchableOpacity, LayoutAnimation
+  Text, TextInput
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,12 +10,12 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
-import { obtenerProductos } from '../database/productos';
 import { registrarSalidaFamiliar } from '../database/salidas_familiares';
 import { obtenerTurnoAbierto } from '../database/turnos';
+import { useProductoCesta } from '../hooks/useProductoCesta';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
-import Skeleton, { SkeletonProducto } from '../components/Skeleton';
+import { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
 // Tipo unión para los items de la lista
@@ -25,11 +25,19 @@ export default function PantallaSalidaFamiliar() {
   // Obtener navigation hook
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'SalidaFamiliar'>>();
   
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [cesta, setCesta] = useState<Map<number, number>>(new Map());
-  const [cargando, setCargando] = useState(true);
+  const {
+    productos,
+    busqueda,
+    setBusqueda,
+    cesta,
+    cargando,
+    cargarProductos,
+    productosConSeparador,
+    cambiarCantidad,
+    obtenerItemsCesta,
+    resetCesta,
+  } = useProductoCesta();
+
   const [procesando, setProcesando] = useState(false);
   const procesandoRef = useRef(false);
 
@@ -48,83 +56,13 @@ export default function PantallaSalidaFamiliar() {
     });
   }, [cesta, navigation]);
 
-  // Productos con separador entre disponibles y agotados
-  const productosConSeparador = useMemo((): ItemLista[] => {
-    if (productosFiltrados.length === 0) return [];
-
-    const disponibles = productosFiltrados.filter(p => p.existencia > 0);
-    const agotados = productosFiltrados.filter(p => p.existencia <= 0);
-
-    // Si no hay agotados, devolver solo disponibles sin separador
-    if (agotados.length === 0) return disponibles;
-
-    // Si hay agotados, insertar un item especial de separador
-    return [
-      ...disponibles,
-      { __tipo: 'separador', id: -1 },
-      ...agotados,
-    ];
-  }, [productosFiltrados]);
-
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
       cargarProductos();
-      setCesta(new Map());
-      setBusqueda('');
+      resetCesta();
     }, [])
   );
-
-  async function cargarProductos() {
-    setCargando(true);
-    try {
-      const lista = await obtenerProductos();
-      setProductos(lista);
-      setProductosFiltrados(lista);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  // Filtrar productos cuando cambia la búsqueda
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (busqueda.trim() === '') {
-      setProductosFiltrados(productos);
-    } else {
-      const termino = busqueda.toLowerCase();
-      const filtrados = productos.filter(p => 
-        p.nombre.toLowerCase().includes(termino)
-      );
-      setProductosFiltrados(filtrados);
-    }
-  }, [busqueda, productos]);
-
-  // Actualizar cantidad de un producto en la cesta
-  function cambiarCantidad(productoId: number, cantidad: number) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCesta(prev => {
-      const nueva = new Map(prev);
-      if (cantidad === 0) {
-        nueva.delete(productoId);
-      } else {
-        nueva.set(productoId, cantidad);
-      }
-      return nueva;
-    });
-  }
-
-  // Construir lista de items de la cesta
-  function obtenerItemsCesta(): ItemCesta[] {
-    const items: ItemCesta[] = [];
-    cesta.forEach((cantidad, productoId) => {
-      const producto = productos.find(p => p.id === productoId);
-      if (producto) items.push({ producto, cantidad });
-    });
-    return items;
-  }
 
   // Función centralizada de reset de estado
   function resetearEstadoProcesando() {
@@ -176,7 +114,7 @@ export default function PantallaSalidaFamiliar() {
       await registrarSalidaFamiliar(items, turno.id);
 
       // Limpiar cesta y recargar inventario
-      setCesta(new Map());
+      resetCesta();
       await cargarProductos();
 
       const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
@@ -236,7 +174,7 @@ export default function PantallaSalidaFamiliar() {
           titulo="Sin productos" 
           descripcion="Agrega productos en Inventario para registrar salidas familiares." 
         />
-      ) : productosFiltrados.length === 0 ? (
+      ) : (productosConSeparador as ItemLista[]).length === 0 ? (
         <EstadoVacio 
           icono="search-outline" 
           titulo="Sin resultados" 
@@ -244,7 +182,7 @@ export default function PantallaSalidaFamiliar() {
         />
       ) : (
         <FlatList
-          data={productosConSeparador}
+          data={productosConSeparador as ItemLista[]}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
             // Render del separador 

@@ -34,6 +34,8 @@ type Props = {
 
 type ModalActivo = 'ninguno' | 'agregarProducto' | 'cobro';
 
+type ItemListaModal = Producto | { __separador: true; id: number };
+
 export default function PantallaDetallePedido({ route, navigation }: Props) {
   const { pedidoId } = route.params;
 
@@ -49,11 +51,15 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   const [cargandoProductos, setCargandoProductos] = useState(false);
   const [busqueda, setBusqueda] = useState('');
 
-  // Filtrado derivado — nunca queda desincronizado con productos
-  const productosFiltrados = useMemo(() => {
-    if (!busqueda.trim()) return productos;
-    const t = busqueda.toLowerCase();
-    return productos.filter(p => p.nombre.toLowerCase().includes(t));
+  // Filtrado derivado con separador de agotados
+  const productosFiltrados = useMemo((): ItemListaModal[] => {
+    const base = busqueda.trim()
+      ? productos.filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+      : productos;
+    const disponibles = base.filter(p => p.existencia > 0);
+    const agotados = base.filter(p => p.existencia <= 0);
+    if (agotados.length === 0) return disponibles;
+    return [...disponibles, { __separador: true as const, id: -1 }, ...agotados];
   }, [busqueda, productos]);
 
   // Estado del modal "Cobro"
@@ -393,17 +399,12 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 
       {/* ════════════════════════════════════════
           MODAL: AGREGAR PRODUCTOS
-          — FIX 1: pointerEvents="box-none" en KeyboardAvoidingView
-          — FIX 2: height fija en modalGrande (no maxHeight)
       ════════════════════════════════════════ */}
       <Modal
         visible={modalActivo === 'agregarProducto'}
         transparent
         animationType="fade"
       >
-        {/* FIX 1: pointerEvents="box-none" permite que los toques atraviesen
-            el KeyboardAvoidingView y lleguen al contenido del modal,
-            sin que el Pressable de dismiss los intercepte */}
         <KeyboardAvoidingView
           style={estilos.overlay}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -440,7 +441,9 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
             ) : (
               <FlatList
                 data={productosFiltrados}
-                keyExtractor={(p) => p.id.toString()}
+                keyExtractor={(item) =>
+                  '__separador' in item ? 'sep' : item.id.toString()
+                }
                 style={estilos.listaProductosModal}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
@@ -453,12 +456,23 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                     </Text>
                   </View>
                 }
-                renderItem={({ item }) => (
-                  <ProductoParaAgregar
-                    producto={item}
-                    onAgregar={handleAgregarProducto}
-                  />
-                )}
+                renderItem={({ item }) => {
+                  if ('__separador' in item) {
+                    return (
+                      <View style={estilos.separadorAgotadosModal}>
+                        <View style={estilos.lineaSep} />
+                        <Text style={estilos.textoSep}>Sin existencia</Text>
+                        <View style={estilos.lineaSep} />
+                      </View>
+                    );
+                  }
+                  return (
+                    <ProductoParaAgregar
+                      producto={item as Producto}
+                      onAgregar={handleAgregarProducto}
+                    />
+                  );
+                }}
               />
             )}
 
@@ -590,6 +604,11 @@ function ProductoParaAgregar({ producto, onAgregar }: ProductoParaAgregarProps) 
             {agotado ? '· Agotado' : `· Stock: ${producto.existencia}`}
           </Text>
         </View>
+        {agotado && (
+          <Text style={estilosPA.textoAgotadoExplicacion}>
+            Sin stock — registra una entrada en Inventario para reponer.
+          </Text>
+        )}
       </View>
 
       <View style={estilosPA.lado}>
@@ -612,18 +631,17 @@ function ProductoParaAgregar({ producto, onAgregar }: ProductoParaAgregarProps) 
           </View>
         )}
 
-        <TouchableOpacity
-          style={[estilosPA.botonAgregar, agotado && estilosPA.botonAgregarDeshabilitado]}
-          onPress={() => {
-            if (!agotado) {
+        {!agotado && (
+          <TouchableOpacity
+            style={estilosPA.botonAgregar}
+            onPress={() => {
               onAgregar(producto, cantidad);
               setCantidad(1);
-            }
-          }}
-          disabled={agotado}
-        >
-          <Ionicons name={agotado ? 'close' : 'add'} size={18} color="#ffffff" />
-        </TouchableOpacity>
+            }}
+          >
+            <Ionicons name="add" size={18} color="#ffffff" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -712,8 +730,6 @@ const estilos = StyleSheet.create({
   tituloModal: { fontSize: 22, fontWeight: 'bold', color: '#1a1a2e', textAlign: 'center' },
   subtituloModal: { fontSize: 14, color: '#2b6cb0', textAlign: 'center', fontWeight: '600', marginTop: 4 },
 
-  // FIX 2: height en lugar de maxHeight para que el FlatList interno
-  // pueda calcular su dimensión y renderizar los items correctamente.
   modalGrande: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
     paddingHorizontal: 20, paddingTop: 12,
@@ -735,6 +751,27 @@ const estilos = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: '#f0f4f8', marginTop: 4,
   },
   textoBotonCerrarModal: { fontSize: 15, color: '#718096', fontWeight: '600' },
+
+  // Estilos del separador de agotados en el modal
+  separadorAgotadosModal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 4,
+    marginVertical: 8,
+    gap: 8,
+  },
+  lineaSep: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e2e8f0',
+  },
+  textoSep: {
+    fontSize: 11,
+    color: '#a0aec0',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 
   modalCobro: {
     backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
@@ -800,6 +837,12 @@ const estilosPA = StyleSheet.create({
   fila: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   precio: { fontSize: 13, color: '#2b6cb0', fontWeight: '700' },
   stock: { fontSize: 12, fontWeight: '600' },
+  textoAgotadoExplicacion: {
+    fontSize: 11,
+    color: '#e53e3e',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   lado: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   controles: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   botonCant: {

@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
-  Text, TextInput, TouchableOpacity, LayoutAnimation
+  Text, TextInput, TouchableOpacity
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,13 +10,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
-import { obtenerProductos } from '../database/productos';
 import { registrarVenta } from '../database/ventas';
 import { obtenerTurnoAbierto } from '../database/turnos';
+import { useProductoCesta } from '../hooks/useProductoCesta';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
 import ModalCobro from '../components/ModalCobro';
-import Skeleton, { SkeletonProducto } from '../components/Skeleton';
+import { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
 // Tipo unión para los items de la lista
@@ -27,11 +27,19 @@ type Props = {
 };
 
 export default function PantallaVenta({ navigation }: Props) {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [cesta, setCesta] = useState<Map<number, number>>(new Map());
-  const [cargando, setCargando] = useState(true);
+  const {
+    productos,
+    busqueda,
+    setBusqueda,
+    cesta,
+    cargando,
+    cargarProductos,
+    productosConSeparador,
+    cambiarCantidad,
+    obtenerItemsCesta,
+    resetCesta,
+  } = useProductoCesta();
+
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
   const [ultimoMetodoPago, setUltimoMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
@@ -64,102 +72,13 @@ export default function PantallaVenta({ navigation }: Props) {
     });
   }, [cesta, navigation]);
 
-  // Productos con separador entre disponibles y agotados
-  const productosConSeparador = useMemo((): ItemLista[] => {
-    if (productosFiltrados.length === 0) return [];
-
-    const disponibles = productosFiltrados.filter(p => p.existencia > 0);
-    const agotados = productosFiltrados.filter(p => p.existencia <= 0);
-
-    // Si no hay agotados, devolver solo disponibles sin separador
-    if (agotados.length === 0) return disponibles;
-
-    // Si hay agotados, insertar un item especial de separador
-    return [
-      ...disponibles,
-      { __tipo: 'separador', id: -1 },
-      ...agotados,
-    ];
-  }, [productosFiltrados]);
-
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
       cargarProductos();
-      // Limpiar cesta al entrar
-      setCesta(new Map());
-      setBusqueda('');
+      resetCesta();
     }, [])
   );
-
-  async function cargarProductos() {
-    setCargando(true);
-    try {
-      const lista = await obtenerProductos();
-      setProductos(lista);
-      setProductosFiltrados(lista);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  // Filtrar productos cuando cambia la búsqueda
-  useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (busqueda.trim() === '') {
-      setProductosFiltrados(productos);
-    } else {
-      const termino = busqueda.toLowerCase();
-      const filtrados = productos.filter(p => 
-        p.nombre.toLowerCase().includes(termino)
-      );
-      setProductosFiltrados(filtrados);
-    }
-  }, [busqueda, productos]);
-
-  // Actualizar cantidad de un producto en la cesta
-  function cambiarCantidad(productoId: number, cantidad: number) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    
-    // Feedback de stock agotado (Bug 2)
-    const producto = productos.find(p => p.id === productoId);
-    if (producto && cantidad >= producto.existencia && cantidad > cantidadEnCesta(productoId)) {
-      if (producto.existencia > 0 && cantidad === producto.existencia) {
-        Toast.show({
-          type: 'info',
-          text1: 'Stock al límite',
-          text2: `Has alcanzado el máximo disponible de ${producto.nombre}.`,
-          position: 'bottom',
-        });
-      }
-    }
-
-    setCesta(prev => {
-      const nueva = new Map(prev);
-      if (cantidad === 0) {
-        nueva.delete(productoId);
-      } else {
-        nueva.set(productoId, cantidad);
-      }
-      return nueva;
-    });
-  }
-
-  function cantidadEnCesta(productoId: number) {
-    return cesta.get(productoId) ?? 0;
-  }
-
-  // Construir lista de items de la cesta para pasarla a CestaFlotante
-  function obtenerItemsCesta(): ItemCesta[] {
-    const items: ItemCesta[] = [];
-    cesta.forEach((cantidad, productoId) => {
-      const producto = productos.find(p => p.id === productoId);
-      if (producto) items.push({ producto, cantidad });
-    });
-    return items;
-  }
 
   function resetearEstadoProcesando() {
     procesandoRef.current = false;
@@ -191,8 +110,6 @@ export default function PantallaVenta({ navigation }: Props) {
       const turno = await obtenerTurnoAbierto();
       if (!turno) {
         Alert.alert('Error', 'No hay un turno abierto. Debes abrir uno antes de vender.');
-        // Importante: resetear aquí también, porque hacemos return implícito
-        // al llegar al finally después de este bloque.
         return;
       }
 
@@ -202,7 +119,7 @@ export default function PantallaVenta({ navigation }: Props) {
       setUltimoMetodoPago(metodoPago);
 
       setModalCobroVisible(false);
-      setCesta(new Map());
+      resetCesta();
       await cargarProductos();
 
       const textoMetodo = metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia';
@@ -229,8 +146,6 @@ export default function PantallaVenta({ navigation }: Props) {
       });
       console.error(error);
     } finally {
-      // Este bloque SIEMPRE se ejecuta, incluso si hay return dentro del try.
-      // Es el único lugar donde se debe resetear el estado de procesamiento.
       resetearEstadoProcesando();
     }
   }
@@ -272,7 +187,7 @@ export default function PantallaVenta({ navigation }: Props) {
             onPress: () => navigation.navigate('Inventario')
           }}
         />
-      ) : productosFiltrados.length === 0 ? (
+      ) : (productosConSeparador as ItemLista[]).length === 0 ? (
         <EstadoVacio 
           icono="search-outline" 
           titulo="Sin resultados" 
@@ -280,7 +195,7 @@ export default function PantallaVenta({ navigation }: Props) {
         />
       ) : (
         <FlatList
-          data={productosConSeparador}
+          data={productosConSeparador as ItemLista[]}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => {
             // Render del separador
@@ -297,7 +212,7 @@ export default function PantallaVenta({ navigation }: Props) {
             return (
               <ProductoVenta
                 producto={item as Producto}
-                cantidadEnCesta={cantidadEnCesta(item.id)}
+                cantidadEnCesta={cesta.get(item.id) ?? 0}
                 onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
               />
             );
@@ -310,11 +225,11 @@ export default function PantallaVenta({ navigation }: Props) {
       )}
 
       {/* Cesta flotante — aparece solo si hay algo en la cesta */}
-        <CestaFlotante 
-          items={itemsCesta} 
-          onCobrar={handleCobrar} 
-          procesando={procesando}
-        />
+      <CestaFlotante 
+        items={itemsCesta} 
+        onCobrar={handleCobrar} 
+        procesando={procesando}
+      />
 
       {/* Modal de cobro inteligente */}
       <ModalCobro
@@ -325,8 +240,6 @@ export default function PantallaVenta({ navigation }: Props) {
           confirmarVenta(itemsCesta, metodo, monto, cambio)
         }
         onCancelar={() => {
-          // Siempre limpiar el estado al cerrar, independientemente de si
-          // se estaba procesando o no. Es idempotente y seguro.
           setModalCobroVisible(false);
           resetearEstadoProcesando();
         }}
