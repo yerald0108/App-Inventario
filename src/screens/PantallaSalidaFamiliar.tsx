@@ -59,7 +59,6 @@ export default function PantallaSalidaFamiliar() {
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
-      cargarProductos();
       resetCesta();
     }, [])
   );
@@ -115,7 +114,7 @@ export default function PantallaSalidaFamiliar() {
 
       // Limpiar cesta y recargar inventario
       resetCesta();
-      await cargarProductos();
+      // await cargarProductos(); // Ya no es necesario, el contexto se encarga
 
       const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
 
@@ -184,6 +183,12 @@ export default function PantallaSalidaFamiliar() {
         <FlatList
           data={productosConSeparador as ItemLista[]}
           keyExtractor={(item) => item.id.toString()}
+          getItemLayout={(_, index) => ({
+            length: 84, // Altura de ProductoVenta (74) + marginVertical (5*2)
+            offset: 84 * index,
+            index,
+          })}
+          windowSize={11} // Aproximadamente 2 pantallas
           renderItem={({ item }) => {
             // Render del separador 
             if ('__tipo' in item && item.__tipo === 'separador') {

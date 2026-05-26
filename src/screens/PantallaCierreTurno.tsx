@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno } from '../database/turnos';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
-import { formatCUP } from '../utils/formatters';
+import { formatCUP } from '../utils';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;

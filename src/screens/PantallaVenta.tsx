@@ -36,6 +36,7 @@ export default function PantallaVenta({ navigation }: Props) {
     cargarProductos,
     productosConSeparador,
     cambiarCantidad,
+    cambiarPrecio, // <-- 1. Obtener la nueva función
     obtenerItemsCesta,
     resetCesta,
   } = useProductoCesta();
@@ -47,12 +48,12 @@ export default function PantallaVenta({ navigation }: Props) {
 
   // Actualizar el badge del header cada vez que cambia la cesta
   useEffect(() => {
-    const totalItems = Array.from(cesta.values()).reduce((acc, qty) => acc + qty, 0);
+    // 2. La lógica de reduce ahora accede a la propiedad `cantidad` del objeto
+    const totalItems = Array.from(cesta.values()).reduce((acc, item) => acc + item.cantidad, 0);
 
     navigation.setOptions({
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 8 }}>
-          {/* Botón a Últimas Ventas */}
           <TouchableOpacity
             onPress={() => navigation.navigate('UltimasVentas')}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -60,7 +61,6 @@ export default function PantallaVenta({ navigation }: Props) {
             <Ionicons name="receipt-outline" size={22} color="#ffffff" />
           </TouchableOpacity>
           
-          {/* Badge de la cesta */}
           {totalItems > 0 && (
             <View style={estilos.badgeHeader}>
               <Text style={estilos.textoBadgeHeader}>{totalItems}</Text>
@@ -72,10 +72,8 @@ export default function PantallaVenta({ navigation }: Props) {
     });
   }, [cesta, navigation]);
 
-  // Recargar productos al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
-      cargarProductos();
       resetCesta();
     }, [])
   );
@@ -85,22 +83,18 @@ export default function PantallaVenta({ navigation }: Props) {
     setProcesando(false);
   }
 
-  // Al pulsar COBRAR — mostrar modal de cobro
   function handleCobrar() {
     const items = obtenerItemsCesta();
     if (items.length === 0) return;
     setModalCobroVisible(true);
   }
 
-  // Confirmar y registrar la venta en la BD
   async function confirmarVenta(
     items: ItemCesta[],
     metodoPago: 'efectivo' | 'transferencia',
     montoRecibido: number,
     cambio: number
   ) {
-    // Guard: si ya se está procesando, no hacer nada.
-    // El ref garantiza que no haya doble ejecución aunque el componente re-renderice.
     if (procesandoRef.current) return;
 
     procesandoRef.current = true;
@@ -114,26 +108,20 @@ export default function PantallaVenta({ navigation }: Props) {
       }
 
       await registrarVenta(items, metodoPago, turno.id);
-
-      // Recordar el método para la próxima venta
       setUltimoMetodoPago(metodoPago);
-
       setModalCobroVisible(false);
       resetCesta();
-      await cargarProductos();
 
       const textoMetodo = metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia';
-      const textoCambio =
-        metodoPago === 'efectivo' && cambio > 0
-          ? ` · Vuelto: ${cambio.toFixed(2)} CUP`
-          : '';
+      const textoCambio = metodoPago === 'efectivo' && cambio > 0 ? ` · Vuelto: ${cambio.toFixed(2)} CUP` : '';
+
+      // 3. Usar `precioFinal` para el cálculo del total en el Toast
+      const totalVenta = items.reduce((acc, i) => acc + (i.precioFinal ?? i.producto.precio) * i.cantidad, 0);
 
       Toast.show({
         type: 'success',
         text1: `Venta registrada · ${textoMetodo}`,
-        text2: `Total: ${items
-          .reduce((acc, i) => acc + i.producto.precio * i.cantidad, 0)
-          .toFixed(2)} CUP${textoCambio}`,
+        text2: `Total: ${totalVenta.toFixed(2)} CUP${textoCambio}`,
         position: 'top',
         visibilityTime: 4000,
       });
@@ -154,15 +142,12 @@ export default function PantallaVenta({ navigation }: Props) {
 
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <SkeletonProducto key={i} />
-      ))}
+      {[1, 2, 3, 4, 5, 6].map((i) => <SkeletonProducto key={i} />)}
     </View>
   );
 
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      {/* Barra de búsqueda */}
       <View style={estilos.contenedorBusqueda}>
         <Ionicons name="search" size={20} color="#718096" style={estilos.iconoBusqueda} />
         <TextInput
@@ -182,10 +167,7 @@ export default function PantallaVenta({ navigation }: Props) {
           icono="cart-outline" 
           titulo="Sin productos" 
           descripcion="No hay productos en el inventario. Agrega productos para comenzar a vender." 
-          accion={{
-            texto: "Ir a Inventario",
-            onPress: () => navigation.navigate('Inventario')
-          }}
+          accion={{ texto: "Ir a Inventario", onPress: () => navigation.navigate('Inventario') }}
         />
       ) : (productosConSeparador as ItemLista[]).length === 0 ? (
         <EstadoVacio 
@@ -197,9 +179,10 @@ export default function PantallaVenta({ navigation }: Props) {
         <FlatList
           data={productosConSeparador as ItemLista[]}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => {
-            // Render del separador
-            if ('__tipo' in item && item.__tipo === 'separador') {
+          getItemLayout={(_, index) => ({ length: 84, offset: 84 * index, index })}
+          windowSize={11}
+          renderItem={({ item: productoItem }) => {
+            if ('__tipo' in productoItem && productoItem.__tipo === 'separador') {
               return (
                 <View style={estilos.separadorAgotados}>
                   <View style={estilos.lineaSeparador} />
@@ -208,37 +191,41 @@ export default function PantallaVenta({ navigation }: Props) {
                 </View>
               );
             }
-            // Render normal del producto
+
+            // 4. Lógica para pasar las nuevas props a ProductoVenta
+            const producto = productoItem as Producto;
+            const itemEnCesta = cesta.get(producto.id);
+            const cantidad = itemEnCesta?.cantidad ?? 0;
+            const precioFinal = itemEnCesta?.precioFinal ?? producto.precio;
+            const precioModificado = itemEnCesta?.precioFinal !== undefined;
+
             return (
               <ProductoVenta
-                producto={item as Producto}
-                cantidadEnCesta={cesta.get(item.id) ?? 0}
-                onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
+                producto={producto}
+                cantidadEnCesta={cantidad}
+                precioFinal={precioFinal}
+                precioModificado={precioModificado}
+                onCambiarCantidad={(nuevaCantidad) => cambiarCantidad(producto.id, nuevaCantidad)}
+                onCambiarPrecio={(nuevoPrecio) => cambiarPrecio(producto.id, nuevoPrecio)}
               />
             );
           }}
-          contentContainerStyle={{ 
-            paddingBottom: itemsCesta.length > 0 ? 140 : 20 
-          }}
+          contentContainerStyle={{ paddingBottom: itemsCesta.length > 0 ? 140 : 20 }}
           showsVerticalScrollIndicator={false}
         />
       )}
 
-      {/* Cesta flotante — aparece solo si hay algo en la cesta */}
       <CestaFlotante 
         items={itemsCesta} 
         onCobrar={handleCobrar} 
         procesando={procesando}
       />
 
-      {/* Modal de cobro inteligente */}
       <ModalCobro
         visible={modalCobroVisible}
         items={itemsCesta}
         metodoPagoInicial={ultimoMetodoPago}
-        onConfirmar={(metodo, monto, cambio) =>
-          confirmarVenta(itemsCesta, metodo, monto, cambio)
-        }
+        onConfirmar={(metodo, monto, cambio) => confirmarVenta(itemsCesta, metodo, monto, cambio)}
         onCancelar={() => {
           setModalCobroVisible(false);
           resetearEstadoProcesando();
@@ -288,7 +275,6 @@ const estilos = StyleSheet.create({
     fontSize: 16,
     color: '#2d3748',
   },
-  // Estilos del badge del header
   badgeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -307,7 +293,6 @@ const estilos = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  // Estilos del separador de agotados
   separadorAgotados: {
     flexDirection: 'row',
     alignItems: 'center',

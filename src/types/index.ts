@@ -49,6 +49,8 @@ export interface VentaAgrupada {
 export interface ItemCesta {
   producto: Producto;
   cantidad: number;
+  precioFinal?: number;
+  precioModificado?: boolean;
 }
 
 // Resumen de ventas externas de un despacho (para cierre de turno)

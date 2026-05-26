@@ -3,10 +3,13 @@ import { Platform, UIManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { inicializarDB } from './src/database/database';
 import { toastConfig } from './src/components/ToastConfig';
+
+// Importar el nuevo ProductosProvider
+import { ProductosProvider } from './src/context/ProductosContext';
 
 import PantallaInicio from './src/screens/PantallaInicio';
 import PantallaInventario from './src/screens/PantallaInventario';
@@ -54,8 +57,10 @@ export default function App() {
   }, []);
 
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      {/* Envolver la aplicación con ProductosProvider */}
+      <ProductosProvider>
+        <NavigationContainer>
         <StatusBar style="light" />
         <Stack.Navigator
           initialRouteName="Inicio"
@@ -153,7 +158,8 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
-      <Toast config={toastConfig} />
+        <Toast config={toastConfig} />
+      </ProductosProvider>
     </SafeAreaProvider>
   );
 }

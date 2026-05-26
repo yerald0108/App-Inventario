@@ -8,20 +8,37 @@ import { Producto } from '../types';
 interface Props {
   producto: Producto;
   cantidadEnCesta: number;
+  precioFinal: number;
+  precioModificado: boolean;
   onCambiarCantidad: (cantidad: number) => void;
+  onCambiarPrecio: (precio: number) => void;
 }
 
-export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCantidad }: Props) {
-  const [editando, setEditando] = useState(false);
-  const [valorInput, setValorInput] = useState('');
+export default function ProductoVenta({ 
+  producto, 
+  cantidadEnCesta, 
+  precioFinal,
+  precioModificado,
+  onCambiarCantidad, 
+  onCambiarPrecio 
+}: Props) {
+  const [editandoCantidad, setEditandoCantidad] = useState(false);
+  const [valorCantidadInput, setValorCantidadInput] = useState('');
+  const [editandoPrecio, setEditandoPrecio] = useState(false);
+  const [valorPrecioInput, setValorPrecioInput] = useState('');
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const agotado = producto.existencia <= 0;
   const colorStock = agotado ? '#e53e3e' : (producto.existencia < producto.alerta_minima ? '#e53e3e' : '#38a169');
   const enCesta = cantidadEnCesta > 0;
 
+  useEffect(() => {
+    if (enCesta && !editandoPrecio) {
+      setValorPrecioInput(precioFinal.toFixed(2));
+    }
+  }, [precioFinal, enCesta, editandoPrecio]);
+
   function ejecutarShake() {
-    // Resetear posición antes de animar
     shakeAnim.setValue(0);
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 6,  duration: 60, useNativeDriver: true }),
@@ -36,7 +53,6 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
     if (cantidadEnCesta < producto.existencia) {
       onCambiarCantidad(cantidadEnCesta + 1);
     } else {
-      // Ya está al límite: animar para dar feedback sin molestar con un Alert
       ejecutarShake();
     }
   }
@@ -47,18 +63,35 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
     }
   }
 
-  function abrirInput() {
+  function abrirInputCantidad() {
     if (agotado) return;
-    setValorInput(cantidadEnCesta > 0 ? cantidadEnCesta.toString() : '');
-    setEditando(true);
+    setValorCantidadInput(cantidadEnCesta > 0 ? cantidadEnCesta.toString() : '');
+    setEditandoCantidad(true);
   }
 
-  function confirmarInput() {
-    const num = parseInt(valorInput, 10);
+  function confirmarInputCantidad() {
+    const num = parseInt(valorCantidadInput, 10);
     if (!isNaN(num) && num >= 0 && num <= producto.existencia) {
       onCambiarCantidad(num);
     }
-    setEditando(false);
+    setEditandoCantidad(false);
+  }
+
+  function abrirInputPrecio() {
+    if (!enCesta) return; // Solo editar si ya está en la cesta
+    setValorPrecioInput(precioFinal.toFixed(2));
+    setEditandoPrecio(true);
+  }
+
+  function confirmarInputPrecio() {
+    const num = parseFloat(valorPrecioInput.replace(',', '.'));
+    if (!isNaN(num) && num >= 0) {
+      onCambiarPrecio(num);
+    } else {
+      // Si el valor no es válido, revertir al precio original del producto
+      onCambiarPrecio(producto.precio);
+    }
+    setEditandoPrecio(false);
   }
 
   return (
@@ -67,29 +100,45 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
       enCesta && estilos.tarjetaActiva,
       agotado && estilos.tarjetaAgotada
     ]}>
-      {/* Info del producto */}
       <View style={estilos.infoProducto}>
         <Text style={[estilos.nombre, agotado && estilos.textoGris]} numberOfLines={1}>
           {producto.nombre}
         </Text>
         <View style={estilos.filaInferior}>
-          <Text style={[estilos.precio, agotado && estilos.textoGris]}>
-            {producto.precio.toFixed(2)} CUP
-          </Text>
+          {editandoPrecio ? (
+            <TextInput
+              style={[estilos.precio, estilos.inputPrecio]}
+              value={valorPrecioInput}
+              onChangeText={setValorPrecioInput}
+              keyboardType="numeric"
+              autoFocus
+              onBlur={confirmarInputPrecio}
+              onSubmitEditing={confirmarInputPrecio}
+              selectTextOnFocus
+            />
+          ) : (
+            <TouchableOpacity onPress={abrirInputPrecio} disabled={!enCesta}>
+              <Text style={[
+                estilos.precio, 
+                agotado && estilos.textoGris,
+                precioModificado && estilos.precioModificado
+              ]}>
+                {precioFinal.toFixed(2)} CUP
+              </Text>
+            </TouchableOpacity>
+          )}
           <Text style={[estilos.stock, { color: colorStock }]}>
             {agotado ? 'Agotado' : `Stock: ${producto.existencia}`}
           </Text>
         </View>
       </View>
 
-      {/* Controles de cantidad envueltos en Animated.View para el efecto shake */}
       <Animated.View
         style={[
           estilos.controles,
           { transform: [{ translateX: shakeAnim }] }
         ]}
       >
-        {/* Botón - (decrementar) */}
         <TouchableOpacity
           style={[estilos.botonControl, cantidadEnCesta === 0 && estilos.botonDeshabilitado]}
           onPress={decrementar}
@@ -99,21 +148,20 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
           <Text style={estilos.textoControl}>−</Text>
         </TouchableOpacity>
 
-        {/* Toca el número para editar directamente */}
         <TouchableOpacity 
-          onPress={abrirInput} 
+          onPress={abrirInputCantidad} 
           style={estilos.cantidadTouchable}
           disabled={agotado}
         >
-          {editando ? (
+          {editandoCantidad ? (
             <TextInput
               style={estilos.inputCantidad}
-              value={valorInput}
-              onChangeText={setValorInput}
+              value={valorCantidadInput}
+              onChangeText={setValorCantidadInput}
               keyboardType="number-pad"
               autoFocus
-              onBlur={confirmarInput}
-              onSubmitEditing={confirmarInput}
+              onBlur={confirmarInputCantidad}
+              onSubmitEditing={confirmarInputCantidad}
               maxLength={3}
             />
           ) : (
@@ -127,7 +175,6 @@ export default function ProductoVenta({ producto, cantidadEnCesta, onCambiarCant
           )}
         </TouchableOpacity>
 
-        {/* Botón + (incrementar) */}
         <TouchableOpacity
           style={[
             estilos.botonControl,
@@ -181,12 +228,23 @@ const estilos = StyleSheet.create({
   },
   filaInferior: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   precio: {
     fontSize: 14,
     color: '#2b6cb0',
     fontWeight: '500',
+  },
+  inputPrecio: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#2b6cb0',
+    paddingVertical: 0, 
+    minWidth: 60, 
+  },
+  precioModificado: {
+    color: '#dd6b20', // Naranja para indicar que fue modificado
+    fontWeight: 'bold',
   },
   stock: {
     fontSize: 14,
@@ -209,7 +267,7 @@ const estilos = StyleSheet.create({
     backgroundColor: '#cbd5e0',
   },
   botonLimite: {
-    backgroundColor: '#dd6b20', // naranja: indica límite alcanzado
+    backgroundColor: '#dd6b20',
   },
   textoControl: {
     color: '#ffffff',

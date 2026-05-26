@@ -19,7 +19,7 @@ import {
   VentaExternaAgrupada,
 } from '../database/despachos';
 import { obtenerTurnoAbierto } from '../database/turnos';
-import { formatCUP } from '../utils/formatters';
+import { formatCUP } from '../utils';
 import ModalCobro from '../components/ModalCobro';
 import EstadoVacio from '../components/EstadoVacio';
 

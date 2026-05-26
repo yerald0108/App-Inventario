@@ -1,27 +1,20 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { LayoutAnimation } from 'react-native';
 import { Producto, ItemCesta } from '../types';
-import { obtenerProductos } from '../database/productos';
+import { useProductos } from '../context/ProductosContext';
+
+type ItemEnCesta = {
+  cantidad: number;
+  precioFinal?: number;
+};
 
 type ItemLista = Producto | { __tipo: 'separador'; id: number };
 
 export function useProductoCesta() {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [cesta, setCesta] = useState<Map<number, number>>(new Map());
-  const [cargando, setCargando] = useState(true);
+  const { productos, cargandoProductos, cargarProductos } = useProductos();
 
-  const cargarProductos = useCallback(async () => {
-    setCargando(true);
-    try {
-      const lista = await obtenerProductos();
-      setProductos(lista);
-    } catch (e) {
-      console.error('useProductoCesta: error al cargar productos', e);
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+  const [busqueda, setBusqueda] = useState('');
+  const [cesta, setCesta] = useState<Map<number, ItemEnCesta>>(new Map());
 
   const productosFiltrados = useMemo(() => {
     if (!busqueda.trim()) return productos;
@@ -37,39 +30,72 @@ export function useProductoCesta() {
     return [...disponibles, { __tipo: 'separador' as const, id: -1 }, ...agotados];
   }, [productosFiltrados]);
 
-  function cambiarCantidad(productoId: number, cantidad: number) {
+  const cambiarCantidad = useCallback((productoId: number, cantidad: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCesta(prev => {
       const nueva = new Map(prev);
-      if (cantidad === 0) nueva.delete(productoId);
-      else nueva.set(productoId, cantidad);
+      const item = nueva.get(productoId);
+
+      if (cantidad === 0) {
+        nueva.delete(productoId);
+      } else {
+        // Si el item no existe, lo crea con la cantidad. Si existe, solo actualiza la cantidad.
+        const newItem = item ? { ...item, cantidad } : { cantidad };
+        nueva.set(productoId, newItem);
+      }
       return nueva;
     });
-  }
+  }, []);
 
-  function obtenerItemsCesta(): ItemCesta[] {
-    const items: ItemCesta[] = [];
-    cesta.forEach((cantidad, productoId) => {
+  const cambiarPrecio = useCallback((productoId: number, nuevoPrecio: number) => {
+    setCesta(prev => {
+      const nueva = new Map(prev);
+      const item = nueva.get(productoId);
       const producto = productos.find(p => p.id === productoId);
-      if (producto) items.push({ producto, cantidad });
+
+      if (item && producto) {
+        const esPrecioOriginal = producto.precio === nuevoPrecio;
+        nueva.set(productoId, {
+          ...item,
+          precioFinal: esPrecioOriginal ? undefined : nuevoPrecio,
+        });
+      }
+      return nueva;
+    });
+  }, [productos]);
+
+  const obtenerItemsCesta = useCallback((): ItemCesta[] => {
+    const items: ItemCesta[] = [];
+    cesta.forEach((item, productoId) => {
+      const producto = productos.find(p => p.id === productoId);
+      if (producto) {
+        const precioFinal = item.precioFinal ?? producto.precio;
+        items.push({
+          producto,
+          cantidad: item.cantidad,
+          precioFinal,
+          precioModificado: item.precioFinal !== undefined,
+        });
+      }
     });
     return items;
-  }
+  }, [cesta, productos]);
 
-  function resetCesta() {
+  const resetCesta = useCallback(() => {
     setCesta(new Map());
     setBusqueda('');
-  }
+  }, []);
 
   return {
     productos,
     busqueda,
     setBusqueda,
     cesta,
-    cargando,
+    cargando: cargandoProductos,
     cargarProductos,
     productosConSeparador,
     cambiarCantidad,
+    cambiarPrecio, // <-- Exportar la nueva función
     obtenerItemsCesta,
     resetCesta,
   };

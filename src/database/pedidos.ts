@@ -122,7 +122,7 @@ export async function agregarItemPedido(
   producto: Producto,
   cantidad: number
 ): Promise<void> {
-  try {
+  await db.withTransactionAsync(async () => {
     // Verificar si ya existe ese producto en el pedido
     const existente = await db.getFirstAsync<PedidoItem>(
       'SELECT * FROM pedidos_items WHERE pedido_id = ? AND producto_id = ?',
@@ -145,11 +145,19 @@ export async function agregarItemPedido(
       );
     }
 
-    await recalcularTotalPedido(pedidoId);
-  } catch (error) {
-    console.error('agregarItemPedido: error', error);
-    throw error;
-  }
+    await recalcularTotalPedidoInterno(pedidoId);
+  });
+}
+
+async function recalcularTotalPedidoInterno(pedidoId: number): Promise<void> {
+  const resultado = await db.getFirstAsync<{ total: number }>(
+    'SELECT COALESCE(SUM(subtotal), 0) as total FROM pedidos_items WHERE pedido_id = ?',
+    [pedidoId]
+  );
+  await db.runAsync(
+    'UPDATE pedidos SET total = ? WHERE id = ?',
+    [resultado?.total ?? 0, pedidoId]
+  );
 }
 
 /** Actualiza la cantidad de un item (0 = eliminar el item) */
@@ -159,7 +167,7 @@ export async function actualizarCantidadItem(
   nuevaCantidad: number,
   precioAplicado: number
 ): Promise<void> {
-  try {
+  await db.withTransactionAsync(async () => {
     if (nuevaCantidad <= 0) {
       await db.runAsync('DELETE FROM pedidos_items WHERE id = ?', [itemId]);
     } else {
@@ -169,40 +177,19 @@ export async function actualizarCantidadItem(
         [nuevaCantidad, nuevoSubtotal, itemId]
       );
     }
-    await recalcularTotalPedido(pedidoId);
-  } catch (error) {
-    console.error('actualizarCantidadItem: error', error);
-    throw error;
-  }
+    await recalcularTotalPedidoInterno(pedidoId);
+  });
 }
 
 /** Elimina un item del pedido */
 export async function eliminarItemPedido(itemId: number, pedidoId: number): Promise<void> {
-  try {
+  await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM pedidos_items WHERE id = ?', [itemId]);
-    await recalcularTotalPedido(pedidoId);
-  } catch (error) {
-    console.error('eliminarItemPedido: error', error);
-    throw error;
-  }
+    await recalcularTotalPedidoInterno(pedidoId);
+  });
 }
 
-/** Recalcula y guarda el total del pedido */
-async function recalcularTotalPedido(pedidoId: number): Promise<void> {
-  try {
-    const resultado = await db.getFirstAsync<{ total: number }>(
-      'SELECT COALESCE(SUM(subtotal), 0) as total FROM pedidos_items WHERE pedido_id = ?',
-      [pedidoId]
-    );
-    await db.runAsync(
-      'UPDATE pedidos SET total = ? WHERE id = ?',
-      [resultado?.total ?? 0, pedidoId]
-    );
-  } catch (error) {
-    console.error('recalcularTotalPedido: error', error);
-    throw error;
-  }
-}
+
 
 /** Renombra un pedido */
 export async function renombrarPedido(pedidoId: number, nuevoNombre: string): Promise<void> {

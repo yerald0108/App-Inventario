@@ -1,6 +1,6 @@
 import db from './database';
 import { VentaAgrupada } from '../types';
-import { sumaSegura } from '../utils/formatters';
+import { sumaSegura } from '../utils';
 
 // Obtener todas las ventas del turno actual agrupadas por venta_id
 export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAgrupada[]> {

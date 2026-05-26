@@ -10,7 +10,7 @@ import { RootStackParamList } from '../../App';
 import { obtenerDetalleTurno } from '../database/turnos';
 import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
 import { Turno, VentaAgrupada } from '../types';
-import { formatCUP } from '../utils/formatters';
+import { formatCUP } from '../utils';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;

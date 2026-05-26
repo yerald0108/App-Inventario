@@ -183,6 +183,12 @@ export default function PantallaInventario() {
         <FlatList
           data={productosFiltrados}
           keyExtractor={(item) => item.id.toString()}
+          getItemLayout={(_, index) => ({
+            length: 86, // Altura de ProductoItem (74) + marginVertical (6*2)
+            offset: 86 * index,
+            index,
+          })}
+          windowSize={11} // Número de elementos a renderizar más allá de la vista visible (aprox. 2 pantallas)
           renderItem={({ item }) => (
             <ProductoItem producto={item} onEditar={abrirEditar} />
           )}

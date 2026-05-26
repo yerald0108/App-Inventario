@@ -18,7 +18,7 @@ import {
 } from '../database/pedidos';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import EstadoVacio from '../components/EstadoVacio';
-import { formatCUP } from '../utils/formatters';
+import { formatCUP } from '../utils';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Pedidos'>;

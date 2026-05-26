@@ -106,7 +106,7 @@ const estilos = StyleSheet.create({
     marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 74, // Altura exacta de ProductoVenta
+    height: 74, // Altura exacta de ProductoVenta. ¡Mantener sincronizado con ProductoVenta/ProductoItem!
   },
   controlesSimulados: {
     flexDirection: 'row',
@@ -124,7 +124,7 @@ const estilos = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    height: 165, // Altura aproximada de la tarjeta de venta
+    height: 165, // Altura aproximada de la tarjeta de venta. ¡Mantener sincronizado!
   },
   divisor: {
     height: 1,

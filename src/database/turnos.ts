@@ -1,5 +1,5 @@
 import db from './database';
-import { sumaSegura } from '../utils/formatters';
+import { sumaSegura } from '../utils';
 import { Turno } from '../types';
 
 // Obtener el turno actualmente abierto

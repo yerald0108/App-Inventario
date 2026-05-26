@@ -21,7 +21,7 @@ export default function CestaFlotante({
 
   // Calcular total general
   const total = items.reduce(
-    (acc, item) => acc + item.producto.precio * item.cantidad,
+    (acc, item) => acc + (item.precioFinal ?? item.producto.precio) * item.cantidad,
     0
   );
 

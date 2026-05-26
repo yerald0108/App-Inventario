@@ -21,11 +21,11 @@ import {
   cerrarPedidoComoVenta,
   renombrarPedido,
 } from '../database/pedidos';
-import { obtenerProductos } from '../database/productos';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import { Producto } from '../types';
-import { formatCUP } from '../utils/formatters';
+import { formatCUP } from '../utils';
 import EstadoVacio from '../components/EstadoVacio';
+import { useProductos } from '../context/ProductosContext';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetallePedido'>;
@@ -47,20 +47,21 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   const [modalActivo, setModalActivo] = useState<ModalActivo>('ninguno');
 
   // ── Estado del modal "Agregar Producto" ───────────────────────────────────
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [cargandoProductos, setCargandoProductos] = useState(false);
+  const { productos: todosLosProductos, cargandoProductos: cargandoTodosLosProductos } = useProductos();
+  // const [productos, setProductos] = useState<Producto[]>([]); // Ya no es necesario
+  // const [cargandoProductos, setCargandoProductos] = useState(false); // Ya no es necesario
   const [busqueda, setBusqueda] = useState('');
 
   // Filtrado derivado con separador de agotados
   const productosFiltrados = useMemo((): ItemListaModal[] => {
     const base = busqueda.trim()
-      ? productos.filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
-      : productos;
+      ? todosLosProductos.filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+      : todosLosProductos;
     const disponibles = base.filter(p => p.existencia > 0);
     const agotados = base.filter(p => p.existencia <= 0);
     if (agotados.length === 0) return disponibles;
     return [...disponibles, { __separador: true as const, id: -1 }, ...agotados];
-  }, [busqueda, productos]);
+  }, [busqueda, todosLosProductos]);
 
   // Estado del modal "Cobro"
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
@@ -123,29 +124,16 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   async function abrirModalAgregar() {
     // 1. Limpiar búsqueda y mostrar spinner
     setBusqueda('');
-    setProductos([]);
-    setCargandoProductos(true);
-
     // 2. Abrir el modal con animación
     setModalActivo('agregarProducto');
-    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
+    Animated.spring(slideAnim, { 
+      toValue: 0, 
+      useNativeDriver: true,
+      tension: 50,    // Ajusta según la velocidad deseada
+      friction: 8,    // Ajusta según el rebote deseado
+    }).start();
 
-    // 3. Cargar productos en segundo plano
-    try {
-      const lista = await obtenerProductos();
-      setProductos(lista);
-    } catch (e) {
-      console.error('Error cargando productos:', e);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'No se pudieron cargar los productos.',
-        position: 'top',
-      });
-      setProductos([]);
-    } finally {
-      setCargandoProductos(false);
-    }
+    // 3. Los productos ya están cargados por el ProductosProvider
   }
 
   function abrirModalCobro() {
@@ -442,7 +430,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
               />
             </View>
 
-            {cargandoProductos ? (
+            {cargandoTodosLosProductos ? (
               <View style={estilos.centradoModal}>
                 <ActivityIndicator size="large" color="#2b6cb0" />
                 <Text style={estilos.textoCargando}>Cargando inventario...</Text>
@@ -456,6 +444,12 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                 style={estilos.listaProductosModal}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
+                getItemLayout={(_, index) => ({
+                  length: 55, // Estimación de la altura del item + padding
+                  offset: 55 * index,
+                  index,
+                })}
+                windowSize={11}
                 ListEmptyComponent={
                   <View style={estilos.centradoModal}>
                     <Text style={estilos.textoSinResultados}>

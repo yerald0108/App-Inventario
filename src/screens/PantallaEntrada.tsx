@@ -15,12 +15,13 @@ import { obtenerTurnoAbierto } from '../database/turnos';
 import { Ionicons } from '@expo/vector-icons';
 import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
+import { useProductos } from '../context/ProductosContext';
 
 export default function PantallaEntrada() {
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const { productos, cargandoProductos, cargarProductos } = useProductos();
   const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
   const [busqueda, setBusqueda] = useState('');
-  const [cargando, setCargando] = useState(true);
+  // const [cargando, setCargando] = useState(true); // Ya no es necesario, viene del contexto
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
   const [cantidad, setCantidad] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
@@ -68,19 +69,19 @@ export default function PantallaEntrada() {
     }
   }, [modalVisible]);
 
-  useFocusEffect(
-    useCallback(() => {
-      cargarProductos();
-    }, [])
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     cargarProductos();
+  //   }, [])
+  // );
 
-  async function cargarProductos() {
-    if (productos.length === 0) setCargando(true);
-    const lista = await obtenerProductos();
-    setProductos(lista);
-    setProductosFiltrados(lista);
-    setCargando(false);
-  }
+  // async function cargarProductos() {
+  //   if (productos.length === 0) setCargando(true);
+  //   const lista = await obtenerProductos();
+  //   setProductos(lista);
+  //   setProductosFiltrados(lista);
+  //   setCargando(false);
+  // }
 
   // Filtrar productos
   useEffect(() => {
@@ -177,12 +178,18 @@ export default function PantallaEntrada() {
         />
       </View>
 
-      {cargando ? (
+      {cargandoProductos ? (
         renderSkeleton()
       ) : (
         <FlatList
           data={productosFiltrados}
           keyExtractor={(item) => item.id.toString()}
+          getItemLayout={(_, index) => ({
+            length: 86, // Altura de ProductoItem (74) + marginVertical (6*2)
+            offset: 86 * index,
+            index,
+          })}
+          windowSize={11} // Aproximadamente 2 pantallas
           renderItem={({ item }) => {
             const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
             const esReciente = item.id === ultimoProductoActualizado;

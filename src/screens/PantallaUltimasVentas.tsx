@@ -13,7 +13,7 @@ import { obtenerVentasTurnoActual, cancelarVenta, cambiarMetodoPagoVenta } from 
 import { obtenerTurnoAbierto } from '../database/turnos';
 import Skeleton, { SkeletonVenta } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
-import { formatCUP } from '../utils/formatters';
+import { formatCUP } from '../utils';
 
 type FlatListType = FlatList<VentaAgrupada>;
 
