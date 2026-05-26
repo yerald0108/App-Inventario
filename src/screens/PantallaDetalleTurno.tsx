@@ -90,12 +90,17 @@ export default function PantallaDetalleTurno({ route }: Props) {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      hour12: true,
     });
   }
 
   function formatearHora(iso: string): string {
     const fecha = new Date(iso);
-    return fecha.toLocaleTimeString('es-CU', { hour: '2-digit', minute: '2-digit' });
+    return fecha.toLocaleTimeString('es-CU', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      hour12: true, 
+    });
   }
 
   if (cargando) {
