@@ -29,41 +29,6 @@ export interface PedidoConItems extends Pedido {
   items: PedidoItem[];
 }
 
-// ─── Inicialización de tablas ─────────────────────────────────────────────────
-
-export async function inicializarTablaPedidos(): Promise<void> {
-  try {
-    await db.execAsync(`
-      CREATE TABLE IF NOT EXISTS pedidos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT NOT NULL,
-        fecha_apertura TEXT NOT NULL,
-        fecha_cierre TEXT,
-        estado TEXT NOT NULL DEFAULT 'abierto'
-          CHECK(estado IN ('abierto', 'cerrado', 'cancelado')),
-        turno_id INTEGER NOT NULL,
-        total REAL NOT NULL DEFAULT 0,
-        FOREIGN KEY (turno_id) REFERENCES turnos(id)
-      );
-
-      CREATE TABLE IF NOT EXISTS pedidos_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        pedido_id INTEGER NOT NULL,
-        producto_id INTEGER NOT NULL,
-        nombre_producto TEXT NOT NULL,
-        precio_aplicado REAL NOT NULL,
-        cantidad REAL NOT NULL,
-        subtotal REAL NOT NULL,
-        FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
-        FOREIGN KEY (producto_id) REFERENCES productos(id)
-      );
-    `);
-  } catch (error) {
-    console.error('inicializarTablaPedidos: error', error);
-    throw error;
-  }
-}
-
 // ─── CRUD Pedidos ─────────────────────────────────────────────────────────────
 
 /** Crea un nuevo pedido abierto y devuelve su ID */

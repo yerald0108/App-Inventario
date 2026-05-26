@@ -184,11 +184,6 @@ export default function PantallaEntrada() {
         <FlatList
           data={productosFiltrados}
           keyExtractor={(item) => item.id.toString()}
-          getItemLayout={(_, index) => ({
-            length: 86, // Altura de ProductoItem (74) + marginVertical (6*2)
-            offset: 86 * index,
-            index,
-          })}
           windowSize={11} // Aproximadamente 2 pantallas
           renderItem={({ item }) => {
             const colorStock = item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';

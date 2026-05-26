@@ -47,7 +47,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   const [modalActivo, setModalActivo] = useState<ModalActivo>('ninguno');
 
   // ── Estado del modal "Agregar Producto" ───────────────────────────────────
-  const { productos: todosLosProductos, cargandoProductos: cargandoTodosLosProductos } = useProductos();
+  const { productos: todosLosProductos, cargandoProductos: cargandoTodosLosProductos, cargarProductos } = useProductos();
   // const [productos, setProductos] = useState<Producto[]>([]); // Ya no es necesario
   // const [cargandoProductos, setCargandoProductos] = useState(false); // Ya no es necesario
   const [busqueda, setBusqueda] = useState('');
@@ -222,6 +222,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
       }
 
       await cerrarPedidoComoVenta(pedidoId, metodoPago, turno.id);
+      await cargarProductos();  
 
       cerrarModal();
 

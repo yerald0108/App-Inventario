@@ -43,7 +43,7 @@ export default function PantallaSalidaFamiliar() {
 
   // Actualizar el badge del header cada vez que cambia la cesta
   useEffect(() => {
-    const totalItems = Array.from(cesta.values()).reduce((acc, qty) => acc + qty, 0);
+    const totalItems = Array.from(cesta.values()).reduce((acc, item) => acc + item.cantidad, 0);
 
     navigation.setOptions({
       headerRight: () =>
@@ -111,10 +111,11 @@ export default function PantallaSalidaFamiliar() {
       }
       
       await registrarSalidaFamiliar(items, turno.id);
+      await cargarProductos(); 
 
       // Limpiar cesta y recargar inventario
       resetCesta();
-      // await cargarProductos(); // Ya no es necesario, el contexto se encarga
+      
 
       const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
 
@@ -183,11 +184,6 @@ export default function PantallaSalidaFamiliar() {
         <FlatList
           data={productosConSeparador as ItemLista[]}
           keyExtractor={(item) => item.id.toString()}
-          getItemLayout={(_, index) => ({
-            length: 84, // Altura de ProductoVenta (74) + marginVertical (5*2)
-            offset: 84 * index,
-            index,
-          })}
           windowSize={11} // Aproximadamente 2 pantallas
           renderItem={({ item }) => {
             // Render del separador 
@@ -204,8 +200,11 @@ export default function PantallaSalidaFamiliar() {
             return (
               <ProductoVenta
                 producto={item as Producto}
-                cantidadEnCesta={cesta.get(item.id) ?? 0}
+                cantidadEnCesta={cesta.get(item.id)?.cantidad ?? 0}
+                precioFinal={(item as Producto).precio}
+                precioModificado={false}
                 onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
+                onCambiarPrecio={() => {}}
               />
             );
           }}

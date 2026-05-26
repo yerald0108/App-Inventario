@@ -1,6 +1,4 @@
 import * as SQLite from 'expo-sqlite';
-import { inicializarTablaDespachos } from './despachos';
-import { inicializarTablaPedidos } from './pedidos';
 
 // Abrir (o crear) la base de datos local
 const db = SQLite.openDatabaseSync('micaja.db');

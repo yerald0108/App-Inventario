@@ -108,6 +108,7 @@ export default function PantallaVenta({ navigation }: Props) {
       }
 
       await registrarVenta(items, metodoPago, turno.id);
+      await cargarProductos(); 
       setUltimoMetodoPago(metodoPago);
       setModalCobroVisible(false);
       resetCesta();
@@ -179,7 +180,6 @@ export default function PantallaVenta({ navigation }: Props) {
         <FlatList
           data={productosConSeparador as ItemLista[]}
           keyExtractor={(item) => item.id.toString()}
-          getItemLayout={(_, index) => ({ length: 84, offset: 84 * index, index })}
           windowSize={11}
           renderItem={({ item: productoItem }) => {
             if ('__tipo' in productoItem && productoItem.__tipo === 'separador') {

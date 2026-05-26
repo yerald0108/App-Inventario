@@ -55,49 +55,7 @@ export interface VentaExternaAgrupada {
 
 // ─── Inicialización de tablas ─────────────────────────────────────────────────
 
-export async function inicializarTablaDespachos(): Promise<void> {
-  await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS despachos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      nombre TEXT NOT NULL,
-      descripcion TEXT,
-      color TEXT NOT NULL DEFAULT '#805ad5',
-      activo INTEGER DEFAULT 1,
-      fecha_creacion TEXT NOT NULL
-    );
 
-    CREATE TABLE IF NOT EXISTS productos_despacho (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      despacho_id INTEGER NOT NULL,
-      nombre TEXT NOT NULL,
-      precio REAL NOT NULL,
-      activo INTEGER DEFAULT 1,
-      FOREIGN KEY (despacho_id) REFERENCES despachos(id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ventas_externas (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      despacho_id INTEGER NOT NULL,
-      turno_id INTEGER NOT NULL,
-      fecha_hora TEXT NOT NULL,
-      metodo_pago TEXT NOT NULL CHECK(metodo_pago IN ('efectivo', 'transferencia')),
-      total REAL NOT NULL,
-      venta_id TEXT NOT NULL,
-      FOREIGN KEY (despacho_id) REFERENCES despachos(id),
-      FOREIGN KEY (turno_id) REFERENCES turnos(id)
-    );
-
-    CREATE TABLE IF NOT EXISTS ventas_externas_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      venta_externa_id INTEGER NOT NULL,
-      producto_despacho_id INTEGER,
-      nombre_producto TEXT NOT NULL,
-      precio_aplicado REAL NOT NULL,
-      cantidad REAL NOT NULL,
-      FOREIGN KEY (venta_externa_id) REFERENCES ventas_externas(id)
-    );
-  `);
-}
 
 // ─── CRUD Despachos ───────────────────────────────────────────────────────────
 
@@ -277,6 +235,33 @@ export async function obtenerVentasExternasTurno(turnoId: number): Promise<Venta
 
 // Resumen por despacho para el cierre de turno
 export async function obtenerResumenExternoPorDespacho(turnoId: number): Promise<{
+  despacho_id: number;
+  despacho_nombre: string;
+  despacho_color: string;
+  total_efectivo: number;
+  total_transferencia: number;
+  cantidad_ventas: number;
+}[]> {
+  return await db.getAllAsync(
+    `SELECT 
+      d.id AS despacho_id,
+      d.nombre AS despacho_nombre,
+      d.color AS despacho_color,
+      COALESCE(SUM(CASE WHEN ve.metodo_pago = 'efectivo' THEN ve.total ELSE 0 END), 0) AS total_efectivo,
+      COALESCE(SUM(CASE WHEN ve.metodo_pago = 'transferencia' THEN ve.total ELSE 0 END), 0) AS total_transferencia,
+      COUNT(ve.id) AS cantidad_ventas
+     FROM despachos d
+     LEFT JOIN ventas_externas ve ON ve.despacho_id = d.id AND ve.turno_id = ?
+     WHERE d.activo = 1
+     GROUP BY d.id
+     HAVING cantidad_ventas > 0
+     ORDER BY d.nombre ASC`,
+    [turnoId]
+  );
+}
+
+// Resumen de ventas externas de un turno cerrado (para PantallaDetalleTurno)
+export async function obtenerResumenExternoDetalleTurno(turnoId: number): Promise<{
   despacho_id: number;
   despacho_nombre: string;
   despacho_color: string;

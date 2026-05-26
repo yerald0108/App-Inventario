@@ -226,3 +226,17 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
 
   return Array.from(mapaVentas.values());
 }
+
+// Obtener pedidos abiertos de un turno (para advertir antes del cierre)
+export async function obtenerPedidosAbiertosTurno(turnoId: number): Promise<{
+  id: number;
+  nombre: string;
+  total: number;
+}[]> {
+  return await db.getAllAsync<{ id: number; nombre: string; total: number }>(
+    `SELECT id, nombre, total FROM pedidos 
+     WHERE turno_id = ? AND estado = 'abierto'
+     ORDER BY fecha_apertura ASC`,
+    [turnoId]
+  );
+}

@@ -11,6 +11,7 @@ import { obtenerDetalleTurno } from '../database/turnos';
 import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
 import { Turno, VentaAgrupada } from '../types';
 import { formatCUP } from '../utils';
+import { obtenerResumenExternoDetalleTurno } from '../database/despachos';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;
@@ -30,6 +31,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
   const [ventasExpandidas, setVentasExpandidas] = useState<Set<string>>(new Set());
   const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
+  const [resumenDespachos, setResumenDespachos] = useState<{ despacho_id: number; despacho_nombre: string; despacho_color: string; total_efectivo: number; total_transferencia: number; cantidad_ventas: number; }[]>([]);
 
   useEffect(() => {
     cargarDetalle();
@@ -56,13 +58,15 @@ export default function PantallaDetalleTurno({ route }: Props) {
       // Una sola fuente de verdad para ventas y anulaciones.
       // obtenerVentasTurnoActual y obtenerAnulacionesTurno (cancelaciones.ts)
       // devuelven VentaAgrupada completa con producto_id, que es el tipo correcto.
-      const [listaVentas, listaAnulaciones] = await Promise.all([
+      const [listaVentas, listaAnulaciones, listaDespachos] = await Promise.all([
         obtenerVentasTurnoActual(turnoId),
         obtenerAnulacionesTurno(turnoId),
+        obtenerResumenExternoDetalleTurno(turnoId),
       ]);
 
       setVentas(listaVentas);
       setAnulaciones(listaAnulaciones);
+      setResumenDespachos(listaDespachos);
     } catch (error) {
       console.error('Error al cargar detalle del turno:', error);
     } finally {
@@ -317,6 +321,48 @@ export default function PantallaDetalleTurno({ route }: Props) {
               </View>
             </View>
           ))}
+        </View>
+      )}
+
+      {/* ── Ventas de despachos externos ── */}
+      {resumenDespachos.length > 0 && (
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="storefront-outline" size={20} color="#319795" />
+            <Text style={estilos.tituloSeccion}>Ventas de despachos externos</Text>
+          </View>
+
+          <View style={estilosLocal.alertaExterna}>
+            <Ionicons name="information-circle-outline" size={16} color="#2c7a7b" />
+            <Text style={estilosLocal.textoAlertaExterna}>
+              Este dinero <Text style={{ fontWeight: 'bold' }}>no pertenece a tu caja</Text>.
+              Fue depositado a cada despacho por separado.
+            </Text>
+          </View>
+
+          {resumenDespachos.map((d) => (
+            <View key={d.despacho_id} style={estilosLocal.filaDespacho}>
+              <View style={[estilosLocal.puntoColor, { backgroundColor: d.despacho_color }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={estilosLocal.nombreDespacho}>{d.despacho_nombre}</Text>
+                <Text style={estilosLocal.detalleDespacho}>
+                  {d.cantidad_ventas} venta{d.cantidad_ventas !== 1 ? 's' : ''}
+                  {d.total_efectivo > 0 ? `  ·  Ef: ${formatCUP(d.total_efectivo)}` : ''}
+                  {d.total_transferencia > 0 ? `  ·  Tr: ${formatCUP(d.total_transferencia)}` : ''}
+                </Text>
+              </View>
+              <Text style={[estilosLocal.totalDespacho, { color: d.despacho_color }]}>
+                {formatCUP(d.total_efectivo + d.total_transferencia)} CUP
+              </Text>
+            </View>
+          ))}
+
+          <View style={[estilos.fila, estilos.filaTotal, { marginTop: 12 }]}>
+            <Text style={estilos.etiquetaTotal}>Total externo:</Text>
+            <Text style={[estilos.valorTotal, { color: '#319795' }]}>
+              {formatCUP(resumenDespachos.reduce((acc, d) => acc + d.total_efectivo + d.total_transferencia, 0))} CUP
+            </Text>
+          </View>
         </View>
       )}
 
@@ -605,5 +651,52 @@ const estilos = StyleSheet.create({
   },
   detallesVentaFila: {
     paddingLeft: 0,
+  },
+});
+
+const estilosLocal = StyleSheet.create({
+  alertaExterna: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#e6fffa',
+    borderWidth: 1,
+    borderColor: '#81e6d9',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+  },
+  textoAlertaExterna: {
+    flex: 1,
+    fontSize: 13,
+    color: '#2c7a7b',
+    lineHeight: 18,
+  },
+  filaDespacho: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f4f8',
+  },
+  puntoColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  nombreDespacho: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a2e',
+  },
+  detalleDespacho: {
+    fontSize: 12,
+    color: '#718096',
+    marginTop: 1,
+  },
+  totalDespacho: {
+    fontSize: 15,
+    fontWeight: 'bold',
   },
 });

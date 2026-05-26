@@ -15,6 +15,8 @@ import {
 } from '../database/turnos';
 import { obtenerPedidosAbiertos } from '../database/pedidos';
 import { Turno } from '../types';
+import { obtenerResumenExternoPorDespacho } from '../database/despachos';
+
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Inicio'>;
@@ -28,6 +30,8 @@ export default function PantallaInicio({ navigation }: Props) {
   });
   const [pedidosAbiertos, setPedidosAbiertos] = useState(0);
   const [abriendoTurno, setAbriendoTurno] = useState(false);
+  const [totalDespachos, setTotalDespachos] = useState(0);
+  const [cantidadDespachos, setCantidadDespachos] = useState(0);
   const abriendoTurnoRef = useRef(false);
 
   useFocusEffect(
@@ -37,17 +41,28 @@ export default function PantallaInicio({ navigation }: Props) {
           const turno = await obtenerTurnoAbierto();
           setTurnoActual(turno);
           if (turno) {
-            const [resumen, pedidos] = await Promise.all([
+            const [resumen, pedidos, despachos] = await Promise.all([
               obtenerResumenTurno(turno.id),
               obtenerPedidosAbiertos(turno.id),
+              obtenerResumenExternoPorDespacho(turno.id),
             ]);
             setTotalesActuales({
               efectivo: resumen.totalEfectivo,
               transferencia: resumen.totalTransferencia,
             });
             setPedidosAbiertos(pedidos.length);
+
+            // Calcular total de despachos externos
+            const totalExt = despachos.reduce(
+              (acc: number, d: any) => acc + d.total_efectivo + d.total_transferencia,
+              0
+            );
+            setTotalDespachos(totalExt);
+            setCantidadDespachos(despachos.length);
           } else {
             setPedidosAbiertos(0);
+            setTotalDespachos(0);
+            setCantidadDespachos(0);
           }
         } catch (error) {
           console.error('Error al cargar turno:', error);
@@ -133,19 +148,33 @@ export default function PantallaInicio({ navigation }: Props) {
               Iniciado: {formatearFecha(turnoActual.fecha_inicio)}
             </Text>
             <View style={estilos.filaTotales}>
-              <View style={estilos.colTotal}>
-                <Text style={estilos.totalEtiqueta}>💵 Efectivo</Text>
-                <Text style={estilos.totalValor}>
-                  ${totalesActuales.efectivo.toFixed(2)}
-                </Text>
-              </View>
-              <View style={estilos.colTotal}>
-                <Text style={estilos.totalEtiqueta}>📱 Transf.</Text>
-                <Text style={estilos.totalValor}>
-                  ${totalesActuales.transferencia.toFixed(2)}
-                </Text>
-              </View>
+            <View style={estilos.colTotal}>
+              <Text style={estilos.totalEtiqueta}>💵 Efectivo</Text>
+              <Text style={estilos.totalValor}>
+                ${totalesActuales.efectivo.toFixed(2)}
+              </Text>
             </View>
+            <View style={estilos.colTotal}>
+              <Text style={estilos.totalEtiqueta}>📱 Transf.</Text>
+              <Text style={estilos.totalValor}>
+                ${totalesActuales.transferencia.toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Nota de despachos externos */}
+          {cantidadDespachos > 0 && (
+            <View style={estilosLocal.notaDespachos}>
+              <Ionicons name="storefront-outline" size={14} color="#2c7a7b" />
+              <Text style={estilosLocal.textoNotaDespachos}>
+                +${totalDespachos.toFixed(2)} CUP de {cantidadDespachos}{' '}
+                despacho{cantidadDespachos > 1 ? 's' : ''} externos{' '}
+                <Text style={estilosLocal.textoNotaDespachosAclaracion}>
+                  (no es tuyo)
+                </Text>
+            </Text>
+            </View>
+          )}
           </View>
         )}
 
@@ -403,4 +432,31 @@ const estilos = StyleSheet.create({
     borderWidth: 1.5, borderColor: '#e53e3e',
   },
   textoBadgePedidos: { fontSize: 11, fontWeight: '900', color: '#e53e3e' },
+});
+
+const estilosLocal = StyleSheet.create({
+  notaDespachos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#e6fffa',
+    borderWidth: 1,
+    borderColor: '#81e6d9',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 12,
+  },
+  textoNotaDespachos: {
+    flex: 1,
+    fontSize: 13,
+    color: '#2c7a7b',
+    fontWeight: '600',
+  },
+  textoNotaDespachosAclaracion: {
+    fontSize: 12,
+    color: '#4fd1c5',
+    fontWeight: '400',
+    fontStyle: 'italic',
+  },
 });

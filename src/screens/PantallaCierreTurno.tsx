@@ -9,7 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
-import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAbiertosTurno } from '../database/turnos';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils';
 
@@ -41,6 +41,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const [procesando, setProcesando] = useState(false);
   const [refrescando, setRefrescando] = useState(false);
   const [sinTurno, setSinTurno] = useState(false);
+  const [pedidosAbiertos, setPedidosAbiertos] = useState<{ id: number; nombre: string; total: number; }[]>([]);
   const procesandoRef = useRef(false);
 
   useFocusEffect(
@@ -73,10 +74,14 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       }
       setTurnoId(turno.id);
 
-      const [resumen, despachos] = await Promise.all([
+      const [resumen, despachos, pedidosOpen] = await Promise.all([
         obtenerResumenTurno(turno.id),
         obtenerResumenExternoPorDespacho(turno.id),
+        obtenerPedidosAbiertosTurno(turno.id),
       ]);
+
+      // Añadir justo después
+      setPedidosAbiertos(pedidosOpen);
 
       setTotalEfectivo(resumen.totalEfectivo);
       setTotalTransferencia(resumen.totalTransferencia);
@@ -130,10 +135,38 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       Alert.alert('Error', 'Ingresa el efectivo físico contado para cerrar el turno.');
       return;
     }
+
     const resultado = calcularDiferencia();
+
+    // Si hay pedidos abiertos, advertir primero
+    if (pedidosAbiertos.length > 0) {
+      const totalPendiente = pedidosAbiertos.reduce((acc, p) => acc + p.total, 0);
+      const detalleMesas = pedidosAbiertos
+        .map(p => `• ${p.nombre}: ${formatCUP(p.total)} CUP`)
+        .join('\n');
+
+      Alert.alert(
+        '⚠️ Hay pedidos sin cobrar',
+        `Los siguientes pedidos se cancelarán sin registrar cobro:\n\n${detalleMesas}\n\nTotal pendiente: ${formatCUP(totalPendiente)} CUP\n\n¿Seguro que deseas cerrar el turno y perder estos pedidos?`,
+        [
+          { text: 'Volver y cobrar', style: 'cancel' },
+          {
+            text: 'Cerrar de todas formas',
+            style: 'destructive',
+            onPress: () => mostrarConfirmacionFinal(resultado?.mensaje ?? ''),
+          },
+        ]
+      );
+      return;
+    }
+
+    mostrarConfirmacionFinal(resultado?.mensaje ?? '');
+  }
+
+  function mostrarConfirmacionFinal(mensajeCuadre: string) {
     Alert.alert(
       'Cerrar turno',
-      `${resultado?.mensaje}\n\n¿Confirmas el cierre del turno?`,
+      `${mensajeCuadre}\n\n¿Confirmas el cierre del turno?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Cerrar turno', style: 'destructive', onPress: confirmarCierre },
@@ -416,6 +449,28 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           })}
         </View>
 
+        {/* ── Advertencia pedidos abiertos ── */}
+        {pedidosAbiertos.length > 0 && (
+          <View style={estilosLocal.advertenciaPedidos}>
+            <View style={estilosLocal.cabeceraAdvertencia}>
+              <Ionicons name="warning" size={20} color="#c05621" />
+              <Text style={estilosLocal.tituloAdvertencia}>
+                {pedidosAbiertos.length} pedido{pedidosAbiertos.length > 1 ? 's' : ''} sin cobrar
+              </Text>
+            </View>
+            <Text style={estilosLocal.textoAdvertencia}>
+              Estos pedidos se cancelarán si cierras el turno ahora:
+            </Text>
+            {pedidosAbiertos.map(p => (
+              <View key={p.id} style={estilosLocal.filaPedido}>
+                <Ionicons name="restaurant-outline" size={14} color="#c05621" />
+                <Text style={estilosLocal.nombrePedido}>{p.nombre}</Text>
+                <Text style={estilosLocal.totalPedido}>{formatCUP(p.total)} CUP</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* ── Botón cerrar turno ── */}
         <TouchableOpacity
           style={[estilos.botonCerrar, procesando && estilos.botonDeshabilitado]}
@@ -580,5 +635,49 @@ const estilosLocal = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  advertenciaPedidos: {
+    backgroundColor: '#fffaf0',
+    borderWidth: 1.5,
+    borderColor: '#f6ad55',
+    borderRadius: 14,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  cabeceraAdvertencia: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  tituloAdvertencia: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#c05621',
+  },
+  textoAdvertencia: {
+    fontSize: 13,
+    color: '#7b341e',
+    marginBottom: 10,
+  },
+  filaPedido: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#feebc8',
+  },
+  nombrePedido: {
+    flex: 1,
+    fontSize: 14,
+    color: '#c05621',
+    fontWeight: '600',
+  },
+  totalPedido: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#c05621',
   },
 });
