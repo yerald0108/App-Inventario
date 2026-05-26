@@ -251,8 +251,17 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
       });
 
       navigation.goBack();
-    } catch (e) {
-      Toast.show({ type: 'error', text1: 'Error', text2: 'No se pudo cerrar la cuenta.', position: 'top' });
+    } catch (e: any) {
+      const mensajeError = e?.message?.startsWith('Stock insuficiente')
+        ? e.message
+        : 'No se pudo cerrar la cuenta. Intenta de nuevo.';
+      Toast.show({ 
+        type: 'error', 
+        text1: 'Stock insuficiente', 
+        text2: mensajeError,
+        position: 'top',
+        visibilityTime: 6000,
+      });
       console.error(e);
     } finally {
       procesandoRef.current = false;

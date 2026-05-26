@@ -232,6 +232,31 @@ export async function cerrarPedidoComoVenta(
       throw new Error('El pedido está vacío o no existe.');
     }
 
+    // ── Validación de stock antes de abrir la transacción ──────────────────
+    const conflictos = await db.getAllAsync<{
+      nombre_producto: string;
+      cantidad: number;
+      existencia: number;
+    }>(
+      `SELECT 
+         pi.nombre_producto,
+         pi.cantidad,
+         p.existencia
+       FROM pedidos_items pi
+       JOIN productos p ON p.id = pi.producto_id
+       WHERE pi.pedido_id = ?
+         AND p.existencia < pi.cantidad`,
+      [pedidoId]
+    );
+
+    if (conflictos.length > 0) {
+      const detalle = conflictos
+        .map(c => `• ${c.nombre_producto} — pedido: ${c.cantidad}, disponible: ${c.existencia}`)
+        .join('\n');
+      throw new Error(`Stock insuficiente para cerrar el pedido:\n${detalle}`);
+    }
+    // ── Fin validación ─────────────────────────────────────────────────────
+
     const ventaId = `PED-${pedidoId}-${Date.now()}`;
     const fechaHora = new Date().toISOString();
 
