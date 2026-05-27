@@ -51,7 +51,7 @@ async function aplicarMigraciones() {
     );
     const version = versionRow ? parseInt(versionRow.valor) : 0;
 
-    // Migración de tabla movimientos (ya existía) ──
+    // ── v1: tabla movimientos ──────────────────────────────────────────────
     if (version < 1) {
       console.log('Ejecutando migración v1: tabla movimientos...');
       await db.execAsync(`
@@ -76,8 +76,7 @@ async function aplicarMigraciones() {
       console.log('Migración v1 completada.');
     }
 
-    // ── Rescate: dispositivos que ya tenían v1 sin la tabla ──────────────
-    // IF NOT EXISTS hace esto seguro en cualquier arranque
+    // ── Rescate: dispositivos que ya tenían v1 sin la tabla ───────────────
     if (version >= 1) {
       await db.execAsync(`
         CREATE TABLE IF NOT EXISTS movimientos (
@@ -97,7 +96,7 @@ async function aplicarMigraciones() {
       `);
     }
 
-    // Tablas de despachos externos ──
+    // ── v2: tablas de despachos ───────────────────────────────────────────
     if (version < 2) {
       console.log('Ejecutando migración v2: tablas de despachos...');
       await db.execAsync(`
@@ -144,7 +143,7 @@ async function aplicarMigraciones() {
       console.log('Migración v2 completada.');
     }
 
-    // Tablas de pedidos ──
+    // ── v3: tablas de pedidos ─────────────────────────────────────────────
     if (version < 3) {
       console.log('Ejecutando migración v3: tablas de pedidos...');
       await db.execAsync(`
@@ -177,7 +176,7 @@ async function aplicarMigraciones() {
       console.log('Migración v3 completada.');
     }
 
-    // Tabla de mermas ──
+    // ── v4: tabla de mermas ───────────────────────────────────────────────
     if (version < 4) {
       console.log('Ejecutando migración v4: tabla de mermas...');
       await db.execAsync(`
@@ -200,7 +199,7 @@ async function aplicarMigraciones() {
       console.log('Migración v4 completada.');
     }
 
-    // Campo propina en movimientos ──
+    // ── v5: campo propina en movimientos ──────────────────────────────────
     if (version < 5) {
       console.log('Ejecutando migración v5: campo propina en movimientos...');
       await db.execAsync(`
@@ -210,6 +209,23 @@ async function aplicarMigraciones() {
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '5')"
       );
       console.log('Migración v5 completada.');
+    }
+
+    // ── v6: pedidos_items mixtos (propio + despacho) ──────────────────────
+    if (version < 6) {
+      console.log('Ejecutando migración v6: pedidos_items mixtos...');
+      // SQLite no permite ADD COLUMN con CHECK en una sola instrucción
+      // cuando hay datos existentes con DEFAULT, así que lo hacemos sin CHECK
+      // en el ALTER y la validación la dejamos en la capa de aplicación.
+      await db.execAsync(`
+        ALTER TABLE pedidos_items ADD COLUMN origen TEXT NOT NULL DEFAULT 'propio';
+        ALTER TABLE pedidos_items ADD COLUMN producto_despacho_id INTEGER;
+        ALTER TABLE pedidos_items ADD COLUMN despacho_id INTEGER;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '6')"
+      );
+      console.log('Migración v6 completada.');
     }
 
   } catch (error) {
