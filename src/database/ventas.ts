@@ -12,7 +12,8 @@ export async function obtenerProductosDisponibles(): Promise<Producto[]> {
 export async function registrarVenta(
   items: { producto: Producto; cantidad: number }[],
   metodoPago: 'efectivo' | 'transferencia',
-  turnoId: number
+  turnoId: number,
+  propina: number = 0
 ): Promise<void> {
   const ventaId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();
@@ -52,6 +53,7 @@ export async function registrarVenta(
           metodoPago,
           turnoId,
           ventaId,
+          propina,
         ]
       );
 

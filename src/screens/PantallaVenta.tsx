@@ -93,7 +93,8 @@ export default function PantallaVenta({ navigation }: Props) {
     items: ItemCesta[],
     metodoPago: 'efectivo' | 'transferencia',
     montoRecibido: number,
-    cambio: number
+    cambio: number,
+    propina: number
   ) {
     if (procesandoRef.current) return;
 
@@ -107,22 +108,24 @@ export default function PantallaVenta({ navigation }: Props) {
         return;
       }
 
-      await registrarVenta(items, metodoPago, turno.id);
+      await registrarVenta(items, metodoPago, turno.id, propina);
       await cargarProductos(); 
       setUltimoMetodoPago(metodoPago);
       setModalCobroVisible(false);
       resetCesta();
 
       const textoMetodo = metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia';
-      const textoCambio = metodoPago === 'efectivo' && cambio > 0 ? ` · Vuelto: ${cambio.toFixed(2)} CUP` : '';
+      const textoCambio = metodoPago === 'efectivo' && cambio > 0 && propina === 0
+        ? ` · Vuelto: ${cambio.toFixed(2)} CUP`
+        : '';
+      const textoPropina = propina > 0 ? ` · Propina: ${propina.toFixed(2)} CUP` : '';
 
-      // 3. Usar `precioFinal` para el cálculo del total en el Toast
       const totalVenta = items.reduce((acc, i) => acc + (i.precioFinal ?? i.producto.precio) * i.cantidad, 0);
 
       Toast.show({
         type: 'success',
         text1: `Venta registrada · ${textoMetodo}`,
-        text2: `Total: ${totalVenta.toFixed(2)} CUP${textoCambio}`,
+        text2: `Total: ${totalVenta.toFixed(2)} CUP${textoCambio}${textoPropina}`,
         position: 'top',
         visibilityTime: 4000,
       });
@@ -225,7 +228,9 @@ export default function PantallaVenta({ navigation }: Props) {
         visible={modalCobroVisible}
         items={itemsCesta}
         metodoPagoInicial={ultimoMetodoPago}
-        onConfirmar={(metodo, monto, cambio) => confirmarVenta(itemsCesta, metodo, monto, cambio)}
+        onConfirmar={(metodo, monto, cambio, propina) => 
+          confirmarVenta(itemsCesta, metodo, monto, cambio, propina)
+        }
         onCancelar={() => {
           setModalCobroVisible(false);
           resetearEstadoProcesando();

@@ -23,6 +23,7 @@ import PantallaVentaExterna from './src/screens/PantallaVentaExterna';
 import PantallaProductosDespacho from './src/screens/PantallaProductosDespacho';
 import PantallaPedidos from './src/screens/PantallaPedidos';
 import PantallaDetallePedido from './src/screens/PantallaDetallePedido';
+import PantallaMerma from './src/screens/PantallaMerma';
 
 export type RootStackParamList = {
   Inicio: undefined;
@@ -34,6 +35,7 @@ export type RootStackParamList = {
   Historial: undefined;
   DetalleTurno: { turnoId: number; fechaCierre?: string };
   SalidaFamiliar: undefined;
+  Merma: undefined;              
   Despachos: undefined;
   VentaExterna: { despachoId: number; despachoNombre: string; despachoColor: string };
   ProductosDespacho: { despachoId: number; despachoNombre: string };
@@ -168,6 +170,11 @@ export default function App() {
               name="SalidaFamiliar"
               component={PantallaSalidaFamiliar}
               options={{ title: 'Salida Familiar' }}
+            />
+            <Stack.Screen
+              name="Merma"
+              component={PantallaMerma}
+              options={{ title: 'Merma de Productos' }}
             />
             <Stack.Screen
               name="Despachos"

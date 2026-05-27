@@ -37,6 +37,7 @@ export interface VentaAgrupada {
   fecha_hora: string;
   metodo_pago: 'efectivo' | 'transferencia';
   total: number;
+  propina: number; 
   items: {
     producto_id: number;
     nombre_producto: string;

@@ -100,6 +100,14 @@ export async function obtenerResumenTurno(turnoId: number) {
     [turnoId]
   );
 
+  // Conteo de propinas del turno
+  const totalPropinas = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(propina), 0) as total
+    FROM movimientos
+    WHERE turno_id = ? AND tipo = 'venta' AND propina > 0`,
+    [turnoId]
+  );
+
   return {
     totalEfectivo: efectivo?.total ?? 0,
     totalTransferencia: transferencia?.total ?? 0,
@@ -108,6 +116,7 @@ export async function obtenerResumenTurno(turnoId: number) {
     inventario,
     cantidadVentas: conteoVentas?.cantidad ?? 0,
     cantidadAnulaciones: conteoAnulaciones?.cantidad ?? 0,
+    totalPropinas: totalPropinas?.total ?? 0,
   };
 }
 
@@ -175,6 +184,7 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
     nombre_producto: string;
     cantidad: number;
     precio_aplicado: number;
+    propina: number;           
   }>(
     `SELECT
       m.venta_id,
@@ -184,11 +194,12 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
       m.producto_id,
       p.nombre AS nombre_producto,
       m.cantidad,
-      m.precio_aplicado
-     FROM movimientos m
-     JOIN productos p ON m.producto_id = p.id
-     WHERE m.turno_id = ? AND m.tipo = 'venta'
-     ORDER BY m.fecha_hora DESC`,
+      m.precio_aplicado,
+      m.propina                
+    FROM movimientos m
+    JOIN productos p ON m.producto_id = p.id
+    WHERE m.turno_id = ? AND m.tipo = 'venta'
+    ORDER BY m.fecha_hora DESC`,
     [turnoId]
   );
 
@@ -197,6 +208,7 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
     fecha_hora: string;
     metodo_pago: 'efectivo' | 'transferencia';
     total: number;
+    propina: number;
     items: { nombre_producto: string; cantidad: number; precio_aplicado: number }[];
   }>();
 
@@ -207,6 +219,7 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
         fecha_hora: mov.fecha_hora,
         metodo_pago: mov.metodo_pago,
         total: 0,
+        propina: mov.propina ?? 0,
         items: [],
       });
     }

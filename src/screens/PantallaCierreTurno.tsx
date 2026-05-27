@@ -10,6 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAbiertosTurno } from '../database/turnos';
+import { obtenerMermasTurno, MermaAgrupada, etiquetaMotivo } from '../database/mermas';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils';
 
@@ -42,6 +43,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const [refrescando, setRefrescando] = useState(false);
   const [sinTurno, setSinTurno] = useState(false);
   const [pedidosAbiertos, setPedidosAbiertos] = useState<{ id: number; nombre: string; total: number; }[]>([]);
+  const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
+  const [totalPropinas, setTotalPropinas] = useState(0);
   const procesandoRef = useRef(false);
 
   useFocusEffect(
@@ -74,10 +77,11 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       }
       setTurnoId(turno.id);
 
-      const [resumen, despachos, pedidosOpen] = await Promise.all([
+      const [resumen, despachos, pedidosOpen, listaMermas] = await Promise.all([
         obtenerResumenTurno(turno.id),
         obtenerResumenExternoPorDespacho(turno.id),
         obtenerPedidosAbiertosTurno(turno.id),
+        obtenerMermasTurno(turno.id),
       ]);
 
       // Añadir justo después
@@ -91,6 +95,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
       setCantidadVentas(resumen.cantidadVentas);
       setCantidadAnulaciones(resumen.cantidadAnulaciones);
       setResumenDespachos(despachos as ResumenDespacho[]);
+      setMermas(listaMermas);
+      setTotalPropinas(resumen.totalPropinas);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar el resumen del turno.');
       console.error(error);
@@ -270,6 +276,19 @@ export default function PantallaCierreTurno({ navigation }: Props) {
             <Text style={estilos.etiquetaTotal}>Total general:</Text>
             <Text style={estilos.valorTotal}>{formatCUP(totalGeneral)} CUP</Text>
           </View>
+
+          {/* Propinas — solo si hubo */}
+          {totalPropinas > 0 && (
+            <View style={[estilos.filaResumen, estilosLocal.filaPropinaCierre]}>
+              <View style={estilosLocal.filaIconoPropina}>
+                <Ionicons name="star" size={14} color="#b7791f" />
+                <Text style={estilosLocal.etiquetaPropinaCierre}>Propinas recibidas:</Text>
+              </View>
+              <Text style={estilosLocal.valorPropinaCierre}>
+                {formatCUP(totalPropinas)} CUP
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* ── Despachos externos ── */}
@@ -427,6 +446,54 @@ export default function PantallaCierreTurno({ navigation }: Props) {
                 <Text style={estilos.horaEntrada}>{formatearFecha(salida.fecha_hora)}</Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {/* ── Mermas del turno ── */}
+        {mermas.length > 0 && (
+          <View style={estilos.seccion}>
+            <View style={estilos.cabeceraSeccion}>
+              <Ionicons name="trash-outline" size={20} color="#c05621" />
+              <Text style={estilos.tituloSeccion}>Mermas del turno</Text>
+            </View>
+
+            {mermas.map((grupo) => (
+              <View key={grupo.grupo_id} style={estilosLocal.grupoMerma}>
+                {/* Cabecera del grupo */}
+                <View style={estilosLocal.cabeceraGrupo}>
+                  <View style={estilosLocal.badgeMotivo}>
+                    <Text style={estilosLocal.textoMotivo}>
+                      {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                    </Text>
+                  </View>
+                  <Text style={estilosLocal.horaGrupo}>
+                    {new Date(grupo.fecha_hora).toLocaleTimeString('es-CU', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+
+                {/* Items del grupo */}
+                {grupo.items.map((item, idx) => (
+                  <View key={idx} style={estilos.filaEntrada}>
+                    <Text style={estilos.nombreEntrada}>{item.nombre_producto}</Text>
+                    <Text style={[estilos.cantidadEntrada, { color: '#c05621' }]}>
+                      -{item.cantidad} unid.
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+
+            {/* Total de unidades dadas de baja */}
+            <View style={estilosLocal.totalMermas}>
+              <Text style={estilosLocal.textoTotalMermas}>
+                Total dado de baja:{' '}
+                {mermas.reduce((acc, g) => acc + g.items.reduce((a, i) => a + i.cantidad, 0), 0)}{' '}
+                unidades
+              </Text>
+            </View>
           </View>
         )}
 
@@ -680,4 +747,64 @@ const estilosLocal = StyleSheet.create({
     fontWeight: 'bold',
     color: '#c05621',
   },
+  grupoMerma: {
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#feebc8',
+    paddingBottom: 8,
+  },
+  cabeceraGrupo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  badgeMotivo: {
+    backgroundColor: '#fffaf0',
+    borderWidth: 1,
+    borderColor: '#f6ad55',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  textoMotivo: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#c05621',
+  },
+  horaGrupo: {
+    fontSize: 13,
+    color: '#a0aec0',
+  },
+  totalMermas: {
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#feebc8',
+    alignItems: 'flex-end',
+  },
+  textoTotalMermas: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#c05621',
+  },
+  filaPropinaCierre: {
+  marginTop: 4,
+  paddingTop: 6,
+},
+filaIconoPropina: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 5,
+},
+etiquetaPropinaCierre: {
+  fontSize: 14,
+  color: '#b7791f',
+  fontWeight: '600',
+},
+valorPropinaCierre: {
+  fontSize: 15,
+  fontWeight: 'bold',
+  color: '#b7791f',
+},
 });

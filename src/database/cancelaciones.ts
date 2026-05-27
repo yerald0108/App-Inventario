@@ -14,6 +14,7 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
     nombre_producto: string;
     cantidad: number;
     precio_aplicado: number;
+    propina: number;          
   }>(
     `SELECT 
       m.venta_id,
@@ -23,11 +24,12 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
       m.producto_id,
       p.nombre AS nombre_producto,
       m.cantidad,
-      m.precio_aplicado
-     FROM movimientos m
-     JOIN productos p ON m.producto_id = p.id
-     WHERE m.turno_id = ? AND m.tipo = 'venta'
-     ORDER BY m.fecha_hora DESC`,
+      m.precio_aplicado,
+      m.propina                
+    FROM movimientos m
+    JOIN productos p ON m.producto_id = p.id
+    WHERE m.turno_id = ? AND m.tipo = 'venta'
+    ORDER BY m.fecha_hora DESC`,
     [turnoId]
   );
 
@@ -41,6 +43,7 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
         fecha_hora: mov.fecha_hora,
         metodo_pago: mov.metodo_pago,
         total: 0,
+        propina: mov.propina, 
         items: [],
       });
     }
@@ -99,6 +102,7 @@ export async function obtenerAnulacionesTurno(turnoId: number): Promise<VentaAgr
         fecha_hora: mov.fecha_hora,
         metodo_pago: mov.metodo_pago,
         total: 0,
+        propina: 0,
         items: [],
       });
     }

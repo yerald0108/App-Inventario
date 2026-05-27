@@ -12,6 +12,7 @@ import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/c
 import { Turno, VentaAgrupada } from '../types';
 import { formatCUP } from '../utils';
 import { obtenerResumenExternoDetalleTurno } from '../database/despachos';
+import { obtenerMermasTurno, MermaAgrupada, etiquetaMotivo } from '../database/mermas';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;
@@ -32,6 +33,8 @@ export default function PantallaDetalleTurno({ route }: Props) {
   const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [resumenDespachos, setResumenDespachos] = useState<{ despacho_id: number; despacho_nombre: string; despacho_color: string; total_efectivo: number; total_transferencia: number; cantidad_ventas: number; }[]>([]);
+  const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
+  const [totalPropinas, setTotalPropinas] = useState(0);
 
   useEffect(() => {
     cargarDetalle();
@@ -55,18 +58,22 @@ export default function PantallaDetalleTurno({ route }: Props) {
       setCantidadVentas(detalle.cantidadVentas);
       setCantidadAnulaciones(detalle.cantidadAnulaciones);
 
+      setTotalPropinas(detalle.totalPropinas ?? 0);
+
       // Una sola fuente de verdad para ventas y anulaciones.
       // obtenerVentasTurnoActual y obtenerAnulacionesTurno (cancelaciones.ts)
       // devuelven VentaAgrupada completa con producto_id, que es el tipo correcto.
-      const [listaVentas, listaAnulaciones, listaDespachos] = await Promise.all([
+      const [listaVentas, listaAnulaciones, listaDespachos, listaMermas] = await Promise.all([
         obtenerVentasTurnoActual(turnoId),
         obtenerAnulacionesTurno(turnoId),
         obtenerResumenExternoDetalleTurno(turnoId),
+        obtenerMermasTurno(turnoId),
       ]);
 
       setVentas(listaVentas);
       setAnulaciones(listaAnulaciones);
       setResumenDespachos(listaDespachos);
+      setMermas(listaMermas);
     } catch (error) {
       console.error('Error al cargar detalle del turno:', error);
     } finally {
@@ -212,8 +219,20 @@ export default function PantallaDetalleTurno({ route }: Props) {
         </View>
         <View style={[estilos.fila, estilos.filaTotal]}>
           <Text style={estilos.etiquetaTotal}>Total general:</Text>
-          <Text style={estilos.valorTotal}>{formatCUP(totalGeneral)} CUP</Text> 
+          <Text style={estilos.valorTotal}>{formatCUP(totalGeneral)} CUP</Text>
         </View>
+
+        {totalPropinas > 0 && (
+          <View style={[estilos.fila, estilosLocal.filaPropina]}>
+            <View style={estilosLocal.filaIconoPropina}>
+              <Ionicons name="star" size={14} color="#b7791f" />
+              <Text style={estilosLocal.etiquetaPropina}>Propinas recibidas:</Text>
+            </View>
+            <Text style={estilosLocal.valorPropina}>
+              {formatCUP(totalPropinas)} CUP
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Cuadre de caja */}
@@ -289,6 +308,14 @@ export default function PantallaDetalleTurno({ route }: Props) {
                         {item.cantidad}x {item.nombre_producto} — {formatCUP(item.cantidad * item.precio_aplicado)} CUP
                       </Text>
                     ))}
+                    {venta.propina > 0 && (
+                      <View style={estilosLocal.filaPropinaventa}>
+                        <Ionicons name="star" size={12} color="#b7791f" />
+                        <Text style={estilosLocal.textoPropinaventa}>
+                          Propina: {formatCUP(venta.propina)} CUP
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 )}
               </TouchableOpacity>
@@ -383,7 +410,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
         </View>
       )}
 
-      {/* Salidas familiares (Bug 9) */}
+      {/* Salidas familiares */}
       {salidasFamiliares.length > 0 && (
         <View style={estilos.seccion}>
           <View style={estilos.cabeceraSeccion}>
@@ -399,6 +426,53 @@ export default function PantallaDetalleTurno({ route }: Props) {
               <Text style={estilos.horaEntrada}>{formatearHora(salida.fecha_hora)}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {/* ── Mermas del turno ── */}
+      {mermas.length > 0 && (
+        <View style={estilos.seccion}>
+          <View style={estilos.cabeceraSeccion}>
+            <Ionicons name="trash-outline" size={20} color="#c05621" />
+            <Text style={estilos.tituloSeccion}>
+              Mermas ({mermas.reduce((acc, g) => acc + g.items.length, 0)} registros)
+            </Text>
+          </View>
+
+          {mermas.map((grupo) => (
+            <View key={grupo.grupo_id} style={estilosLocal.grupoMerma}>
+              <View style={estilosLocal.cabeceraGrupo}>
+                <View style={estilosLocal.badgeMotivo}>
+                  <Text style={estilosLocal.textoMotivo}>
+                    {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                  </Text>
+                </View>
+                <Text style={estilosLocal.horaGrupo}>
+                  {new Date(grupo.fecha_hora).toLocaleTimeString('es-CU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </Text>
+              </View>
+
+              {grupo.items.map((item, idx) => (
+                <View key={idx} style={estilos.filaEntrada}>
+                  <Text style={estilos.nombreEntrada}>{item.nombre_producto}</Text>
+                  <Text style={[estilos.cantidadEntrada, { color: '#c05621' }]}>
+                    -{item.cantidad} unid.
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
+
+          <View style={estilosLocal.totalMermas}>
+            <Text style={estilosLocal.textoTotalMermas}>
+              Total dado de baja:{' '}
+              {mermas.reduce((acc, g) => acc + g.items.reduce((a, i) => a + i.cantidad, 0), 0)}{' '}
+              unidades
+            </Text>
+          </View>
         </View>
       )}
 
@@ -699,4 +773,79 @@ const estilosLocal = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
   },
+  grupoMerma: {
+    marginBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#feebc8',
+    paddingBottom: 8,
+  },
+  cabeceraGrupo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  badgeMotivo: {
+    backgroundColor: '#fffaf0',
+    borderWidth: 1,
+    borderColor: '#f6ad55',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  textoMotivo: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#c05621',
+  },
+  horaGrupo: {
+    fontSize: 13,
+    color: '#a0aec0',
+  },
+  totalMermas: {
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#feebc8',
+    alignItems: 'flex-end',
+  },
+  textoTotalMermas: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#c05621',
+  },
+  filaPropina: {
+  marginTop: 4,
+  paddingTop: 6,
+},
+filaIconoPropina: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 5,
+},
+etiquetaPropina: {
+  fontSize: 14,
+  color: '#b7791f',
+  fontWeight: '600',
+},
+valorPropina: {
+  fontSize: 15,
+  fontWeight: 'bold',
+  color: '#b7791f',
+},
+filaPropinaventa: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 5,
+  marginTop: 6,
+  paddingTop: 6,
+  borderTopWidth: 1,
+  borderTopColor: '#fefcbf',
+},
+textoPropinaventa: {
+  fontSize: 12,
+  fontWeight: '700',
+  color: '#b7791f',
+},
 });
+

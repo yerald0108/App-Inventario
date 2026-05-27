@@ -177,6 +177,41 @@ async function aplicarMigraciones() {
       console.log('Migración v3 completada.');
     }
 
+    // Tabla de mermas ──
+    if (version < 4) {
+      console.log('Ejecutando migración v4: tabla de mermas...');
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS mermas (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          turno_id INTEGER NOT NULL,
+          fecha_hora TEXT NOT NULL,
+          grupo_id TEXT NOT NULL,
+          producto_id INTEGER NOT NULL,
+          cantidad REAL NOT NULL,
+          motivo TEXT NOT NULL,
+          motivo_detalle TEXT,
+          FOREIGN KEY (turno_id) REFERENCES turnos(id),
+          FOREIGN KEY (producto_id) REFERENCES productos(id)
+        );
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '4')"
+      );
+      console.log('Migración v4 completada.');
+    }
+
+    // Campo propina en movimientos ──
+    if (version < 5) {
+      console.log('Ejecutando migración v5: campo propina en movimientos...');
+      await db.execAsync(`
+        ALTER TABLE movimientos ADD COLUMN propina REAL DEFAULT 0;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '5')"
+      );
+      console.log('Migración v5 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     await db.execAsync('DROP TABLE IF EXISTS movimientos_new;').catch(() => {});

@@ -13,7 +13,8 @@ interface Props {
   onConfirmar: (
     metodoPago: 'efectivo' | 'transferencia',
     montoRecibido: number,
-    cambio: number
+    cambio: number,
+    propina: number
   ) => void;
   onCancelar: () => void;
   procesando?: boolean;
@@ -32,6 +33,7 @@ export default function ModalCobro({
   const [montoRecibido, setMontoRecibido] = useState('');
   const [cambio, setCambio] = useState(0);
   const [errorMonto, setErrorMonto] = useState('');
+  const [usarPropina, setUsarPropina] = useState(false);
   const slideAnim = useRef(new Animated.Value(600)).current;
 
   // 1. Usar el precioFinal si existe, si no, el del producto.
@@ -98,6 +100,7 @@ export default function ModalCobro({
       }).start();
       setMontoRecibido('');
       setMetodoPago(metodoPagoInicial);
+      setUsarPropina(false); 
     } else {
       slideAnim.setValue(600);
     }
@@ -189,9 +192,69 @@ export default function ModalCobro({
                 {errorMonto !== '' && <Text style={estilos.textoError}>{errorMonto}</Text>}
 
                 {cambio > 0 && (
-                  <View style={estilos.contenedorCambio}>
-                    <Text style={estilos.etiquetaCambio}>CAMBIO (VUELTO)</Text>
-                    <Text style={estilos.valorCambio}>${cambio.toFixed(2)} CUP</Text>
+                  <View>
+                    {/* Recuadro del vuelto — cambia color según la elección */}
+                    <View style={[
+                      estilos.contenedorCambio,
+                      usarPropina && estilosLocal.contenedorPropina,
+                    ]}>
+                      <Text style={[
+                        estilos.etiquetaCambio,
+                        usarPropina && estilosLocal.etiquetaPropina,
+                      ]}>
+                        {usarPropina ? '⭐ PROPINA' : 'CAMBIO (VUELTO)'}
+                      </Text>
+                      <Text style={[
+                        estilos.valorCambio,
+                        usarPropina && estilosLocal.valorPropina,
+                      ]}>
+                        ${cambio.toFixed(2)} CUP
+                      </Text>
+                    </View>
+
+                    {/* Selector: devolver o propina */}
+                    <Text style={estilosLocal.etiquetaSelector}>¿Qué hacer con este dinero?</Text>
+                    <View style={estilosLocal.gridSelector}>
+                      <TouchableOpacity
+                        style={[
+                          estilosLocal.botonSelector,
+                          !usarPropina && estilosLocal.botonSelectorActivo,
+                        ]}
+                        onPress={() => setUsarPropina(false)}
+                      >
+                        <Ionicons
+                          name="arrow-undo-outline"
+                          size={20}
+                          color={!usarPropina ? '#ffffff' : '#2b6cb0'}
+                        />
+                        <Text style={[
+                          estilosLocal.textoBotonSelector,
+                          !usarPropina && estilosLocal.textoBotonSelectorActivo,
+                        ]}>
+                          Devolver al cliente
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          estilosLocal.botonSelector,
+                          usarPropina && estilosLocal.botonSelectorPropina,
+                        ]}
+                        onPress={() => setUsarPropina(true)}
+                        >
+                        <Ionicons
+                          name="star-outline"
+                          size={20}
+                          color={usarPropina ? '#ffffff' : '#d69e2e'}
+                        />
+                        <Text style={[
+                          estilosLocal.textoBotonSelector,
+                          usarPropina && estilosLocal.textoBotonSelectorActivo,
+                        ]}>
+                          Registrar propina
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
@@ -224,7 +287,8 @@ export default function ModalCobro({
             style={[estilos.botonConfirmar, botonDeshabilitado && estilos.botonDeshabilitado]}
             onPress={() => {
               const montoNum = metodoPago === 'efectivo' ? parseFloat(montoRecibido) : total;
-              onConfirmar(metodoPago, montoNum, cambio);
+              const propinaFinal = usarPropina ? cambio : 0;
+              onConfirmar(metodoPago, montoNum, cambio, propinaFinal);
             }}
             disabled={botonDeshabilitado}
           >
@@ -299,4 +363,59 @@ const estilos = StyleSheet.create({
   botonDeshabilitado: { backgroundColor: '#a0aec0', shadowOpacity: 0, elevation: 0 },
   filaBotonConfirmar: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   textoConfirmar: { color: '#ffffff', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
+});
+
+const estilosLocal = StyleSheet.create({
+  // Recuadro cuando se elige propina
+  contenedorPropina: {
+    backgroundColor: '#fffff0',
+    borderColor: '#d69e2e',
+  },
+  etiquetaPropina: {
+    color: '#b7791f',
+  },
+  valorPropina: {
+    color: '#744210',
+  },
+  // Selector devolver / propina
+  etiquetaSelector: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  gridSelector: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 8,
+  },
+  botonSelector: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#bee3f8',
+    backgroundColor: '#ebf8ff',
+  },
+  botonSelectorActivo: {
+    backgroundColor: '#2b6cb0',
+    borderColor: '#2b6cb0',
+  },
+  botonSelectorPropina: {
+    backgroundColor: '#d69e2e',
+    borderColor: '#d69e2e',
+  },
+  textoBotonSelector: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2b6cb0',
+  },
+  textoBotonSelectorActivo: {
+    color: '#ffffff',
+  },
 });

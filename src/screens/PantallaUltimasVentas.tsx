@@ -219,6 +219,16 @@ export default function PantallaUltimasVentas() {
                     {prod.cantidad}x {prod.nombre_producto} — {formatCUP(prod.cantidad * prod.precio_aplicado)} CUP
                   </Text>
                 ))}
+
+                {/* Propina — solo si hubo */}
+                {item.propina > 0 && (
+                  <View style={estilosLocal.filaPropina}>
+                    <Ionicons name="star" size={13} color="#b7791f" />
+                    <Text style={estilosLocal.textoPropina}>
+                      Propina: {formatCUP(item.propina)} CUP
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Botón cancelar */}
@@ -394,5 +404,22 @@ const estilos = StyleSheet.create({
     color: '#2b6cb0',
     fontSize: 13,
     fontWeight: 'bold',
+  },
+});
+
+const estilosLocal = StyleSheet.create({
+  filaPropina: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#fefcbf',
+  },
+  textoPropina: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#b7791f',
   },
 });

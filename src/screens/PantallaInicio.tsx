@@ -302,6 +302,22 @@ export default function PantallaInicio({ navigation }: Props) {
             <Text style={estilos.textoTarjeta}>Salida Familiar</Text>
           </TouchableOpacity>
 
+          {/* Merma */}
+          <TouchableOpacity
+            style={[
+              estilos.tarjetaAccion,
+              { backgroundColor: turnoActual ? '#c05621' : '#a0aec0' },
+            ]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('Merma')
+                : handleAccionSinTurno('registrar mermas')
+            }
+          >
+            <Ionicons name="trash-outline" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Merma</Text>
+          </TouchableOpacity>
+
           {/* Despachos Externos */}
           <TouchableOpacity
             style={[
