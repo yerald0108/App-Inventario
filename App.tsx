@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Platform, UIManager, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Platform, UIManager, View, Text, TouchableOpacity, 
+         StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -35,7 +36,7 @@ export type RootStackParamList = {
   Historial: undefined;
   DetalleTurno: { turnoId: number; fechaCierre?: string };
   SalidaFamiliar: undefined;
-  Merma: undefined;              
+  Merma: undefined;
   Despachos: undefined;
   VentaExterna: { despachoId: number; despachoNombre: string; despachoColor: string };
   ProductosDespacho: { despachoId: number; despachoNombre: string };
@@ -45,11 +46,12 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// ── Tipos de estado de la DB ──────────────────────────────────────────────────
 type EstadoDB = 'cargando' | 'listo' | 'error';
 
 export default function App() {
   const [estadoDB, setEstadoDB] = useState<EstadoDB>('cargando');
+  // ── NUEVO: capturar el mensaje de error completo ──
+  const [mensajeError, setMensajeError] = useState<string>('');
 
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -62,13 +64,16 @@ export default function App() {
     try {
       await inicializarDB();
       setEstadoDB('listo');
-    } catch (error) {
+    } catch (error: any) {
       console.error('App: error crítico al inicializar DB', error);
+      // ── NUEVO: guardar el mensaje de error ──
+      const msg = error?.message ?? String(error) ?? 'Error desconocido';
+      const stack = error?.stack ?? '';
+      setMensajeError(`${msg}\n\n${stack}`);
       setEstadoDB('error');
     }
   }
 
-  // ── Pantalla de carga mientras la DB arranca ──────────────────────────────
   if (estadoDB === 'cargando') {
     return (
       <SafeAreaProvider>
@@ -80,17 +85,23 @@ export default function App() {
     );
   }
 
-  // ── Pantalla de error crítico ─────────────────────────────────────────────
+  // ── NUEVO: mostrar el error completo en pantalla ──
   if (estadoDB === 'error') {
     return (
       <SafeAreaProvider>
         <View style={estilosApp.centrado}>
           <Text style={estilosApp.iconoError}>⚠️</Text>
           <Text style={estilosApp.tituloError}>Error al iniciar la app</Text>
+          
+          {/* Mensaje de error visible en pantalla */}
+          <ScrollView style={estilosApp.scrollError}>
+            <Text style={estilosApp.textoErrorDetalle} selectable>
+              {mensajeError || 'Error desconocido. Revisa los logs.'}
+            </Text>
+          </ScrollView>
+
           <Text style={estilosApp.descripcionError}>
-            No se pudo preparar la base de datos.{'\n'}
-            Cierra la app completamente y vuelve a abrirla.{'\n'}
-            Si el problema persiste, contacta al soporte.
+            Toma una captura de pantalla del error de arriba y compártela.
           </Text>
           <TouchableOpacity style={estilosApp.botonReintentar} onPress={arrancarDB}>
             <Text style={estilosApp.textoBotonReintentar}>Reintentar</Text>
@@ -100,7 +111,6 @@ export default function App() {
     );
   }
 
-  // ── App normal ────────────────────────────────────────────────────────────
   return (
     <SafeAreaProvider>
       <ProductosProvider>
@@ -217,7 +227,7 @@ const estilosApp = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f0f4f8',
-    padding: 32,
+    padding: 24,
   },
   textoCargando: {
     marginTop: 16,
@@ -226,22 +236,37 @@ const estilosApp = StyleSheet.create({
     fontWeight: '600',
   },
   iconoError: {
-    fontSize: 56,
-    marginBottom: 16,
+    fontSize: 48,
+    marginBottom: 12,
   },
   tituloError: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1a1a2e',
-    marginBottom: 12,
+    marginBottom: 16,
     textAlign: 'center',
   },
+  // ── NUEVO ──
+  scrollError: {
+    width: '100%',
+    maxHeight: 300,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  textoErrorDetalle: {
+    color: '#f6ad55',
+    fontSize: 11,
+    fontFamily: 'monospace',
+    lineHeight: 16,
+  },
   descripcionError: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#718096',
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: 24,
+    lineHeight: 20,
   },
   botonReintentar: {
     backgroundColor: '#2b6cb0',
