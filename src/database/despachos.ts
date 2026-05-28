@@ -1,4 +1,4 @@
-import db from './database';
+import { getDatabase } from '../database/database';
 
 // ─── Tipos locales ────────────────────────────────────────────────────────────
 
@@ -60,6 +60,7 @@ export interface VentaExternaAgrupada {
 // ─── CRUD Despachos ───────────────────────────────────────────────────────────
 
 export async function obtenerDespachos(): Promise<Despacho[]> {
+  const db = await getDatabase();
   return await db.getAllAsync<Despacho>(
     'SELECT * FROM despachos WHERE activo = 1 ORDER BY nombre ASC'
   );
@@ -70,6 +71,7 @@ export async function crearDespacho(
   descripcion: string | null,
   color: string
 ): Promise<number> {
+  const db = await getDatabase();
   const result = await db.runAsync(
     'INSERT INTO despachos (nombre, descripcion, color, activo, fecha_creacion) VALUES (?, ?, ?, 1, ?)',
     [nombre, descripcion, color, new Date().toISOString()]
@@ -83,6 +85,7 @@ export async function actualizarDespacho(
   descripcion: string | null,
   color: string
 ): Promise<void> {
+  const db = await getDatabase();
   await db.runAsync(
     'UPDATE despachos SET nombre = ?, descripcion = ?, color = ? WHERE id = ?',
     [nombre, descripcion, color, id]
@@ -90,6 +93,7 @@ export async function actualizarDespacho(
 }
 
 export async function eliminarDespacho(id: number): Promise<void> {
+  const db = await getDatabase();
   // Soft delete
   await db.runAsync('UPDATE despachos SET activo = 0 WHERE id = ?', [id]);
 }
@@ -97,6 +101,7 @@ export async function eliminarDespacho(id: number): Promise<void> {
 // ─── CRUD Productos del Despacho ──────────────────────────────────────────────
 
 export async function obtenerProductosDespacho(despachoId: number): Promise<ProductoDespacho[]> {
+  const db = await getDatabase();
   return await db.getAllAsync<ProductoDespacho>(
     'SELECT * FROM productos_despacho WHERE despacho_id = ? AND activo = 1 ORDER BY nombre ASC',
     [despachoId]
@@ -108,6 +113,7 @@ export async function crearProductoDespacho(
   nombre: string,
   precio: number
 ): Promise<void> {
+  const db = await getDatabase();
   await db.runAsync(
     'INSERT INTO productos_despacho (despacho_id, nombre, precio, activo) VALUES (?, ?, ?, 1)',
     [despachoId, nombre, precio]
@@ -119,6 +125,7 @@ export async function actualizarProductoDespacho(
   nombre: string,
   precio: number
 ): Promise<void> {
+  const db = await getDatabase();
   await db.runAsync(
     'UPDATE productos_despacho SET nombre = ?, precio = ? WHERE id = ?',
     [nombre, precio, id]
@@ -126,6 +133,7 @@ export async function actualizarProductoDespacho(
 }
 
 export async function eliminarProductoDespacho(id: number): Promise<void> {
+  const db = await getDatabase();
   await db.runAsync('UPDATE productos_despacho SET activo = 0 WHERE id = ?', [id]);
 }
 
@@ -141,6 +149,7 @@ export async function registrarVentaExterna(
   const fechaHora = new Date().toISOString();
   const total = items.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
 
+  const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     const result = await db.runAsync(
       'INSERT INTO ventas_externas (despacho_id, turno_id, fecha_hora, metodo_pago, total, venta_id) VALUES (?, ?, ?, ?, ?, ?)',
@@ -160,6 +169,7 @@ export async function registrarVentaExterna(
 export async function cancelarVentaExterna(ventaId: string): Promise<void> {
   // Para ventas externas la cancelación simplemente elimina los registros
   // ya que no hay inventario propio que restaurar
+  const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     const venta = await db.getFirstAsync<{ id: number }>(
       'SELECT id FROM ventas_externas WHERE venta_id = ?',
@@ -173,7 +183,7 @@ export async function cancelarVentaExterna(ventaId: string): Promise<void> {
 }
 
 export async function obtenerVentasExternasTurno(turnoId: number): Promise<VentaExternaAgrupada[]> {
-  const rows = await db.getAllAsync<{
+  const rows = await getDatabase().getAllAsync<{
     venta_id: string;
     despacho_id: number;
     despacho_nombre: string;
@@ -242,6 +252,7 @@ export async function obtenerResumenExternoPorDespacho(turnoId: number): Promise
   total_transferencia: number;
   cantidad_ventas: number;
 }[]> {
+  const db = await getDatabase();
   return await db.getAllAsync(
     `SELECT 
       d.id AS despacho_id,
@@ -269,6 +280,7 @@ export async function obtenerResumenExternoDetalleTurno(turnoId: number): Promis
   total_transferencia: number;
   cantidad_ventas: number;
 }[]> {
+  const db = await getDatabase();
   return await db.getAllAsync(
     `SELECT 
       d.id AS despacho_id,
@@ -299,7 +311,7 @@ export async function obtenerTotalesExternosPorTurnos(
   // SQLite no soporta parámetros array directamente; construimos los placeholders.
   const placeholders = turnoIds.map(() => '?').join(', ');
 
-  const filas = await db.getAllAsync<{ turno_id: number; total: number }>(
+  const filas = await getDatabase().getAllAsync<{ turno_id: number; total: number }>(
     `SELECT turno_id, COALESCE(SUM(total), 0) AS total
      FROM ventas_externas
      WHERE turno_id IN (${placeholders})

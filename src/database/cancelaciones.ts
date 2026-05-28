@@ -1,11 +1,11 @@
-import db from './database';
+import { getDatabase } from '../database/database';
 import { VentaAgrupada } from '../types';
 import { sumaSegura } from '../utils';
 
 // Obtener todas las ventas del turno actual agrupadas por venta_id
 export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAgrupada[]> {
   // Traer todos los movimientos de venta del turno actual (no cancelados)
-  const movimientos = await db.getAllAsync<{
+  const movimientos = await getDatabase().getAllAsync<{
     venta_id: string;
     fecha_hora: string;
     metodo_pago: 'efectivo' | 'transferencia';
@@ -67,7 +67,7 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
 
 // Obtener todas las anulaciones del turno actual agrupadas por venta_id
 export async function obtenerAnulacionesTurno(turnoId: number): Promise<VentaAgrupada[]> {
-  const movimientos = await db.getAllAsync<{
+  const movimientos = await getDatabase().getAllAsync<{
     venta_id: string;
     fecha_hora: string;
     metodo_pago: 'efectivo' | 'transferencia';
@@ -127,7 +127,7 @@ export async function obtenerAnulacionesTurno(turnoId: number): Promise<VentaAgr
 // Cancelar una venta completa por su venta_id
 export async function cancelarVenta(ventaId: string): Promise<void> {
   // Obtener todos los movimientos de esa venta
-  const movimientos = await db.getAllAsync<{
+  const movimientos = await getDatabase().getAllAsync<{
     producto_id: number;
     cantidad: number;
   }>(
@@ -137,14 +137,14 @@ export async function cancelarVenta(ventaId: string): Promise<void> {
   );
 
   // Marcar todos los movimientos de esa venta como cancelacion
-  await db.runAsync(
+  await getDatabase().runAsync(
     `UPDATE movimientos SET tipo = 'cancelacion' WHERE venta_id = ? AND tipo = 'venta'`,
     [ventaId]
   );
 
   // Devolver las cantidades al inventario
   for (const mov of movimientos) {
-    await db.runAsync(
+    await getDatabase().runAsync(
       'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
       [mov.cantidad, mov.producto_id]
     );
@@ -156,7 +156,7 @@ export async function cambiarMetodoPagoVenta(
   ventaId: string,
   nuevoMetodo: 'efectivo' | 'transferencia'
 ): Promise<void> {
-  await db.runAsync(
+  await getDatabase().runAsync(
     `UPDATE movimientos 
      SET metodo_pago = ? 
      WHERE venta_id = ? AND tipo = 'venta'`,

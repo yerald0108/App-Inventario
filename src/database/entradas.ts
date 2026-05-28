@@ -1,4 +1,4 @@
-import db from './database';
+import { getDatabase } from '../database/database';
 
 // Registrar una entrada de mercancía
 export async function registrarEntrada(
@@ -8,6 +8,7 @@ export async function registrarEntrada(
 ): Promise<void> {
   const fechaHora = new Date().toISOString();
   try {
+    const db = await getDatabase();
     await db.runAsync(
       `INSERT INTO movimientos
         (tipo, fecha_hora, producto_id, cantidad, turno_id)

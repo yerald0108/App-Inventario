@@ -1,4 +1,4 @@
-import db from './database';
+import { getDatabase } from '../database/database';
 import { ItemCesta } from '../types';
 
 /**
@@ -12,6 +12,7 @@ export async function registrarSalidaFamiliar(
   const fechaHora = new Date().toISOString();
   const grupoId = `FAM-${Date.now()}`;
   try {
+    const db = await getDatabase();
     await db.withTransactionAsync(async () => {
       for (const item of items) {
         await db.runAsync(

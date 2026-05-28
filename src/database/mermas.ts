@@ -1,4 +1,4 @@
-import db from './database';
+import { getDatabase } from '../database/database';
 import { formatCUP } from '../utils';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
@@ -42,6 +42,7 @@ export async function registrarMerma(
   const fechaHora = new Date().toISOString();
 
   try {
+    const db = await getDatabase();
     await db.withTransactionAsync(async () => {
       for (const item of items) {
         // Insertar el registro de merma
@@ -68,6 +69,7 @@ export async function registrarMerma(
 // ─── Obtener mermas de un turno agrupadas por grupo_id ────────────────────────
 
 export async function obtenerMermasTurno(turnoId: number): Promise<MermaAgrupada[]> {
+  const db = await getDatabase();
   const filas = await db.getAllAsync<{
     grupo_id: string;
     fecha_hora: string;

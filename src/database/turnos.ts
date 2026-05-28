@@ -1,9 +1,10 @@
-import db from './database';
+import { getDatabase } from '../database/database';
 import { sumaSegura } from '../utils';
 import { Turno } from '../types';
 
 // Obtener el turno actualmente abierto
 export async function obtenerTurnoAbierto(): Promise<Turno | null> {
+  const db = await getDatabase();
   return await db.getFirstAsync<Turno>(
     'SELECT * FROM turnos WHERE cerrado = 0 ORDER BY id DESC LIMIT 1'
   );
@@ -11,6 +12,7 @@ export async function obtenerTurnoAbierto(): Promise<Turno | null> {
 
 // Crear un nuevo turno
 export async function crearTurno(): Promise<number> {
+  const db = await getDatabase();
   // Verificar que no haya un turno abierto antes de crear uno nuevo.
   // Esto es una segunda línea de defensa contra el doble tap u otras
   // condiciones de carrera.
@@ -31,6 +33,7 @@ export async function crearTurno(): Promise<number> {
 
 // Obtener resumen completo de un turno para el cierre
 export async function obtenerResumenTurno(turnoId: number) {
+  const db = await getDatabase();
   // Total en efectivo (solo ventas no canceladas)
   const efectivo = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(total), 0) as total 
@@ -128,7 +131,7 @@ export async function cerrarTurno(
   efectivoReal: number
 ): Promise<void> {
   const fechaCierre = new Date().toISOString();
-
+  const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     // 1. Cancelar los pedidos abiertos que pertenecen a este turno
     await db.runAsync(
@@ -157,6 +160,7 @@ export async function obtenerTurnosCerrados(
   limite: number = 20,
   offset: number = 0
 ): Promise<Turno[]> {
+  const db = await getDatabase();
   return await db.getAllAsync<Turno>(
     `SELECT * FROM turnos
      WHERE cerrado = 1
@@ -168,6 +172,7 @@ export async function obtenerTurnosCerrados(
 
 // Obtener el resumen de un turno cerrado (solo lectura)
 export async function obtenerDetalleTurno(turnoId: number) {
+  const db = await getDatabase();
   const turno = await db.getFirstAsync<Turno>(
     'SELECT * FROM turnos WHERE id = ?',
     [turnoId]
@@ -182,6 +187,7 @@ export async function obtenerDetalleTurno(turnoId: number) {
 
 // Obtener ventas agrupadas de un turno cerrado
 export async function obtenerVentasDetalleTurno(turnoId: number) {
+  const db = await getDatabase();
   const movimientos = await db.getAllAsync<{
     venta_id: string;
     fecha_hora: string;
@@ -253,6 +259,7 @@ export async function obtenerPedidosAbiertosTurno(turnoId: number): Promise<{
   nombre: string;
   total: number;
 }[]> {
+  const db = await getDatabase();
   return await db.getAllAsync<{ id: number; nombre: string; total: number }>(
     `SELECT id, nombre, total FROM pedidos 
      WHERE turno_id = ? AND estado = 'abierto'

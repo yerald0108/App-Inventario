@@ -1,8 +1,9 @@
-import db from './database';
+import { getDatabase } from '../database/database';
 import { Producto } from '../types';
 
 // Obtener productos disponibles para vender (existencia > 0)
 export async function obtenerProductosDisponibles(): Promise<Producto[]> {
+  const db = await getDatabase();
   return await db.getAllAsync<Producto>(
     'SELECT * FROM productos WHERE existencia > 0 ORDER BY nombre ASC'
   );
@@ -18,6 +19,7 @@ export async function registrarVenta(
   const ventaId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();
 
+  const db = await getDatabase();
   await db.withTransactionAsync(async () => {
     for (const item of items) {
       // Validar que precio y cantidad son números finitos antes de operar.

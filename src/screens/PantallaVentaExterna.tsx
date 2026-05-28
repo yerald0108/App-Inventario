@@ -348,6 +348,7 @@ export default function PantallaVentaExterna({ route }: Props) {
             precio: i.precio,
             existencia: 999,
             alerta_minima: 0,
+            precio_costo: 0,
           },
           cantidad: i.cantidad,
         }))}

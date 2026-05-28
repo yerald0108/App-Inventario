@@ -1,11 +1,22 @@
 import * as SQLite from 'expo-sqlite';
 
-// Abrir (o crear) la base de datos local
-const db = SQLite.openDatabaseSync('micaja.db');
+// Guardamos la base de datos aquí, pero NO la abrimos todavía
+let db: SQLite.SQLiteDatabase | null = null;
+
+// Esta función devuelve la base de datos ya abierta
+export function getDatabase(): SQLite.SQLiteDatabase {
+  if (!db) {
+    throw new Error('La base de datos no está inicializada. Llama a inicializarDB() primero.');
+  }
+  return db;
+}
 
 // Inicializar tablas y esquema base
 export async function inicializarDB(): Promise<void> {
   try {
+    // Abrir la base de datos AQUÍ, no antes
+    db = await SQLite.openDatabaseAsync('micaja.db');
+    
     // 1. Tablas core siempre presentes
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
@@ -39,12 +50,14 @@ export async function inicializarDB(): Promise<void> {
 
   } catch (error) {
     console.error('inicializarDB: fallo crítico al inicializar la base de datos', error);
-    // Re-lanzar para que App.tsx lo capture y muestre pantalla de error
+    db = null;
     throw error;
   }
 }
 
 async function aplicarMigraciones() {
+  if (!db) throw new Error('DB no inicializada');
+  
   try {
     const versionRow = await db.getFirstAsync<{ valor: string }>(
       "SELECT valor FROM meta WHERE clave = 'schema_version'"
@@ -211,12 +224,9 @@ async function aplicarMigraciones() {
       console.log('Migración v5 completada.');
     }
 
-    // ── v6: pedidos_items mixtos (propio + despacho) ──────────────────────
+    // ── v6: pedidos_items mixtos ──────────────────────────────────────────
     if (version < 6) {
       console.log('Ejecutando migración v6: pedidos_items mixtos...');
-      // SQLite no permite ADD COLUMN con CHECK en una sola instrucción
-      // cuando hay datos existentes con DEFAULT, así que lo hacemos sin CHECK
-      // en el ALTER y la validación la dejamos en la capa de aplicación.
       await db.execAsync(`
         ALTER TABLE pedidos_items ADD COLUMN origen TEXT NOT NULL DEFAULT 'propio';
         ALTER TABLE pedidos_items ADD COLUMN producto_despacho_id INTEGER;
@@ -228,7 +238,7 @@ async function aplicarMigraciones() {
       console.log('Migración v6 completada.');
     }
 
-    // ── v7: precio_costo en productos ────────────────────────────────────────
+    // ── v7: precio_costo en productos ─────────────────────────────────────
     if (version < 7) {
       console.log('Ejecutando migración v7: precio_costo en productos...');
       await db.execAsync(`
@@ -242,8 +252,9 @@ async function aplicarMigraciones() {
 
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
-    await db.execAsync('DROP TABLE IF EXISTS movimientos_new;').catch(() => {});
+    if (db) {
+      await db.execAsync('DROP TABLE IF EXISTS movimientos_new;').catch(() => {});
+    }
+    throw error;
   }
 }
-
-export default db;
