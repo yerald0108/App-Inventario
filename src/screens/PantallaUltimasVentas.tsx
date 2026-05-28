@@ -145,9 +145,11 @@ export default function PantallaUltimasVentas() {
   // Formatear hora legible desde ISO string
   function formatearHora(fechaISO: string): string {
     const fecha = new Date(fechaISO);
-    const horas = fecha.getHours().toString().padStart(2, '0');
-    const minutos = fecha.getMinutes().toString().padStart(2, '0');
-    return `${horas}:${minutos}`;
+    return fecha.toLocaleTimeString('es-CU', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
   }
 
   const renderSkeleton = () => (

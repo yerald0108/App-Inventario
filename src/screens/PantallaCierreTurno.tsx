@@ -44,6 +44,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
   const [sinTurno, setSinTurno] = useState(false);
   const [pedidosAbiertos, setPedidosAbiertos] = useState<{ id: number; nombre: string; total: number; }[]>([]);
   const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
+  const [mermasExpandidas, setMermasExpandidas] = useState<Set<string>>(new Set());
   const [totalPropinas, setTotalPropinas] = useState(0);
   const procesandoRef = useRef(false);
 
@@ -201,7 +202,19 @@ export default function PantallaCierreTurno({ navigation }: Props) {
 
   function formatearFecha(iso: string): string {
     const fecha = new Date(iso);
-    return fecha.toLocaleTimeString('es-CU', { hour: '2-digit', minute: '2-digit' });
+    return fecha.toLocaleTimeString('es-CU', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  function toggleMerma(grupoId: string) {
+    setMermasExpandidas(prev => {
+      const nueva = new Set(prev);
+      if (nueva.has(grupoId)) {
+        nueva.delete(grupoId);
+      } else {
+        nueva.add(grupoId);
+      }
+      return nueva;
+    });
   }
 
   if (cargando || sinTurno) {
@@ -457,34 +470,96 @@ export default function PantallaCierreTurno({ navigation }: Props) {
               <Text style={estilos.tituloSeccion}>Mermas del turno</Text>
             </View>
 
-            {mermas.map((grupo) => (
-              <View key={grupo.grupo_id} style={estilosLocal.grupoMerma}>
-                {/* Cabecera del grupo */}
-                <View style={estilosLocal.cabeceraGrupo}>
-                  <View style={estilosLocal.badgeMotivo}>
-                    <Text style={estilosLocal.textoMotivo}>
-                      {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
-                    </Text>
+            {mermas.map((grupo) => {
+              const expandido = mermasExpandidas.has(grupo.grupo_id);
+              return (
+                <TouchableOpacity
+                  key={grupo.grupo_id}
+                  style={estilosLocal.grupoMerma}
+                  onPress={() => toggleMerma(grupo.grupo_id)}
+                  activeOpacity={0.7}
+                >
+                  {/* Cabecera del grupo */}
+                  <View style={estilosLocal.cabeceraGrupo}>
+                    <View style={estilosLocal.badgeMotivo}>
+                      <Text style={estilosLocal.textoMotivo}>
+                        {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                      </Text>
+                    </View>
+                    <View style={estilosLocal.filaDerechaCabecera}>
+                      <Text style={estilosLocal.horaGrupo}>
+                        {new Date(grupo.fecha_hora).toLocaleTimeString('es-CU', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </Text>
+                      <Ionicons
+                        name={expandido ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color="#a0aec0"
+                      />
+                    </View>
                   </View>
-                  <Text style={estilosLocal.horaGrupo}>
-                    {new Date(grupo.fecha_hora).toLocaleTimeString('es-CU', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                </View>
 
-                {/* Items del grupo */}
-                {grupo.items.map((item, idx) => (
-                  <View key={idx} style={estilos.filaEntrada}>
-                    <Text style={estilos.nombreEntrada}>{item.nombre_producto}</Text>
-                    <Text style={[estilos.cantidadEntrada, { color: '#c05621' }]}>
-                      -{item.cantidad} unid.
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            ))}
+                  {/* Items del grupo — siempre visibles */}
+                  {grupo.items.map((item, idx) => (
+                    <View key={idx} style={estilosLocal.filaItemMerma}>
+                      <View style={estilosLocal.infoItemMerma}>
+                        <Text style={estilos.nombreEntrada}>{item.nombre_producto}</Text>
+                        <Text style={estilosLocal.motivoItemMerma}>
+                          Motivo: {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                        </Text>
+                      </View>
+                      <Text style={[estilos.cantidadEntrada, { color: '#c05621' }]}>
+                        -{item.cantidad} unid.
+                      </Text>
+                    </View>
+                  ))}
+
+                  {/* Detalle expandido */}
+                  {expandido && (
+                    <View style={estilosLocal.detalleExpandido}>
+                      <View style={estilosLocal.filaDetalleItem}>
+                        <Ionicons name="calendar-outline" size={14} color="#c05621" />
+                        <Text style={estilosLocal.textoDetalleItem}>
+                          Fecha y hora:{' '}
+                          {new Date(grupo.fecha_hora).toLocaleString('es-CU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
+                        </Text>
+                      </View>
+                      <View style={estilosLocal.filaDetalleItem}>
+                        <Ionicons name="warning-outline" size={14} color="#c05621" />
+                        <Text style={estilosLocal.textoDetalleItem}>
+                          Motivo: {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                        </Text>
+                      </View>
+                      {grupo.motivo_detalle && (
+                        <View style={estilosLocal.filaDetalleItem}>
+                          <Ionicons name="chatbox-outline" size={14} color="#c05621" />
+                          <Text style={estilosLocal.textoDetalleItem}>
+                            Descripción: {grupo.motivo_detalle}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={estilosLocal.filaDetalleItem}>
+                        <Ionicons name="cube-outline" size={14} color="#c05621" />
+                        <Text style={estilosLocal.textoDetalleItem}>
+                          Total unidades dadas de baja:{' '}
+                          {grupo.items.reduce((acc, i) => acc + i.cantidad, 0)}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
 
             {/* Total de unidades dadas de baja */}
             <View style={estilosLocal.totalMermas}>
@@ -806,5 +881,47 @@ valorPropinaCierre: {
   fontSize: 15,
   fontWeight: 'bold',
   color: '#b7791f',
+},
+filaItemMerma: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 6,
+  borderBottomWidth: 1,
+  borderBottomColor: '#feebc8',
+  gap: 8,
+},
+infoItemMerma: {
+  flex: 1,
+},
+motivoItemMerma: {
+  fontSize: 12,
+  color: '#c05621',
+  fontStyle: 'italic',
+  marginTop: 2,
+},
+filaDerechaCabecera: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+},
+detalleExpandido: {
+  marginTop: 10,
+  backgroundColor: '#fffaf0',
+  borderRadius: 10,
+  padding: 12,
+  borderWidth: 1,
+  borderColor: '#fbd38d',
+  gap: 8,
+},
+filaDetalleItem: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 8,
+},
+textoDetalleItem: {
+  flex: 1,
+  fontSize: 13,
+  color: '#744210',
+  lineHeight: 18,
 },
 });

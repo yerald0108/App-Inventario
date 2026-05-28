@@ -30,6 +30,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
   const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
   const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
   const [ventasExpandidas, setVentasExpandidas] = useState<Set<string>>(new Set());
+  const [mermasExpandidas, setMermasExpandidas] = useState<Set<string>>(new Set());
   const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
   const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [resumenDespachos, setResumenDespachos] = useState<{ despacho_id: number; despacho_nombre: string; despacho_color: string; total_efectivo: number; total_transferencia: number; cantidad_ventas: number; }[]>([]);
@@ -88,6 +89,18 @@ export default function PantallaDetalleTurno({ route }: Props) {
         nueva.delete(ventaId);
       } else {
         nueva.add(ventaId);
+      }
+      return nueva;
+    });
+  }
+
+  function toggleMerma(grupoId: string) {
+    setMermasExpandidas(prev => {
+      const nueva = new Set(prev);
+      if (nueva.has(grupoId)) {
+        nueva.delete(grupoId);
+      } else {
+        nueva.add(grupoId);
       }
       return nueva;
     });
@@ -439,32 +452,96 @@ export default function PantallaDetalleTurno({ route }: Props) {
             </Text>
           </View>
 
-          {mermas.map((grupo) => (
-            <View key={grupo.grupo_id} style={estilosLocal.grupoMerma}>
-              <View style={estilosLocal.cabeceraGrupo}>
-                <View style={estilosLocal.badgeMotivo}>
-                  <Text style={estilosLocal.textoMotivo}>
-                    {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
-                  </Text>
+          {mermas.map((grupo) => {
+            const expandido = mermasExpandidas.has(grupo.grupo_id);
+            return (
+              <TouchableOpacity
+                key={grupo.grupo_id}
+                style={estilosLocal.grupoMerma}
+                onPress={() => toggleMerma(grupo.grupo_id)}
+                activeOpacity={0.7}
+              >
+                {/* Cabecera */}
+                <View style={estilosLocal.cabeceraGrupo}>
+                  <View style={estilosLocal.badgeMotivo}>
+                    <Text style={estilosLocal.textoMotivo}>
+                      {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                    </Text>
+                  </View>
+                  <View style={estilosLocal.filaDerechaCabecera}>
+                    <Text style={estilosLocal.horaGrupo}>
+                      {new Date(grupo.fecha_hora).toLocaleTimeString('es-CU', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true,
+                      })}
+                    </Text>
+                    <Ionicons
+                      name={expandido ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color="#a0aec0"
+                    />
+                  </View>
                 </View>
-                <Text style={estilosLocal.horaGrupo}>
-                  {new Date(grupo.fecha_hora).toLocaleTimeString('es-CU', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </Text>
-              </View>
 
-              {grupo.items.map((item, idx) => (
-                <View key={idx} style={estilos.filaEntrada}>
-                  <Text style={estilos.nombreEntrada}>{item.nombre_producto}</Text>
-                  <Text style={[estilos.cantidadEntrada, { color: '#c05621' }]}>
+                {/* Items siempre visibles */}
+                {grupo.items.map((item, idx) => (
+                  <View key={idx} style={estilos.filaEntrada}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={estilos.nombreEntrada}>{item.nombre_producto}</Text>
+                      <Text style={estilosLocal.motivoItemMerma}>
+                        Motivo: {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                      </Text>
+                    </View>
+                    <Text style={[estilos.cantidadEntrada, { color: '#c05621' }]}>
                     -{item.cantidad} unid.
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ))}
+                    </Text>
+                  </View>
+                ))}
+
+                {/* Detalle expandido */}
+                {expandido && (
+                  <View style={estilosLocal.detalleExpandido}>
+                    <View style={estilosLocal.filaDetalleItem}>
+                      <Ionicons name="calendar-outline" size={14} color="#c05621" />
+                      <Text style={estilosLocal.textoDetalleItem}>
+                        Fecha y hora:{' '}
+                        {new Date(grupo.fecha_hora).toLocaleString('es-CU', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </Text>
+                    </View>
+                    <View style={estilosLocal.filaDetalleItem}>
+                      <Ionicons name="warning-outline" size={14} color="#c05621" />
+                      <Text style={estilosLocal.textoDetalleItem}>
+                        Motivo: {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
+                      </Text>
+                    </View>
+                    {grupo.motivo_detalle && (
+                      <View style={estilosLocal.filaDetalleItem}>
+                        <Ionicons name="chatbox-outline" size={14} color="#c05621" />
+                        <Text style={estilosLocal.textoDetalleItem}>
+                          Descripción: {grupo.motivo_detalle}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={estilosLocal.filaDetalleItem}>
+                      <Ionicons name="cube-outline" size={14} color="#c05621" />
+                      <Text style={estilosLocal.textoDetalleItem}>
+                        Total unidades dadas de baja:{' '}
+                        {grupo.items.reduce((acc, i) => acc + i.cantidad, 0)}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
 
           <View style={estilosLocal.totalMermas}>
             <Text style={estilosLocal.textoTotalMermas}>
@@ -846,6 +923,37 @@ textoPropinaventa: {
   fontSize: 12,
   fontWeight: '700',
   color: '#b7791f',
+},
+filaDerechaCabecera: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+},
+motivoItemMerma: {
+  fontSize: 12,
+  color: '#c05621',
+  fontStyle: 'italic',
+  marginTop: 2,
+},
+detalleExpandido: {
+  marginTop: 10,
+  backgroundColor: '#fffaf0',
+  borderRadius: 10,
+  padding: 12,
+  borderWidth: 1,
+  borderColor: '#fbd38d',
+  gap: 8,
+},
+filaDetalleItem: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 8,
+},
+textoDetalleItem: {
+  flex: 1,
+  fontSize: 13,
+  color: '#744210',
+  lineHeight: 18,
 },
 });
 
