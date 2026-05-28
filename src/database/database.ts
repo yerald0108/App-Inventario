@@ -228,6 +228,18 @@ async function aplicarMigraciones() {
       console.log('Migración v6 completada.');
     }
 
+    // ── v7: precio_costo en productos ────────────────────────────────────────
+    if (version < 7) {
+      console.log('Ejecutando migración v7: precio_costo en productos...');
+      await db.execAsync(`
+        ALTER TABLE productos ADD COLUMN precio_costo REAL DEFAULT 0;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '7')"
+      );
+      console.log('Migración v7 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     await db.execAsync('DROP TABLE IF EXISTS movimientos_new;').catch(() => {});

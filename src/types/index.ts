@@ -4,6 +4,7 @@ export interface Producto {
   id: number;
   nombre: string;
   precio: number;
+  precio_costo: number; // 0 = no informado
   existencia: number;
   alerta_minima: number;
 }

@@ -8,10 +8,11 @@ import { Producto } from '../types';
 
 interface Props {
   visible: boolean;
-  producto: Producto | null; // null = modo crear, Producto = modo editar
+  producto: Producto | null;
   onGuardar: (datos: {
     nombre: string;
     precio: number;
+    precio_costo: number;
     existencia: number;
     alerta_minima: number;
   }) => void;
@@ -24,6 +25,7 @@ export default function FormularioProducto({
 }: Props) {
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
+  const [precioCosto, setPrecioCosto] = useState('');
   const [existencia, setExistencia] = useState('');
   const [alertaMinima, setAlertaMinima] = useState('5');
   const slideAnim = useRef(new Animated.Value(600)).current;
@@ -31,27 +33,18 @@ export default function FormularioProducto({
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return gestureState.dy > 10;
-      },
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10,
       onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          slideAnim.setValue(gestureState.dy);
-        }
+        if (gestureState.dy > 0) slideAnim.setValue(gestureState.dy);
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 150 || gestureState.vy > 0.5) {
           Animated.timing(slideAnim, {
-            toValue: 600,
-            duration: 200,
-            useNativeDriver: true,
+            toValue: 600, duration: 200, useNativeDriver: true,
           }).start(onCancelar);
         } else {
           Animated.spring(slideAnim, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 50,
-            friction: 8
+            toValue: 0, useNativeDriver: true, tension: 50, friction: 8,
           }).start();
         }
       },
@@ -61,53 +54,53 @@ export default function FormularioProducto({
   useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8
+        toValue: 0, useNativeDriver: true, tension: 50, friction: 8,
       }).start();
     } else {
       slideAnim.setValue(600);
     }
   }, [visible]);
 
-  // Cargar datos del producto al abrir en modo edición
-    useEffect(() => {
-        if (producto) {
-        setNombre(producto.nombre ?? '');
-        setPrecio(producto.precio != null ? producto.precio.toString() : '');
-        setExistencia(producto.existencia != null ? producto.existencia.toString() : '');
-        setAlertaMinima(producto.alerta_minima != null ? producto.alerta_minima.toString() : '5');
+  useEffect(() => {
+    if (producto) {
+      setNombre(producto.nombre ?? '');
+      setPrecio(producto.precio != null ? producto.precio.toString() : '');
+      setPrecioCosto(
+        producto.precio_costo && producto.precio_costo > 0
+          ? producto.precio_costo.toString()
+          : ''
+      );
+      setExistencia(producto.existencia != null ? producto.existencia.toString() : '');
+      setAlertaMinima(producto.alerta_minima != null ? producto.alerta_minima.toString() : '5');
     } else {
-        setNombre('');
-        setPrecio('');
-        setExistencia('');
-        setAlertaMinima('5');
+      setNombre('');
+      setPrecio('');
+      setPrecioCosto('');
+      setExistencia('');
+      setAlertaMinima('5');
     }
-    }, [producto, visible]);
+  }, [producto, visible]);
 
   function validarYGuardar() {
-    // Validar nombre
     if (!nombre.trim()) {
       Alert.alert('Error', 'El nombre del producto es obligatorio.');
       return;
     }
-
-    // Validar precio
     const precioNum = parseFloat(precio);
     if (isNaN(precioNum) || precioNum <= 0) {
       Alert.alert('Error', 'El precio debe ser mayor que 0.');
       return;
     }
-
-    // Validar existencia
+    const costNum = precioCosto.trim() === '' ? 0 : parseFloat(precioCosto);
+    if (isNaN(costNum) || costNum < 0) {
+      Alert.alert('Error', 'El precio de costo no puede ser negativo.');
+      return;
+    }
     const existenciaNum = parseFloat(existencia);
     if (isNaN(existenciaNum) || existenciaNum < 0) {
       Alert.alert('Error', 'La existencia no puede ser negativa.');
       return;
     }
-
-    // Validar alerta mínima
     const alertaNum = parseFloat(alertaMinima);
     if (isNaN(alertaNum) || alertaNum < 0) {
       Alert.alert('Error', 'La alerta mínima no puede ser negativa.');
@@ -117,6 +110,7 @@ export default function FormularioProducto({
     onGuardar({
       nombre: nombre.trim(),
       precio: precioNum,
+      precio_costo: costNum,
       existencia: existenciaNum,
       alerta_minima: alertaNum,
     });
@@ -128,14 +122,22 @@ export default function FormularioProducto({
       `Esta acción borrará definitivamente "${nombre}" y no se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Eliminar ahora', 
-          style: 'destructive', 
-          onPress: onEliminar 
-        },
+        { text: 'Eliminar ahora', style: 'destructive', onPress: onEliminar },
       ]
     );
   }
+
+  // Calcular margen para mostrarlo en tiempo real
+  const precioNum = parseFloat(precio);
+  const costNum = parseFloat(precioCosto);
+  const margenValido =
+    !isNaN(precioNum) && precioNum > 0 &&
+    !isNaN(costNum)   && costNum  > 0 &&
+    precioNum > costNum;
+  const margenPct = margenValido
+    ? (((precioNum - costNum) / precioNum) * 100).toFixed(1)
+    : null;
+  const ganancia = margenValido ? (precioNum - costNum).toFixed(2) : null;
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
@@ -144,12 +146,9 @@ export default function FormularioProducto({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <Pressable style={estilos.dismissArea} onPress={onCancelar} />
-        
-        <Animated.View 
-          style={[
-            estilos.modal,
-            { transform: [{ translateY: slideAnim }] }
-          ]}
+
+        <Animated.View
+          style={[estilos.modal, { transform: [{ translateY: slideAnim }] }]}
         >
           <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -157,6 +156,7 @@ export default function FormularioProducto({
               {producto ? 'Editar producto' : 'Nuevo producto'}
             </Text>
 
+            {/* Nombre */}
             <Text style={estilos.etiqueta}>Nombre</Text>
             <TextInput
               style={estilos.input}
@@ -167,7 +167,8 @@ export default function FormularioProducto({
               autoCapitalize="words"
             />
 
-            <Text style={estilos.etiqueta}>Precio</Text>
+            {/* Precio de venta */}
+            <Text style={estilos.etiqueta}>Precio de venta</Text>
             <View style={estilos.contenedorInputSufijo}>
               <TextInput
                 style={estilos.inputSufijo}
@@ -180,6 +181,33 @@ export default function FormularioProducto({
               <Text style={estilos.sufijo}>CUP</Text>
             </View>
 
+            {/* Precio de costo */}
+            <Text style={estilos.etiqueta}>
+              Precio de costo{' '}
+              <Text style={estilos.etiquetaOpcional}>(opcional)</Text>
+            </Text>
+            <View style={estilos.contenedorInputSufijo}>
+              <TextInput
+                style={estilos.inputSufijo}
+                value={precioCosto}
+                onChangeText={setPrecioCosto}
+                placeholder="Ej: 30"
+                placeholderTextColor="#a0aec0"
+                keyboardType="numeric"
+              />
+              <Text style={estilos.sufijo}>CUP</Text>
+            </View>
+
+            {/* Indicador de margen en tiempo real */}
+            {margenPct !== null && (
+              <View style={estilos.chipMargen}>
+                <Text style={estilos.textoChipMargen}>
+                  Ganancia por unidad: {ganancia} CUP · Margen: {margenPct}%
+                </Text>
+              </View>
+            )}
+
+            {/* Existencia */}
             <Text style={estilos.etiqueta}>Existencia actual</Text>
             <View style={estilos.contenedorInputSufijo}>
               <TextInput
@@ -193,6 +221,7 @@ export default function FormularioProducto({
               <Text style={estilos.sufijo}>unid.</Text>
             </View>
 
+            {/* Alerta mínima */}
             <Text style={estilos.etiqueta}>Alerta mínima de stock</Text>
             <View style={estilos.contenedorInputSufijo}>
               <TextInput
@@ -206,21 +235,18 @@ export default function FormularioProducto({
               <Text style={estilos.sufijo}>unid.</Text>
             </View>
 
-            {/* Botón guardar */}
             <TouchableOpacity style={estilos.botonGuardar} onPress={validarYGuardar}>
               <Text style={estilos.textoBotonGuardar}>
                 {producto ? 'GUARDAR CAMBIOS' : 'CREAR PRODUCTO'}
               </Text>
             </TouchableOpacity>
 
-            {/* Botón eliminar — solo en modo edición */}
             {producto && onEliminar && (
               <TouchableOpacity style={estilos.botonEliminar} onPress={confirmarEliminar}>
                 <Text style={estilos.textoBotonEliminar}>ELIMINAR PRODUCTO</Text>
               </TouchableOpacity>
             )}
 
-            {/* Botón cancelar */}
             <TouchableOpacity style={estilos.botonCancelar} onPress={onCancelar}>
               <Text style={estilos.textoBotonCancelar}>Cancelar</Text>
             </TouchableOpacity>
@@ -237,9 +263,7 @@ const estilos = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
-  dismissArea: {
-    ...StyleSheet.absoluteFillObject,
-  },
+  dismissArea: { ...StyleSheet.absoluteFillObject },
   modal: {
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 32,
@@ -248,97 +272,68 @@ const estilos = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     paddingTop: 12,
     maxHeight: '90%',
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 20,
   },
   barraArrastre: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 3,
-    alignSelf: 'center',
-    marginBottom: 16,
+    width: 40, height: 5, backgroundColor: '#e2e8f0',
+    borderRadius: 3, alignSelf: 'center', marginBottom: 16,
   },
   titulo: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
-    marginBottom: 20,
-    textAlign: 'center',
+    fontSize: 22, fontWeight: 'bold', color: '#1a1a2e',
+    marginBottom: 20, textAlign: 'center',
   },
   etiqueta: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#4a5568',
-    marginBottom: 6,
-    marginTop: 12,
+    fontSize: 15, fontWeight: '600', color: '#4a5568',
+    marginBottom: 6, marginTop: 12,
+  },
+  etiquetaOpcional: {
+    fontSize: 13, fontWeight: '400', color: '#a0aec0',
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: '#cbd5e0',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    color: '#1a1a2e',
-    backgroundColor: '#f7fafc',
+    borderWidth: 1.5, borderColor: '#cbd5e0', borderRadius: 10,
+    padding: 14, fontSize: 16, color: '#1a1a2e', backgroundColor: '#f7fafc',
   },
   contenedorInputSufijo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#cbd5e0',
-    borderRadius: 10,
-    backgroundColor: '#f7fafc',
-    paddingRight: 14,
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#cbd5e0',
+    borderRadius: 10, backgroundColor: '#f7fafc', paddingRight: 14,
   },
   inputSufijo: {
-    flex: 1,
-    padding: 14,
-    fontSize: 16,
-    color: '#1a1a2e',
+    flex: 1, padding: 14, fontSize: 16, color: '#1a1a2e',
   },
   sufijo: {
-    fontSize: 14,
-    color: '#a0aec0',
-    fontWeight: 'bold',
+    fontSize: 14, color: '#a0aec0', fontWeight: 'bold',
+  },
+  chipMargen: {
+    marginTop: 8,
+    backgroundColor: '#f0fff4',
+    borderWidth: 1,
+    borderColor: '#9ae6b4',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  textoChipMargen: {
+    fontSize: 13,
+    color: '#2f855a',
+    fontWeight: '600',
   },
   botonGuardar: {
-    backgroundColor: '#2b6cb0',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 24,
+    backgroundColor: '#2b6cb0', borderRadius: 12,
+    padding: 16, alignItems: 'center', marginTop: 24,
   },
-  textoBotonGuardar: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  textoBotonGuardar: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
   botonEliminar: {
-    backgroundColor: '#fff5f5',
-    borderWidth: 1.5,
-    borderColor: '#e53e3e',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 12,
+    backgroundColor: '#fff5f5', borderWidth: 1.5, borderColor: '#e53e3e',
+    borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 12,
   },
-  textoBotonEliminar: {
-    color: '#e53e3e',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  textoBotonEliminar: { color: '#e53e3e', fontSize: 16, fontWeight: 'bold' },
   botonCancelar: {
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
+    padding: 16, alignItems: 'center', marginTop: 8, marginBottom: 8,
   },
-  textoBotonCancelar: {
-    color: '#718096',
-    fontSize: 16,
-  },
+  textoBotonCancelar: { color: '#718096', fontSize: 16 },
 });

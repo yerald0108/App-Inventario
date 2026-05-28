@@ -153,9 +153,16 @@ export async function cerrarTurno(
 }
 
 // Obtener todos los turnos cerrados ordenados por fecha (más reciente primero)
-export async function obtenerTurnosCerrados(): Promise<Turno[]> {
+export async function obtenerTurnosCerrados(
+  limite: number = 20,
+  offset: number = 0
+): Promise<Turno[]> {
   return await db.getAllAsync<Turno>(
-    'SELECT * FROM turnos WHERE cerrado = 1 ORDER BY fecha_cierre DESC'
+    `SELECT * FROM turnos
+     WHERE cerrado = 1
+     ORDER BY fecha_cierre DESC
+     LIMIT ? OFFSET ?`,
+    [limite, offset]
   );
 }
 

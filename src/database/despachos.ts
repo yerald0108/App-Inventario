@@ -286,3 +286,30 @@ export async function obtenerResumenExternoDetalleTurno(turnoId: number): Promis
     [turnoId]
   );
 }
+
+/**
+ * Devuelve el total de ventas externas para cada turno indicado.
+ * El resultado es un Map<turnoId, total>.
+ */
+export async function obtenerTotalesExternosPorTurnos(
+  turnoIds: number[]
+): Promise<Map<number, number>> {
+  if (turnoIds.length === 0) return new Map();
+
+  // SQLite no soporta parámetros array directamente; construimos los placeholders.
+  const placeholders = turnoIds.map(() => '?').join(', ');
+
+  const filas = await db.getAllAsync<{ turno_id: number; total: number }>(
+    `SELECT turno_id, COALESCE(SUM(total), 0) AS total
+     FROM ventas_externas
+     WHERE turno_id IN (${placeholders})
+     GROUP BY turno_id`,
+    turnoIds
+  );
+
+  const mapa = new Map<number, number>();
+  for (const fila of filas) {
+    mapa.set(fila.turno_id, fila.total);
+  }
+  return mapa;
+}

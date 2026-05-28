@@ -78,18 +78,19 @@ export default function PantallaInventario() {
   async function handleGuardar(datos: {
     nombre: string;
     precio: number;
+    precio_costo: number;
     existencia: number;
     alerta_minima: number;
   }) {
     try {
       if (productoSeleccionado) {
-        // Modo edición
         await actualizarProducto(
           productoSeleccionado.id,
           datos.nombre,
           datos.precio,
           datos.existencia,
-          datos.alerta_minima
+          datos.alerta_minima,
+          datos.precio_costo
         );
         Toast.show({
           type: 'success',
@@ -98,8 +99,13 @@ export default function PantallaInventario() {
           position: 'top',
         });
       } else {
-        // Modo crear
-        await crearProducto(datos.nombre, datos.precio, datos.existencia, datos.alerta_minima);
+        await crearProducto(
+          datos.nombre,
+          datos.precio,
+          datos.existencia,
+          datos.alerta_minima,
+          datos.precio_costo
+        );
         Toast.show({
           type: 'success',
           text1: 'Producto creado',
