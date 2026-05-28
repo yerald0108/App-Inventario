@@ -29,12 +29,14 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-font"
     ],
     "extra": {
       "eas": {
-        "projectId": "2d073e86-d988-42b9-ad42-352c9f0458c4"
+        "projectId": "1d4073a5-0250-4b8d-972b-a2b0922194e5"
       }
-    }
+    },
+    "owner": "yeralfuste"
   }
 }

@@ -19,7 +19,6 @@ export async function inicializarDB(): Promise<void> {
     
     // 1. Tablas core siempre presentes
     await db.execAsync(`
-      PRAGMA journal_mode = WAL;
 
       CREATE TABLE IF NOT EXISTS meta (
         clave TEXT PRIMARY KEY,
