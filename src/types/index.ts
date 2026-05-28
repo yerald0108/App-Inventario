@@ -9,9 +9,13 @@ export interface Producto {
   alerta_minima: number;
 }
 
+// Valor centinela: indica que el item no tiene producto
+// de inventario asociado (ej: venta libre de despacho externo)
+export const ID_PRODUCTO_EXTERNO = -1;
+
 export interface Movimiento {
   id: number;
-  tipo: 'venta' | 'entrada' | 'cancelacion' | 'salida_familiar';
+  tipo: 'venta' | 'entrada' | 'cancelacion' | 'salida_familiar' | 'propina';
   fecha_hora: string;
   producto_id: number;
   cantidad: number;

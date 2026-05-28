@@ -30,14 +30,15 @@ export async function crearProducto(
   existencia: number,
   alerta_minima: number = 5,
   precio_costo: number = 0
-): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync(
+): Promise<number> {
+  const db = getDatabase();
+  const resultado = await db.runAsync(
     `INSERT INTO productos
        (nombre, precio, existencia, alerta_minima, precio_costo)
      VALUES (?, ?, ?, ?, ?)`,
     [nombre, precio, existencia, alerta_minima, precio_costo]
   );
+  return resultado.lastInsertRowId;
 }
 
 export async function actualizarProducto(

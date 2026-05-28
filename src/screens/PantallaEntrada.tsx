@@ -9,7 +9,7 @@ import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Producto } from '../types';
-import { obtenerProductos, crearProducto } from '../database/productos';
+import { crearProducto } from '../database/productos';
 import { registrarEntrada } from '../database/entradas';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import { Ionicons } from '@expo/vector-icons';
@@ -199,19 +199,13 @@ export default function PantallaEntrada() {
         return;
       }
 
-      // 1. Crear el producto con la cantidad inicial como existencia
-      await crearProducto(nombreTrimmed, precioNum, cantidadNum, 5);
+      // 1. Crear el producto y obtener su id directamente
+      const nuevoId = await crearProducto(nombreTrimmed, precioNum, cantidadNum, 5);
 
-      // 2. Obtener el producto recién creado para registrar la entrada
-      const lista = await obtenerProductos();
-      const productoCreado = lista.find(p => p.nombre === nombreTrimmed);
-
-      if (productoCreado) {
-        // 3. Registrar la entrada en movimientos (para que aparezca en el historial del turno)
-        await registrarEntrada(productoCreado.id, cantidadNum, turno.id);
-        setUltimoProductoActualizado(productoCreado.id);
-        setTimeout(() => setUltimoProductoActualizado(null), 2000);
-      }
+      // 2. Registrar la entrada usando el id real, sin búsqueda por nombre
+      await registrarEntrada(nuevoId, cantidadNum, turno.id);
+      setUltimoProductoActualizado(nuevoId);
+      setTimeout(() => setUltimoProductoActualizado(null), 2000);
 
       await cargarProductos();
       cerrarModal();

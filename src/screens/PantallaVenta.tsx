@@ -12,7 +12,7 @@ import { Producto, ItemCesta } from '../types';
 import { registrarVenta } from '../database/ventas';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import { useProductos } from '../context/ProductosContext';
-import { useCestaStore } from '../store/useCestaStore';
+import { useCestaStore, NAMESPACE_VENTA } from '../store/useCestaStore';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
 import ModalCobro from '../components/ModalCobro';
@@ -35,14 +35,15 @@ export default function PantallaVenta({ navigation }: Props) {
   } = useProductos();
 
   const {
-    busqueda,
+    namespaces,
     setBusqueda,
-    cesta,
     cambiarCantidad,
     cambiarPrecio,
     obtenerItemsCesta,
     resetCesta,
   } = useCestaStore();
+
+  const { cesta, busqueda } = namespaces[NAMESPACE_VENTA] ?? { cesta: {}, busqueda: '' };
 
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
@@ -96,7 +97,7 @@ export default function PantallaVenta({ navigation }: Props) {
   }
 
   function handleCobrar() {
-    const items = obtenerItemsCesta();
+    const items = obtenerItemsCesta(NAMESPACE_VENTA);
     if (items.length === 0) return;
     setModalCobroVisible(true);
   }
@@ -124,7 +125,7 @@ export default function PantallaVenta({ navigation }: Props) {
       await cargarProductos(busqueda); 
       setUltimoMetodoPago(metodoPago);
       setModalCobroVisible(false);
-      resetCesta();
+      resetCesta(NAMESPACE_VENTA);
 
       const textoMetodo = metodoPago === 'efectivo' ? 'Efectivo' : 'Transferencia';
       const textoCambio = metodoPago === 'efectivo' && cambio > 0 && propina === 0
@@ -154,7 +155,7 @@ export default function PantallaVenta({ navigation }: Props) {
     }
   }
 
-  const itemsCesta = obtenerItemsCesta();
+  const itemsCesta = obtenerItemsCesta(NAMESPACE_VENTA);
 
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
@@ -171,7 +172,7 @@ export default function PantallaVenta({ navigation }: Props) {
           placeholder="Buscar producto..."
           placeholderTextColor="#a0aec0"
           value={busqueda}
-          onChangeText={setBusqueda}
+          onChangeText={(texto) => setBusqueda(NAMESPACE_VENTA, texto)}
           clearButtonMode="while-editing"
         />
       </View>
@@ -222,8 +223,8 @@ export default function PantallaVenta({ navigation }: Props) {
                 cantidadEnCesta={cantidad}
                 precioFinal={precioFinal}
                 precioModificado={precioModificado}
-                onCambiarCantidad={(nuevaCantidad) => cambiarCantidad(producto, nuevaCantidad)}
-                onCambiarPrecio={(nuevoPrecio) => cambiarPrecio(producto.id, nuevoPrecio)}
+                onCambiarCantidad={(nuevaCantidad) => cambiarCantidad(NAMESPACE_VENTA, producto, nuevaCantidad)}
+                onCambiarPrecio={(nuevoPrecio) => cambiarPrecio(NAMESPACE_VENTA, producto.id, nuevoPrecio)}
               />
             );
           }}

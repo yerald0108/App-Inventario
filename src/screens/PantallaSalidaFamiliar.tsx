@@ -12,7 +12,7 @@ import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
 import { registrarSalidaFamiliar } from '../database/salidas_familiares';
 import { obtenerTurnoAbierto } from '../database/turnos';
-import { useCestaStore } from '../store/useCestaStore';
+import { useCestaStore, NAMESPACE_SALIDA_FAMILIAR} from '../store/useCestaStore';
 import { useProductos } from '../context/ProductosContext';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
@@ -29,13 +29,14 @@ export default function PantallaSalidaFamiliar() {
   const { productos, cargandoProductos: cargando, cargarProductos, cargarMasProductos, cargandoMas } = useProductos();
 
   const {
-    busqueda,
+    namespaces,
     setBusqueda,
-    cesta,
     cambiarCantidad,
     obtenerItemsCesta,
     resetCesta,
   } = useCestaStore();
+
+  const { cesta, busqueda } = namespaces[NAMESPACE_SALIDA_FAMILIAR] ?? { cesta: {}, busqueda: '' };
 
   const productosConSeparador = useMemo((): ItemLista[] => {
     if (productos.length === 0) return [];
@@ -74,7 +75,7 @@ export default function PantallaSalidaFamiliar() {
   // Recargar productos al entrar a la pantalla
   useFocusEffect(
     useCallback(() => {
-      resetCesta();
+      resetCesta(NAMESPACE_SALIDA_FAMILIAR);
     }, [])
   );
 
@@ -86,7 +87,7 @@ export default function PantallaSalidaFamiliar() {
 
   // Confirmar y registrar la salida familiar
   function handleConfirmarSalida() {
-    const items = obtenerItemsCesta();
+    const items = obtenerItemsCesta(NAMESPACE_SALIDA_FAMILIAR);
     if (items.length === 0) return;
 
     const totalUnidades = items.reduce((acc, item) => acc + item.cantidad, 0);
@@ -108,7 +109,7 @@ export default function PantallaSalidaFamiliar() {
 
   // Guard con return temprano y finally consistente
   async function ejecutarSalida() {
-    const items = obtenerItemsCesta();
+    const items = obtenerItemsCesta(NAMESPACE_SALIDA_FAMILIAR);
     
     // Guard: si ya se está procesando, no hacer nada.
     // El ref garantiza que no haya doble ejecución aunque el componente re-renderice.
@@ -129,7 +130,7 @@ export default function PantallaSalidaFamiliar() {
       await cargarProductos(); 
 
       // Limpiar cesta y recargar inventario
-      resetCesta();
+      resetCesta(NAMESPACE_SALIDA_FAMILIAR);
       
 
       const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
@@ -156,7 +157,7 @@ export default function PantallaSalidaFamiliar() {
     }
   }
 
-  const itemsCesta = obtenerItemsCesta();
+  const itemsCesta = obtenerItemsCesta(NAMESPACE_SALIDA_FAMILIAR);
 
   const renderSkeleton = () => (
     <View style={{ padding: 16 }}>
@@ -176,7 +177,7 @@ export default function PantallaSalidaFamiliar() {
           placeholder="Buscar producto para familiar..."
           placeholderTextColor="#a0aec0"
           value={busqueda}
-          onChangeText={setBusqueda}
+          onChangeText={(texto) => setBusqueda(NAMESPACE_SALIDA_FAMILIAR, texto)}
           clearButtonMode="while-editing"
         />
       </View>
@@ -218,7 +219,7 @@ export default function PantallaSalidaFamiliar() {
                 cantidadEnCesta={cesta[(item as Producto).id]?.cantidad ?? 0}
                 precioFinal={(item as Producto).precio}
                 precioModificado={false}
-                onCambiarCantidad={(cantidad) => cambiarCantidad(item as Producto, cantidad)}
+                onCambiarCantidad={(cantidad) => cambiarCantidad(NAMESPACE_SALIDA_FAMILIAR, item as Producto, cantidad)}
                 onCambiarPrecio={() => {}}
               />
             );

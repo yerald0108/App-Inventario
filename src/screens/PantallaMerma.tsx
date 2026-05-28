@@ -17,7 +17,7 @@ import {
   registrarMerma, MotivoMerma,
   MOTIVOS_MERMA, ItemMerma
 } from '../database/mermas';
-import { useCestaStore } from '../store/useCestaStore';
+import { useCestaStore, NAMESPACE_MERMA } from '../store/useCestaStore';
 import { useProductos } from '../context/ProductosContext';
 import EstadoVacio from '../components/EstadoVacio';
 import { SkeletonProducto } from '../components/Skeleton';
@@ -31,13 +31,14 @@ export default function PantallaMerma() {
   const { productos, cargandoProductos: cargando, cargarProductos, cargarMasProductos, cargandoMas } = useProductos();
   
   const {
-    busqueda,
+    namespaces,
     setBusqueda,
-    cesta,
     cambiarCantidad,
     obtenerItemsCesta,
     resetCesta,
   } = useCestaStore();
+
+  const { cesta, busqueda } = namespaces[NAMESPACE_MERMA] ?? { cesta: {}, busqueda: '' };
 
   const productosConSeparador = useMemo((): ItemLista[] => {
     if (productos.length === 0) return [];
@@ -98,12 +99,12 @@ export default function PantallaMerma() {
 
   useFocusEffect(
     useCallback(() => {
-      resetCesta();
+      resetCesta(NAMESPACE_MERMA);
     }, [])
   );
 
   function abrirModal() {
-    const items = obtenerItemsCesta();
+    const items = obtenerItemsCesta(NAMESPACE_MERMA);
     if (items.length === 0) return;
     setMotivoSeleccionado(null);
     setMotivoDetalle('');
@@ -139,7 +140,7 @@ export default function PantallaMerma() {
         return;
       }
 
-      const items = obtenerItemsCesta();
+      const items = obtenerItemsCesta(NAMESPACE_MERMA);
       const itemsMerma: ItemMerma[] = items.map(i => ({
         productoId: i.producto.id,
         nombreProducto: i.producto.nombre,
@@ -155,7 +156,7 @@ export default function PantallaMerma() {
 
       await cargarProductos();
       cerrarModal();
-      resetCesta();
+      resetCesta(NAMESPACE_MERMA);
 
       const totalUnidades = items.reduce((acc, i) => acc + i.cantidad, 0);
       Toast.show({
@@ -179,7 +180,7 @@ export default function PantallaMerma() {
     }
   }
 
-  const itemsCesta = obtenerItemsCesta();
+  const itemsCesta = obtenerItemsCesta(NAMESPACE_MERMA);
   const totalUnidades = itemsCesta.reduce((acc, i) => acc + i.cantidad, 0);
 
   const renderSkeleton = () => (
@@ -207,7 +208,7 @@ export default function PantallaMerma() {
           placeholder="Buscar producto..."
           placeholderTextColor="#a0aec0"
           value={busqueda}
-          onChangeText={setBusqueda}
+          onChangeText={(texto) => setBusqueda(NAMESPACE_MERMA, texto)}
           clearButtonMode="while-editing"
         />
       </View>
@@ -247,7 +248,7 @@ export default function PantallaMerma() {
                 <View style={estilos.controles}>
                   <TouchableOpacity
                     style={[estilos.botonControl, cantidad === 0 && estilos.botonDeshabilitado]}
-                    onPress={() => cambiarCantidad(producto, Math.max(0, cantidad - 1))}
+                    onPress={() => cambiarCantidad(NAMESPACE_MERMA, producto, Math.max(0, cantidad - 1))}
                     disabled={cantidad === 0}
                   >
                     <Text style={estilos.textoControl}>−</Text>
@@ -261,7 +262,7 @@ export default function PantallaMerma() {
                       producto.existencia <= 0 && estilos.botonDeshabilitado,
                       cantidad >= producto.existencia && estilos.botonLimite,
                     ]}
-                    onPress={() => cambiarCantidad(producto, Math.min(producto.existencia, cantidad + 1))}
+                    onPress={() => cambiarCantidad(NAMESPACE_MERMA, producto, Math.min(producto.existencia, cantidad + 1))}
                     disabled={producto.existencia <= 0}
                   >
                     <Text style={estilos.textoControl}>+</Text>

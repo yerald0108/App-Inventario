@@ -104,11 +104,25 @@ export async function obtenerResumenTurno(turnoId: number) {
   );
 
   // Conteo de propinas del turno
+  // Se agrupa por venta_id para no sumar la propina N veces
+  // (una venta con 3 productos tiene 3 filas con la misma propina)
   const totalPropinas = await db.getFirstAsync<{ total: number }>(
-    `SELECT COALESCE(SUM(propina), 0) as total
-    FROM movimientos
-    WHERE turno_id = ? AND tipo = 'venta' AND propina > 0`,
-    [turnoId]
+    `SELECT COALESCE(SUM(propina_unica), 0) as total
+    FROM (
+       -- Propinas de ventas normales (agrupadas para no duplicar)
+      SELECT MAX(propina) as propina_unica
+      FROM movimientos
+      WHERE turno_id = ? AND tipo = 'venta' AND propina > 0
+      GROUP BY venta_id
+
+      UNION ALL
+
+      -- Propinas de pedidos 100% de despacho (un registro por venta_id)
+      SELECT propina as propina_unica
+      FROM movimientos
+      WHERE turno_id = ? AND tipo = 'propina'
+    )`,
+    [turnoId, turnoId]
   );
 
   return {

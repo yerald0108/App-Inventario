@@ -249,6 +249,48 @@ async function aplicarMigraciones() {
       console.log('Migración v7 completada.');
     }
 
+    // ── v8: tipo 'propina' en movimientos ─────────────────────────────────────────
+    if (version < 8) {
+      console.log('Ejecutando migración v8: soporte propina en movimientos...');
+      await db.execAsync(`
+        -- SQLite no permite modificar CHECK constraints directamente.
+        -- La solución es recrear la tabla con el nuevo constraint.
+
+        -- 1. Crear tabla nueva con el constraint actualizado
+        CREATE TABLE IF NOT EXISTS movimientos_v8 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tipo TEXT NOT NULL CHECK(tipo IN (
+            'venta', 'entrada', 'cancelacion', 'salida_familiar', 'propina'
+          )),
+          fecha_hora TEXT NOT NULL,
+          producto_id INTEGER NOT NULL,
+          cantidad REAL NOT NULL,
+          precio_aplicado REAL,
+          total REAL,
+          metodo_pago TEXT CHECK(metodo_pago IN ('efectivo', 'transferencia')),
+          turno_id INTEGER,
+          venta_id TEXT,
+          propina REAL DEFAULT 0,
+          FOREIGN KEY (producto_id) REFERENCES productos(id),
+          FOREIGN KEY (turno_id) REFERENCES turnos(id)
+        );
+
+        -- 2. Copiar todos los datos existentes
+        INSERT INTO movimientos_v8
+          SELECT * FROM movimientos;
+
+        -- 3. Eliminar la tabla vieja
+        DROP TABLE movimientos;
+
+        -- 4. Renombrar la nueva
+        ALTER TABLE movimientos_v8 RENAME TO movimientos;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '8')"
+      );
+      console.log('Migración v8 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     if (db) {

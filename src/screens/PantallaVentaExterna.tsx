@@ -18,6 +18,7 @@ import {
   cancelarVentaExterna,
   VentaExternaAgrupada,
 } from '../database/despachos';
+import { ID_PRODUCTO_EXTERNO } from '../types';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import { formatCUP } from '../utils';
 import ModalCobro from '../components/ModalCobro';
@@ -343,7 +344,9 @@ export default function PantallaVentaExterna({ route }: Props) {
         visible={modalCobroVisible}
         items={itemsCesta.map(i => ({
           producto: {
-            id: i.productoId ?? 0,
+            // ID_PRODUCTO_EXTERNO (-1) indica explícitamente que este item
+            // no tiene producto de inventario propio asociado
+            id: i.productoId ?? ID_PRODUCTO_EXTERNO,
             nombre: i.nombre,
             precio: i.precio,
             existencia: 999,

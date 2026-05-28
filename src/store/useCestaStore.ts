@@ -12,26 +12,59 @@ export interface CestaItemState {
   precioFinal?: number;
 }
 
-interface CestaStore {
+// Cada namespace tiene su propio estado aislado
+interface CestaNamespaceState {
   cesta: Record<number, CestaItemState>;
   busqueda: string;
-  setBusqueda: (busqueda: string) => void;
-  cambiarCantidad: (producto: Producto, cantidad: number) => void;
-  cambiarPrecio: (productoId: number, nuevoPrecio: number) => void;
-  obtenerItemsCesta: () => ItemCesta[];
-  resetCesta: () => void;
+}
+
+interface CestaStore {
+  // El estado está dividido por namespace
+  namespaces: Record<string, CestaNamespaceState>;
+
+  setBusqueda: (namespace: string, busqueda: string) => void;
+  cambiarCantidad: (namespace: string, producto: Producto, cantidad: number) => void;
+  cambiarPrecio: (namespace: string, productoId: number, nuevoPrecio: number) => void;
+  obtenerItemsCesta: (namespace: string) => ItemCesta[];
+  resetCesta: (namespace: string) => void;
+}
+
+// Estado vacío por defecto para cualquier namespace nuevo
+const estadoVacio = (): CestaNamespaceState => ({
+  cesta: {},
+  busqueda: '',
+});
+
+// Helper interno: obtiene el estado de un namespace, 
+// creándolo vacío si no existe todavía
+function getNamespace(
+  namespaces: Record<string, CestaNamespaceState>,
+  namespace: string
+): CestaNamespaceState {
+  return namespaces[namespace] ?? estadoVacio();
 }
 
 export const useCestaStore = create<CestaStore>((set, get) => ({
-  cesta: {},
-  busqueda: '',
-  
-  setBusqueda: (busqueda: string) => set({ busqueda }),
-  
-  cambiarCantidad: (producto, cantidad) => {
+  namespaces: {},
+
+  setBusqueda: (namespace, busqueda) => {
+    set((state) => ({
+      namespaces: {
+        ...state.namespaces,
+        [namespace]: {
+          ...getNamespace(state.namespaces, namespace),
+          busqueda,
+        },
+      },
+    }));
+  },
+
+  cambiarCantidad: (namespace, producto, cantidad) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     set((state) => {
-      const nuevaCesta = { ...state.cesta };
+      const ns = getNamespace(state.namespaces, namespace);
+      const nuevaCesta = { ...ns.cesta };
+
       if (cantidad <= 0) {
         delete nuevaCesta[producto.id];
       } else {
@@ -42,14 +75,22 @@ export const useCestaStore = create<CestaStore>((set, get) => ({
           precioFinal: itemActual ? itemActual.precioFinal : undefined,
         };
       }
-      return { cesta: nuevaCesta };
+
+      return {
+        namespaces: {
+          ...state.namespaces,
+          [namespace]: { ...ns, cesta: nuevaCesta },
+        },
+      };
     });
   },
-  
-  cambiarPrecio: (productoId, nuevoPrecio) => {
+
+  cambiarPrecio: (namespace, productoId, nuevoPrecio) => {
     set((state) => {
-      const nuevaCesta = { ...state.cesta };
+      const ns = getNamespace(state.namespaces, namespace);
+      const nuevaCesta = { ...ns.cesta };
       const item = nuevaCesta[productoId];
+
       if (item) {
         const esPrecioOriginal = item.producto.precio === nuevoPrecio;
         nuevaCesta[productoId] = {
@@ -57,13 +98,19 @@ export const useCestaStore = create<CestaStore>((set, get) => ({
           precioFinal: esPrecioOriginal ? undefined : nuevoPrecio,
         };
       }
-      return { cesta: nuevaCesta };
+
+      return {
+        namespaces: {
+          ...state.namespaces,
+          [namespace]: { ...ns, cesta: nuevaCesta },
+        },
+      };
     });
   },
-  
-  obtenerItemsCesta: () => {
-    const { cesta } = get();
-    return Object.values(cesta).map((item) => {
+
+  obtenerItemsCesta: (namespace) => {
+    const ns = getNamespace(get().namespaces, namespace);
+    return Object.values(ns.cesta).map((item) => {
       const precioFinal = item.precioFinal ?? item.producto.precio;
       return {
         producto: item.producto,
@@ -73,8 +120,19 @@ export const useCestaStore = create<CestaStore>((set, get) => ({
       };
     });
   },
-  
-  resetCesta: () => {
-    set({ cesta: {}, busqueda: '' });
+
+  resetCesta: (namespace) => {
+    set((state) => ({
+      namespaces: {
+        ...state.namespaces,
+        [namespace]: estadoVacio(),
+      },
+    }));
   },
 }));
+
+// ── Namespaces disponibles ────────────────────────────────────────────────────
+// Exportamos constantes para evitar strings sueltos en las pantallas
+export const NAMESPACE_VENTA = 'venta';
+export const NAMESPACE_SALIDA_FAMILIAR = 'salidaFamiliar';
+export const NAMESPACE_MERMA = 'merma';

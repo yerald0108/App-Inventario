@@ -280,7 +280,11 @@ export default function PantallaInicio({ navigation }: Props) {
           {/* Resumen de ventas */}
           <TouchableOpacity
             style={[estilos.tarjetaAccion, { backgroundColor: '#805ad5' }]}
-            onPress={() => navigation.navigate('UltimasVentas')}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('UltimasVentas')
+                : handleAccionSinTurno('ver el resumen de ventas')
+            }
           >
             <Ionicons name="receipt" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Resumen de Ventas</Text>

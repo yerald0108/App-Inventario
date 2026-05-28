@@ -166,7 +166,7 @@ export default function PantallaUltimasVentas() {
         <EstadoVacio 
           icono="alert-circle-outline" 
           titulo="Sin turno abierto" 
-          descripcion="Regresa al inicio para realizar operaciones y abrir un turno." 
+          descripcion="Las ventas se registran dentro de un turno activo. Abre uno desde la pantalla de inicio para comenzar a vender."
         />
       </SafeAreaView>
     );

@@ -385,7 +385,20 @@ export async function cerrarPedidoComoVenta(
         }
       }
 
-      // ── 3. Marcar el pedido como cerrado ───────────────────────────────────
+      // ── 3. Si no hubo items propios pero sí propina, registrarla por separado ──
+      // Esto ocurre cuando el pedido es 100% de despacho externo.
+      // Sin este registro, la propina desaparecería silenciosamente.
+      if (itemsPropios.length === 0 && propina > 0) {
+        await db.runAsync(
+          `INSERT INTO movimientos
+            (tipo, fecha_hora, producto_id, cantidad, precio_aplicado,
+            total, metodo_pago, turno_id, venta_id, propina)
+          VALUES ('propina', ?, 0, 0, 0, 0, ?, ?, ?, ?)`,
+          [fechaHora, metodoPago, turnoId, ventaId, propina]
+        );
+      }
+
+      // ── 4. Marcar el pedido como cerrado ───────────────────────────────────────
       await db.runAsync(
         `UPDATE pedidos SET estado = 'cerrado', fecha_cierre = ? WHERE id = ?`,
         [fechaHora, pedidoId]
