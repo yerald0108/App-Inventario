@@ -1,6 +1,6 @@
 import { getDatabase } from '../database/database';
 import { VentaAgrupada } from '../types';
-import { sumaSegura } from '../utils';
+import { sumaSegura, calcularTotalItemsBD } from '../utils';
 
 // Obtener todas las ventas del turno actual agrupadas por venta_id
 export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAgrupada[]> {
@@ -59,7 +59,7 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
 
   // Recalcular totales desde los items validados (no confiar en el campo total de BD)
   for (const venta of mapaVentas.values()) {
-    venta.total = sumaSegura(venta.items.map(i => i.precio_aplicado * i.cantidad));
+    venta.total = calcularTotalItemsBD(venta.items);
   }
 
   return Array.from(mapaVentas.values());
@@ -118,7 +118,7 @@ export async function obtenerAnulacionesTurno(turnoId: number): Promise<VentaAgr
 
   // Recalcular totales desde los items validados (no confiar en el campo total de BD)
   for (const venta of mapaVentas.values()) {
-    venta.total = sumaSegura(venta.items.map(i => i.precio_aplicado * i.cantidad));
+    venta.total = calcularTotalItemsBD(venta.items);
   }
 
   return Array.from(mapaVentas.values());

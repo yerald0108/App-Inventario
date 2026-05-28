@@ -1,5 +1,5 @@
 import { getDatabase } from '../database/database';
-import { sumaSegura } from '../utils';
+import { sumaSegura, calcularTotalItemsBD } from '../utils';
 import { Turno } from '../types';
 
 // Obtener el turno actualmente abierto
@@ -316,7 +316,7 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
   // Recalcular totales desde los items (igual que cancelaciones.ts)
   // NO confiar en la columna `total` de BD, puede contener valores corruptos.
   for (const venta of mapaVentas.values()) {
-    venta.total = sumaSegura(venta.items.map(i => i.precio_aplicado * i.cantidad));
+    venta.total = calcularTotalItemsBD(venta.items);
   }
 
   return Array.from(mapaVentas.values());

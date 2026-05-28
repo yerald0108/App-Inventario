@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ItemCesta } from '../types';
+import { calcularTotalItemsCesta } from '../utils';
 
 interface Props {
   visible: boolean;
@@ -37,11 +38,7 @@ export default function ModalCobro({
   const slideAnim = useRef(new Animated.Value(600)).current;
 
   // 1. Usar el precioFinal si existe, si no, el del producto.
-  const total = items.reduce(
-    (acc, item) => acc + (item.precioFinal ?? item.producto.precio) * item.cantidad,
-    0
-  );
-
+  const total = calcularTotalItemsCesta(items);
   useEffect(() => {
     if (metodoPago === 'efectivo') {
       const recibido = parseFloat(montoRecibido);

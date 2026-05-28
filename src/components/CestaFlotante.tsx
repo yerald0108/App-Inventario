@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { ItemCesta } from '../types';
+import { calcularTotalItemsCesta } from '../utils';
 
 interface Props {
   items: ItemCesta[];
@@ -20,10 +21,7 @@ export default function CestaFlotante({
   if (items.length === 0) return null;
 
   // Calcular total general
-  const total = items.reduce(
-    (acc, item) => acc + (item.precioFinal ?? item.producto.precio) * item.cantidad,
-    0
-  );
+  const total = calcularTotalItemsCesta(items);
 
   // Cantidad de productos distintos en la cesta
   const cantidadDistintos = items.length;
