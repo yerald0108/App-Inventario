@@ -3,13 +3,17 @@ import { Producto } from '../types';
 import { obtenerProductos as dbObtenerProductos } from '../database/productos';
 import { handleError } from '../utils';
 
+const LIMITE_POR_PAGINA = 20;
+
 interface ProductosContextType {
   productos: Producto[];
   cargandoProductos: boolean;
+  cargandoMas: boolean;
+  hayMasProductos: boolean;
   ultimaActualizacion: number;
-  cargarProductos: () => Promise<void>;
+  cargarProductos: (query?: string) => Promise<void>;
+  cargarMasProductos: () => Promise<void>;
   actualizarProductoEnLista: (productoActualizado: Producto) => void;
-  buscarProductos: (query: string) => Producto[];
 }
 
 const ProductosContext = createContext<ProductosContextType | undefined>(undefined);
@@ -17,13 +21,21 @@ const ProductosContext = createContext<ProductosContextType | undefined>(undefin
 export function ProductosProvider({ children }: { children: React.ReactNode }) {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargandoProductos, setCargandoProductos] = useState(true);
+  const [cargandoMas, setCargandoMas] = useState(false);
+  const [hayMasProductos, setHayMasProductos] = useState(true);
+  const [offsetActual, setOffsetActual] = useState(0);
+  const [queryActual, setQueryActual] = useState('');
   const [ultimaActualizacion, setUltimaActualizacion] = useState(Date.now());
 
-  const cargarProductos = useCallback(async () => {
+  const cargarProductos = useCallback(async (query: string = '') => {
     setCargandoProductos(true);
+    setQueryActual(query);
+    setOffsetActual(0);
     try {
-      const lista = await dbObtenerProductos();
+      const lista = await dbObtenerProductos(query, LIMITE_POR_PAGINA, 0);
       setProductos(lista);
+      setHayMasProductos(lista.length === LIMITE_POR_PAGINA);
+      setOffsetActual(LIMITE_POR_PAGINA);
       setUltimaActualizacion(Date.now());
     } catch (e) {
       handleError(e, 'Error al cargar inventario');
@@ -31,6 +43,23 @@ export function ProductosProvider({ children }: { children: React.ReactNode }) {
       setCargandoProductos(false);
     }
   }, []);
+
+  const cargarMasProductos = useCallback(async () => {
+    if (cargandoMas || !hayMasProductos) return;
+    setCargandoMas(true);
+    try {
+      const lista = await dbObtenerProductos(queryActual, LIMITE_POR_PAGINA, offsetActual);
+      if (lista.length > 0) {
+        setProductos(prev => [...prev, ...lista]);
+        setOffsetActual(prev => prev + LIMITE_POR_PAGINA);
+      }
+      setHayMasProductos(lista.length === LIMITE_POR_PAGINA);
+    } catch (e) {
+      handleError(e, 'Error al cargar más productos');
+    } finally {
+      setCargandoMas(false);
+    }
+  }, [cargandoMas, hayMasProductos, queryActual, offsetActual]);
 
   const actualizarProductoEnLista = useCallback((productoActualizado: Producto) => {
     setProductos(prev => {
@@ -51,25 +80,21 @@ export function ProductosProvider({ children }: { children: React.ReactNode }) {
     setUltimaActualizacion(Date.now());
   }, []);
 
-  const buscarProductos = useCallback((query: string) => {
-    if (!query.trim()) return productos;
-    const termino = query.toLowerCase();
-    return productos.filter(p => p.nombre.toLowerCase().includes(termino));
-  }, [productos]);
-
-  // Cargar productos al montar el proveedor
+  // Cargar productos al montar el proveedor inicial sin query
   useEffect(() => {
-    cargarProductos();
+    cargarProductos('');
   }, [cargarProductos]);
 
   const value = useMemo(() => ({
     productos,
     cargandoProductos,
+    cargandoMas,
+    hayMasProductos,
     ultimaActualizacion,
     cargarProductos,
+    cargarMasProductos,
     actualizarProductoEnLista,
-    buscarProductos,
-  }), [productos, cargandoProductos, ultimaActualizacion, cargarProductos, actualizarProductoEnLista, buscarProductos]);
+  }), [productos, cargandoProductos, cargandoMas, hayMasProductos, ultimaActualizacion, cargarProductos, cargarMasProductos, actualizarProductoEnLista]);
 
   return (
     <ProductosContext.Provider value={value}>

@@ -1,25 +1,24 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
-  Text, TextInput, TouchableOpacity
+  Text, TextInput, TouchableOpacity, ActivityIndicator
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
 import { registrarVenta } from '../database/ventas';
 import { obtenerTurnoAbierto } from '../database/turnos';
-import { useProductoCesta } from '../hooks/useProductoCesta';
+import { useProductos } from '../context/ProductosContext';
+import { useCestaStore } from '../store/useCestaStore';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
 import ModalCobro from '../components/ModalCobro';
 import { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 
-// Tipo unión para los items de la lista
 type ItemLista = Producto | { __tipo: 'separador'; id: number };
 
 type Props = {
@@ -29,27 +28,46 @@ type Props = {
 export default function PantallaVenta({ navigation }: Props) {
   const {
     productos,
+    cargandoProductos,
+    cargandoMas,
+    cargarProductos,
+    cargarMasProductos,
+  } = useProductos();
+
+  const {
     busqueda,
     setBusqueda,
     cesta,
-    cargando,
-    cargarProductos,
-    productosConSeparador,
     cambiarCantidad,
-    cambiarPrecio, // <-- 1. Obtener la nueva función
+    cambiarPrecio,
     obtenerItemsCesta,
     resetCesta,
-  } = useProductoCesta();
+  } = useCestaStore();
 
   const [procesando, setProcesando] = useState(false);
   const [modalCobroVisible, setModalCobroVisible] = useState(false);
   const [ultimoMetodoPago, setUltimoMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
   const procesandoRef = useRef(false);
 
+  // Debounce para la búsqueda remota
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cargarProductos(busqueda);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [busqueda, cargarProductos]);
+
+  const productosConSeparador = useMemo((): ItemLista[] => {
+    if (productos.length === 0) return [];
+    const disponibles = productos.filter(p => p.existencia > 0);
+    const agotados = productos.filter(p => p.existencia <= 0);
+    if (agotados.length === 0) return disponibles;
+    return [...disponibles, { __tipo: 'separador' as const, id: -1 }, ...agotados];
+  }, [productos]);
+
   // Actualizar el badge del header cada vez que cambia la cesta
   useEffect(() => {
-    // 2. La lógica de reduce ahora accede a la propiedad `cantidad` del objeto
-    const totalItems = Array.from(cesta.values()).reduce((acc, item) => acc + item.cantidad, 0);
+    const totalItems = Object.values(cesta).reduce((acc, item) => acc + item.cantidad, 0);
 
     navigation.setOptions({
       headerRight: () => (
@@ -71,12 +89,6 @@ export default function PantallaVenta({ navigation }: Props) {
       ),
     });
   }, [cesta, navigation]);
-
-  useFocusEffect(
-    useCallback(() => {
-      resetCesta();
-    }, [])
-  );
 
   function resetearEstadoProcesando() {
     procesandoRef.current = false;
@@ -109,7 +121,7 @@ export default function PantallaVenta({ navigation }: Props) {
       }
 
       await registrarVenta(items, metodoPago, turno.id, propina);
-      await cargarProductos(); 
+      await cargarProductos(busqueda); 
       setUltimoMetodoPago(metodoPago);
       setModalCobroVisible(false);
       resetCesta();
@@ -164,16 +176,16 @@ export default function PantallaVenta({ navigation }: Props) {
         />
       </View>
 
-      {cargando ? (
+      {cargandoProductos ? (
         renderSkeleton()
-      ) : productos.length === 0 ? (
+      ) : productos.length === 0 && busqueda === '' ? (
         <EstadoVacio 
           icono="cart-outline" 
           titulo="Sin productos" 
           descripcion="No hay productos en el inventario. Agrega productos para comenzar a vender." 
           accion={{ texto: "Ir a Inventario", onPress: () => navigation.navigate('Inventario') }}
         />
-      ) : (productosConSeparador as ItemLista[]).length === 0 ? (
+      ) : productosConSeparador.length === 0 ? (
         <EstadoVacio 
           icono="search-outline" 
           titulo="Sin resultados" 
@@ -181,9 +193,12 @@ export default function PantallaVenta({ navigation }: Props) {
         />
       ) : (
         <FlatList
-          data={productosConSeparador as ItemLista[]}
+          data={productosConSeparador}
           keyExtractor={(item) => item.id.toString()}
           windowSize={11}
+          onEndReached={cargarMasProductos}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={cargandoMas ? <ActivityIndicator size="small" color="#2b6cb0" style={{ margin: 16 }} /> : null}
           renderItem={({ item: productoItem }) => {
             if ('__tipo' in productoItem && productoItem.__tipo === 'separador') {
               return (
@@ -195,9 +210,8 @@ export default function PantallaVenta({ navigation }: Props) {
               );
             }
 
-            // 4. Lógica para pasar las nuevas props a ProductoVenta
             const producto = productoItem as Producto;
-            const itemEnCesta = cesta.get(producto.id);
+            const itemEnCesta = cesta[producto.id];
             const cantidad = itemEnCesta?.cantidad ?? 0;
             const precioFinal = itemEnCesta?.precioFinal ?? producto.precio;
             const precioModificado = itemEnCesta?.precioFinal !== undefined;
@@ -208,7 +222,7 @@ export default function PantallaVenta({ navigation }: Props) {
                 cantidadEnCesta={cantidad}
                 precioFinal={precioFinal}
                 precioModificado={precioModificado}
-                onCambiarCantidad={(nuevaCantidad) => cambiarCantidad(producto.id, nuevaCantidad)}
+                onCambiarCantidad={(nuevaCantidad) => cambiarCantidad(producto, nuevaCantidad)}
                 onCambiarPrecio={(nuevoPrecio) => cambiarPrecio(producto.id, nuevoPrecio)}
               />
             );

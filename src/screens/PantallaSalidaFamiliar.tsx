@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
   Text, TextInput
@@ -12,7 +12,8 @@ import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
 import { registrarSalidaFamiliar } from '../database/salidas_familiares';
 import { obtenerTurnoAbierto } from '../database/turnos';
-import { useProductoCesta } from '../hooks/useProductoCesta';
+import { useCestaStore } from '../store/useCestaStore';
+import { useProductos } from '../context/ProductosContext';
 import ProductoVenta from '../components/ProductoVenta';
 import CestaFlotante from '../components/CestaFlotante';
 import { SkeletonProducto } from '../components/Skeleton';
@@ -25,25 +26,39 @@ export default function PantallaSalidaFamiliar() {
   // Obtener navigation hook
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'SalidaFamiliar'>>();
   
+  const { productos, cargandoProductos: cargando, cargarProductos, cargarMasProductos, cargandoMas } = useProductos();
+
   const {
-    productos,
     busqueda,
     setBusqueda,
     cesta,
-    cargando,
-    cargarProductos,
-    productosConSeparador,
     cambiarCantidad,
     obtenerItemsCesta,
     resetCesta,
-  } = useProductoCesta();
+  } = useCestaStore();
+
+  const productosConSeparador = useMemo((): ItemLista[] => {
+    if (productos.length === 0) return [];
+    const disponibles = productos.filter(p => p.existencia > 0);
+    const agotados = productos.filter(p => p.existencia <= 0);
+    if (agotados.length === 0) return disponibles;
+    return [...disponibles, { __tipo: 'separador' as const, id: -1 }, ...agotados];
+  }, [productos]);
+
+  // Búsqueda remota (debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cargarProductos(busqueda);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [busqueda, cargarProductos]);
 
   const [procesando, setProcesando] = useState(false);
   const procesandoRef = useRef(false);
 
   // Actualizar el badge del header cada vez que cambia la cesta
   useEffect(() => {
-    const totalItems = Array.from(cesta.values()).reduce((acc, item) => acc + item.cantidad, 0);
+    const totalItems = Object.values(cesta).reduce((acc, item) => acc + item.cantidad, 0);
 
     navigation.setOptions({
       headerRight: () =>
@@ -200,10 +215,10 @@ export default function PantallaSalidaFamiliar() {
             return (
               <ProductoVenta
                 producto={item as Producto}
-                cantidadEnCesta={cesta.get(item.id)?.cantidad ?? 0}
+                cantidadEnCesta={cesta[(item as Producto).id]?.cantidad ?? 0}
                 precioFinal={(item as Producto).precio}
                 precioModificado={false}
-                onCambiarCantidad={(cantidad) => cambiarCantidad(item.id, cantidad)}
+                onCambiarCantidad={(cantidad) => cambiarCantidad(item as Producto, cantidad)}
                 onCambiarPrecio={() => {}}
               />
             );

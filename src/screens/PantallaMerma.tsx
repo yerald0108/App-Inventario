@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, FlatList, StyleSheet, Alert,
   TextInput, TouchableOpacity, Modal, ScrollView,
@@ -17,7 +17,8 @@ import {
   registrarMerma, MotivoMerma,
   MOTIVOS_MERMA, ItemMerma
 } from '../database/mermas';
-import { useProductoCesta } from '../hooks/useProductoCesta';
+import { useCestaStore } from '../store/useCestaStore';
+import { useProductos } from '../context/ProductosContext';
 import EstadoVacio from '../components/EstadoVacio';
 import { SkeletonProducto } from '../components/Skeleton';
 import { formatCUP } from '../utils';
@@ -27,18 +28,32 @@ type ItemLista = Producto | { __tipo: 'separador'; id: number };
 export default function PantallaMerma() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  const { productos, cargandoProductos: cargando, cargarProductos, cargarMasProductos, cargandoMas } = useProductos();
+  
   const {
-    productos,
     busqueda,
     setBusqueda,
     cesta,
-    cargando,
-    cargarProductos,
-    productosConSeparador,
     cambiarCantidad,
     obtenerItemsCesta,
     resetCesta,
-  } = useProductoCesta();
+  } = useCestaStore();
+
+  const productosConSeparador = useMemo((): ItemLista[] => {
+    if (productos.length === 0) return [];
+    const disponibles = productos.filter(p => p.existencia > 0);
+    const agotados = productos.filter(p => p.existencia <= 0);
+    if (agotados.length === 0) return disponibles;
+    return [...disponibles, { __tipo: 'separador' as const, id: -1 }, ...agotados];
+  }, [productos]);
+
+  // Búsqueda remota (debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cargarProductos(busqueda);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [busqueda, cargarProductos]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [motivoSeleccionado, setMotivoSeleccionado] = useState<MotivoMerma | null>(null);
@@ -68,7 +83,7 @@ export default function PantallaMerma() {
 
   // Badge en el header
   useEffect(() => {
-    const totalItems = Array.from(cesta.values())
+    const totalItems = Object.values(cesta)
       .reduce((acc, item) => acc + item.cantidad, 0);
     navigation.setOptions({
       headerRight: () =>
@@ -212,7 +227,7 @@ export default function PantallaMerma() {
               );
             }
             const producto = item as Producto;
-            const itemEnCesta = cesta.get(producto.id);
+            const itemEnCesta = cesta[producto.id];
             const cantidad = itemEnCesta?.cantidad ?? 0;
 
             return (
@@ -232,7 +247,7 @@ export default function PantallaMerma() {
                 <View style={estilos.controles}>
                   <TouchableOpacity
                     style={[estilos.botonControl, cantidad === 0 && estilos.botonDeshabilitado]}
-                    onPress={() => cambiarCantidad(producto.id, Math.max(0, cantidad - 1))}
+                    onPress={() => cambiarCantidad(producto, Math.max(0, cantidad - 1))}
                     disabled={cantidad === 0}
                   >
                     <Text style={estilos.textoControl}>−</Text>
@@ -246,7 +261,7 @@ export default function PantallaMerma() {
                       producto.existencia <= 0 && estilos.botonDeshabilitado,
                       cantidad >= producto.existencia && estilos.botonLimite,
                     ]}
-                    onPress={() => cambiarCantidad(producto.id, Math.min(producto.existencia, cantidad + 1))}
+                    onPress={() => cambiarCantidad(producto, Math.min(producto.existencia, cantidad + 1))}
                     disabled={producto.existencia <= 0}
                   >
                     <Text style={estilos.textoControl}>+</Text>

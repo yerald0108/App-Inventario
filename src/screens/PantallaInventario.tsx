@@ -1,16 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, TextInput, LayoutAnimation
+  StyleSheet, TextInput, ActivityIndicator
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import {
-  obtenerProductos, crearProducto,
-  actualizarProducto, eliminarProducto
-} from '../database/productos';
+import { crearProducto, actualizarProducto, eliminarProducto } from '../database/productos';
 import { Producto } from '../types';
 import ProductoItem from '../components/ProductoItem';
 import FormularioProducto from '../components/FormularioProducto';
@@ -20,24 +17,35 @@ import { useProductos } from '../context/ProductosContext';
 import { handleError } from '../utils';
 
 export default function PantallaInventario() {
-  const { productos, cargandoProductos, cargarProductos, buscarProductos, actualizarProductoEnLista } = useProductos();
-  const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
+  const { 
+    productos, 
+    cargandoProductos, 
+    cargandoMas, 
+    cargarProductos, 
+    cargarMasProductos, 
+    actualizarProductoEnLista 
+  } = useProductos();
+  
   const [busqueda, setBusqueda] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
 
-  // Recargar productos cada vez que la pantalla gana foco
+  // Recargar productos al ganar foco si la búsqueda está vacía
   useFocusEffect(
     useCallback(() => {
-      cargarProductos().then(() => setBusqueda(''));
-    }, [cargarProductos])
+      if (busqueda === '') {
+        cargarProductos('');
+      }
+    }, [cargarProductos, busqueda])
   );
 
-  // Filtrar productos cuando cambia la búsqueda o los productos cambian
+  // Debounce para la búsqueda
   useEffect(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setProductosFiltrados(buscarProductos(busqueda));
-  }, [busqueda, productos, buscarProductos]);
+    const timer = setTimeout(() => {
+      cargarProductos(busqueda);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [busqueda, cargarProductos]);
 
   function abrirCrear() {
     setProductoSeleccionado(null);
@@ -89,7 +97,7 @@ export default function PantallaInventario() {
           datos.alerta_minima,
           datos.precio_costo
         );
-        await cargarProductos();
+        await cargarProductos(busqueda);
         Toast.show({
           type: 'success',
           text1: 'Producto creado',
@@ -115,7 +123,7 @@ export default function PantallaInventario() {
         position: 'top',
       });
       cerrarModal();
-      cargarProductos();
+      cargarProductos(busqueda);
     } catch (error) {
       handleError(error, 'Error al eliminar');
     }
@@ -131,20 +139,6 @@ export default function PantallaInventario() {
 
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      {/* Resumen de stock y finanzas */}
-      {!cargandoProductos && (
-        <View style={estilos.resumen}>
-          <Text style={estilos.textoResumen}>
-            {productos.length} productos · {productos.filter(p => p.existencia < p.alerta_minima).length} stock bajo
-          </Text>
-          {productos.some(p => p.precio_costo && p.precio_costo > 0) && (
-            <Text style={estilos.textoResumenMargen}>
-              Margen prom: {(productos.filter(p => p.precio_costo && p.precio_costo > 0).reduce((acc, p) => acc + ((p.precio - (p.precio_costo || 0)) / p.precio), 0) / productos.filter(p => p.precio_costo && p.precio_costo > 0).length * 100).toFixed(1)}%
-            </Text>
-          )}
-        </View>
-      )}
-
       {/* Barra de búsqueda */}
       <View style={estilos.contenedorBusqueda}>
         <Ionicons name="search" size={20} color="#718096" style={estilos.iconoBusqueda} />
@@ -163,9 +157,12 @@ export default function PantallaInventario() {
         renderSkeleton()
       ) : (
         <FlatList
-          data={productosFiltrados}
+          data={productos}
           keyExtractor={(item) => item.id.toString()}
-          windowSize={11} // Número de elementos a renderizar más allá de la vista visible (aprox. 2 pantallas)
+          windowSize={11}
+          onEndReached={cargarMasProductos}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={cargandoMas ? <ActivityIndicator size="small" color="#2b6cb0" style={{ margin: 16 }} /> : null}
           renderItem={({ item }) => (
             <ProductoItem producto={item} onEditar={abrirEditar} />
           )}
@@ -216,23 +213,6 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
-  },
-  resumen: {
-    backgroundColor: '#1a1a2e',
-    padding: 12,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  textoResumen: {
-    color: '#a0aec0',
-    fontSize: 14,
-  },
-  textoResumenMargen: {
-    color: '#9ae6b4',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   textoVacio: {
     fontSize: 18,

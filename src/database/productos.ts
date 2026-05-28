@@ -2,13 +2,17 @@ import { getDatabase } from '../database/database';
 import { Producto } from '../types';
 
 // Los productos con existencia > 0 primero, luego los agotados, ambos por nombre
-export async function obtenerProductos(): Promise<Producto[]> {
+export async function obtenerProductos(query: string = '', limit: number = 20, offset: number = 0): Promise<Producto[]> {
   const db = await getDatabase();
+  const searchQuery = `%${query}%`;
   return await db.getAllAsync<Producto>(
     `SELECT * FROM productos
+     WHERE nombre LIKE ?
      ORDER BY
        CASE WHEN existencia > 0 THEN 0 ELSE 1 END ASC,
-       nombre ASC`
+       nombre ASC
+     LIMIT ? OFFSET ?`,
+    [searchQuery, limit, offset]
   );
 }
 
