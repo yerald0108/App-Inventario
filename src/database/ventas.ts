@@ -42,7 +42,7 @@ export async function registrarVenta(
       await db.runAsync(
         `INSERT INTO movimientos 
           (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total, metodo_pago, turno_id, venta_id, propina)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           'venta',
           fechaHora,
