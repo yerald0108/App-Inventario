@@ -65,6 +65,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
   const [montoRecibido, setMontoRecibido] = useState('');
   const [cambio, setCambio] = useState(0);
+  const [usarPropina, setUsarPropina] = useState(false);
 
   // ── Renombrar ─────────────────────────────────────────────────────────────
   const [editandoNombre, setEditandoNombre] = useState(false);
@@ -186,6 +187,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   function abrirModalCobro() {
     setMontoRecibido('');
     setMetodoPago('efectivo');
+    setUsarPropina(false);
     setModalActivo('cobro');
     Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
   }
@@ -284,18 +286,21 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
       const turno = await obtenerTurnoAbierto();
       if (!turno) { Alert.alert('Error', 'No hay turno abierto.'); return; }
 
-      await cerrarPedidoComoVenta(pedidoId, metodoPago, turno.id);
+      const propinaFinal = usarPropina ? cambio : 0;
+      await cerrarPedidoComoVenta(pedidoId, metodoPago, turno.id, propinaFinal);
       await cargarProductos();
       cerrarModal();
 
-      const textoCambio = metodoPago === 'efectivo' && cambio > 0
+      const textoCambio = metodoPago === 'efectivo' && cambio > 0 && !usarPropina
         ? ` · Vuelto: ${formatCUP(cambio)} CUP` : '';
+      const textoPropina = propinaFinal > 0
+        ? ` · Propina: ${formatCUP(propinaFinal)} CUP` : '';
 
       // Construir texto del toast con el desglose
       const totalDespachos = sumaSegura([...totalesSeparados.porDespacho.values()].map(d => d.total));
       const texto2 = totalesSeparados.propio > 0 && totalDespachos > 0
-        ? `Tuyo: ${formatCUP(totalesSeparados.propio)} · Despachos: ${formatCUP(totalDespachos)} CUP${textoCambio}`
-        : `${formatCUP(pedido.total)} CUP${textoCambio}`;
+        ? `Tuyo: ${formatCUP(totalesSeparados.propio)} · Despachos: ${formatCUP(totalDespachos)} CUP${textoCambio}${textoPropina}`
+        : `${formatCUP(pedido.total)} CUP${textoCambio}${textoPropina}`;
 
       Toast.show({
         type: 'success',
@@ -776,14 +781,75 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
                     />
                     <Text style={estilos.sufijoMonto}>CUP</Text>
                   </View>
-                  {cambio > 0 && (
-                    <View style={estilos.contenedorCambio}>
-                      <Text style={estilos.etiquetaCambio}>VUELTO</Text>
-                      <Text style={estilos.valorCambio}>{formatCUP(cambio)} CUP</Text>
-                    </View>
-                  )}
                   {montoRecibido !== '' && parseFloat(montoRecibido) < pedido.total && (
                     <Text style={estilos.textoError}>Monto insuficiente para cubrir el total</Text>
+                  )}
+
+                  {cambio > 0 && (
+                    <View>
+                      {/* Recuadro del vuelto — cambia color según la elección */}
+                      <View style={[
+                        estilos.contenedorCambio,
+                        usarPropina && estilosModalCobro.contenedorPropina,
+                      ]}>
+                        <Text style={[
+                          estilos.etiquetaCambio,
+                          usarPropina && estilosModalCobro.etiquetaPropina,
+                        ]}>
+                          {usarPropina ? '⭐ PROPINA' : 'CAMBIO (VUELTO)'}
+                        </Text>
+                        <Text style={[
+                          estilos.valorCambio,
+                          usarPropina && estilosModalCobro.valorPropina,
+                        ]}>
+                          {formatCUP(cambio)} CUP
+                        </Text>
+                      </View>
+
+                      {/* Selector: devolver o propina */}
+                      <Text style={estilosModalCobro.etiquetaSelector}>¿Qué hacer con este dinero?</Text>
+                      <View style={estilosModalCobro.gridSelector}>
+                        <TouchableOpacity
+                          style={[
+                            estilosModalCobro.botonSelector,
+                            !usarPropina && estilosModalCobro.botonSelectorActivo,
+                          ]}
+                          onPress={() => setUsarPropina(false)}
+                        >
+                          <Ionicons
+                            name="arrow-undo-outline"
+                            size={20}
+                            color={!usarPropina ? '#ffffff' : '#2b6cb0'}
+                          />
+                          <Text style={[
+                            estilosModalCobro.textoBotonSelector,
+                            !usarPropina && estilosModalCobro.textoBotonSelectorActivo,
+                          ]}>
+                            Devolver al cliente
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[
+                            estilosModalCobro.botonSelector,
+                            usarPropina && estilosModalCobro.botonSelectorPropina,
+                          ]}
+                          onPress={() => setUsarPropina(true)}
+                        >
+                          <Ionicons
+                            name="star-outline"
+                            size={20}
+                            color={usarPropina ? '#ffffff' : '#d69e2e'}
+                          />
+                          <Text style={[
+                            estilosModalCobro.textoBotonSelector,
+                            usarPropina && estilosModalCobro.textoBotonSelectorActivo,
+                          ]}>
+                            Registrar propina
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   )}
                 </View>
               )}
@@ -1208,5 +1274,58 @@ const estilosPA = StyleSheet.create({
   botonAgregar: {
     width: 36, height: 36, borderRadius: 10, backgroundColor: '#38a169',
     alignItems: 'center', justifyContent: 'center',
+  },
+});
+
+const estilosModalCobro = StyleSheet.create({
+  contenedorPropina: {
+    backgroundColor: '#fffff0',
+    borderColor: '#d69e2e',
+  },
+  etiquetaPropina: {
+    color: '#b7791f',
+  },
+  valorPropina: {
+    color: '#744210',
+  },
+  etiquetaSelector: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  gridSelector: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 8,
+  },
+  botonSelector: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#bee3f8',
+    backgroundColor: '#ebf8ff',
+  },
+  botonSelectorActivo: {
+    backgroundColor: '#2b6cb0',
+    borderColor: '#2b6cb0',
+  },
+  botonSelectorPropina: {
+    backgroundColor: '#d69e2e',
+    borderColor: '#d69e2e',
+  },
+  textoBotonSelector: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2b6cb0',
+  },
+  textoBotonSelectorActivo: {
+    color: '#ffffff',
   },
 });

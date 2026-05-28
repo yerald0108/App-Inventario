@@ -275,7 +275,8 @@ export async function renombrarPedido(pedidoId: number, nuevoNombre: string): Pr
 export async function cerrarPedidoComoVenta(
   pedidoId: number,
   metodoPago: 'efectivo' | 'transferencia',
-  turnoId: number
+  turnoId: number,
+  propina: number = 0
 ): Promise<void> {
   try {
     const db = await getDatabase();
@@ -325,8 +326,8 @@ export async function cerrarPedidoComoVenta(
         await db.runAsync(
           `INSERT INTO movimientos
             (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total,
-             metodo_pago, turno_id, venta_id, propina)
-           VALUES ('venta', ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+            metodo_pago, turno_id, venta_id, propina)
+          VALUES ('venta', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             fechaHora,
             item.producto_id,
@@ -336,6 +337,7 @@ export async function cerrarPedidoComoVenta(
             metodoPago,
             turnoId,
             ventaId,
+            propina, 
           ]
         );
 
