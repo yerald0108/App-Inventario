@@ -39,6 +39,15 @@ export async function registrarVenta(
         );
       }
 
+      const prodInDB = await db.getFirstAsync<{ existencia: number }>(
+        'SELECT existencia FROM productos WHERE id = ?',
+        [item.producto.id]
+      );
+
+      if (!prodInDB || prodInDB.existencia < cantidad) {
+        throw new Error(`Stock insuficiente para el producto "${item.producto.nombre}". Disponible: ${prodInDB?.existencia ?? 0}, Solicitado: ${cantidad}`);
+      }
+
       const total = precio * cantidad;
 
       await db.runAsync(

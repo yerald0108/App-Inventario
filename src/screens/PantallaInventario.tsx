@@ -16,49 +16,28 @@ import ProductoItem from '../components/ProductoItem';
 import FormularioProducto from '../components/FormularioProducto';
 import Skeleton, { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
+import { useProductos } from '../context/ProductosContext';
+import { handleError } from '../utils';
 
 export default function PantallaInventario() {
-  const [productos, setProductos] = useState<Producto[]>([]);
+  const { productos, cargandoProductos, cargarProductos, buscarProductos, actualizarProductoEnLista } = useProductos();
   const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
   const [busqueda, setBusqueda] = useState('');
-  const [cargando, setCargando] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
 
   // Recargar productos cada vez que la pantalla gana foco
   useFocusEffect(
     useCallback(() => {
-      cargarProductos();
-      setBusqueda('');
-    }, [])
+      cargarProductos().then(() => setBusqueda(''));
+    }, [cargarProductos])
   );
 
-  async function cargarProductos() {
-    setCargando(true);
-    try {
-      const lista = await obtenerProductos();
-      setProductos(lista);
-      setProductosFiltrados(lista);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  // Filtrar productos cuando cambia la búsqueda
+  // Filtrar productos cuando cambia la búsqueda o los productos cambian
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    if (busqueda.trim() === '') {
-      setProductosFiltrados(productos);
-    } else {
-      const termino = busqueda.toLowerCase();
-      const filtrados = productos.filter(p => 
-        p.nombre.toLowerCase().includes(termino)
-      );
-      setProductosFiltrados(filtrados);
-    }
-  }, [busqueda, productos]);
+    setProductosFiltrados(buscarProductos(busqueda));
+  }, [busqueda, productos, buscarProductos]);
 
   function abrirCrear() {
     setProductoSeleccionado(null);
@@ -92,6 +71,10 @@ export default function PantallaInventario() {
           datos.alerta_minima,
           datos.precio_costo
         );
+        actualizarProductoEnLista({
+          ...productoSeleccionado,
+          ...datos
+        });
         Toast.show({
           type: 'success',
           text1: 'Producto actualizado',
@@ -106,6 +89,7 @@ export default function PantallaInventario() {
           datos.alerta_minima,
           datos.precio_costo
         );
+        await cargarProductos();
         Toast.show({
           type: 'success',
           text1: 'Producto creado',
@@ -114,15 +98,8 @@ export default function PantallaInventario() {
         });
       }
       cerrarModal();
-      cargarProductos();
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'No se pudo guardar el producto.',
-        position: 'top',
-      });
-      console.error(error);
+      handleError(error, 'Error al guardar');
     }
   }
 
@@ -140,13 +117,7 @@ export default function PantallaInventario() {
       cerrarModal();
       cargarProductos();
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'No se pudo eliminar el producto.',
-        position: 'top',
-      });
-      console.error(error);
+      handleError(error, 'Error al eliminar');
     }
   }
 
@@ -160,12 +131,17 @@ export default function PantallaInventario() {
 
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      {/* Resumen de stock */}
-      {!cargando && (
+      {/* Resumen de stock y finanzas */}
+      {!cargandoProductos && (
         <View style={estilos.resumen}>
           <Text style={estilos.textoResumen}>
-            {productos.length} productos · {productos.filter(p => p.existencia < p.alerta_minima).length} con stock bajo
+            {productos.length} productos · {productos.filter(p => p.existencia < p.alerta_minima).length} stock bajo
           </Text>
+          {productos.some(p => p.precio_costo && p.precio_costo > 0) && (
+            <Text style={estilos.textoResumenMargen}>
+              Margen prom: {(productos.filter(p => p.precio_costo && p.precio_costo > 0).reduce((acc, p) => acc + ((p.precio - (p.precio_costo || 0)) / p.precio), 0) / productos.filter(p => p.precio_costo && p.precio_costo > 0).length * 100).toFixed(1)}%
+            </Text>
+          )}
         </View>
       )}
 
@@ -183,7 +159,7 @@ export default function PantallaInventario() {
       </View>
 
       {/* Lista de productos o Skeleton */}
-      {cargando ? (
+      {cargandoProductos ? (
         renderSkeleton()
       ) : (
         <FlatList
@@ -245,10 +221,18 @@ const estilos = StyleSheet.create({
     backgroundColor: '#1a1a2e',
     padding: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
   },
   textoResumen: {
     color: '#a0aec0',
     fontSize: 14,
+  },
+  textoResumenMargen: {
+    color: '#9ae6b4',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   textoVacio: {
     fontSize: 18,

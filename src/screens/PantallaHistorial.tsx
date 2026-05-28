@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, ScrollView, ActivityIndicator
@@ -9,7 +9,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { Turno } from '../types';
-import { obtenerTurnosCerrados } from '../database/turnos';
+import { obtenerTurnosCerradosFiltrados, obtenerFiltrosDisponiblesHistorial } from '../database/turnos';
 import { obtenerTotalesExternosPorTurnos } from '../database/despachos';
 import { SkeletonTurno } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
@@ -26,36 +26,39 @@ export default function PantallaHistorial({ navigation }: Props) {
   const [cargando, setCargando] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [hayMas, setHayMas] = useState(true);
+  
   const [filtroMes, setFiltroMes] = useState<number | null>(null);
   const [filtroAnio, setFiltroAnio] = useState<number | null>(null);
+
+  const [mesesDisponibles, setMesesDisponibles] = useState<number[]>([]);
+  const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([]);
 
   // Usamos un ref para el offset para evitar closures obsoletos en onEndReached
   const offsetRef = useRef(0);
 
-  // ── Años disponibles (calculados sobre los turnos ya cargados) ──────────
-  const aniosDisponibles = useMemo(() => {
-    const set = new Set<number>();
-    turnos.forEach(t => {
-      if (t.fecha_cierre) set.add(new Date(t.fecha_cierre).getFullYear());
-    });
-    return Array.from(set).sort((a, b) => b - a);
-  }, [turnos]);
-
-  // ── Carga inicial (o al volver a la pantalla) ───────────────────────────
+  // ── Cargar filtros disponibles ───────────────────────────
   useFocusEffect(
     useCallback(() => {
-      cargarDesdeElPrincipio();
+      obtenerFiltrosDisponiblesHistorial().then(({ meses, anios }) => {
+        setMesesDisponibles(meses);
+        setAniosDisponibles(anios);
+      });
     }, [])
   );
+
+  // ── Carga inicial (o al cambiar filtros) ───────────────────────────
+  useEffect(() => {
+    cargarDesdeElPrincipio();
+  }, [filtroMes, filtroAnio]);
 
   async function cargarDesdeElPrincipio() {
     setCargando(true);
     setHayMas(true);
     offsetRef.current = 0;
 
-    const lista = await obtenerTurnosCerrados(PAGE_SIZE, 0);
+    const lista = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, 0);
     const ids = lista.map(t => t.id);
-    const mapaExternos = await obtenerTotalesExternosPorTurnos(ids);
+    const mapaExternos = ids.length > 0 ? await obtenerTotalesExternosPorTurnos(ids) : new Map();
 
     setTurnos(lista);
     setTotalesExternos(mapaExternos);
@@ -69,7 +72,7 @@ export default function PantallaHistorial({ navigation }: Props) {
     if (cargandoMas || !hayMas) return;
     setCargandoMas(true);
 
-    const siguientePagina = await obtenerTurnosCerrados(PAGE_SIZE, offsetRef.current);
+    const siguientePagina = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, offsetRef.current);
 
     if (siguientePagina.length > 0) {
       const ids = siguientePagina.map(t => t.id);
@@ -87,18 +90,6 @@ export default function PantallaHistorial({ navigation }: Props) {
     setHayMas(siguientePagina.length === PAGE_SIZE);
     setCargandoMas(false);
   }
-
-  // ── Filtrado local sobre los turnos ya cargados ─────────────────────────
-  const turnosFiltrados = useMemo(() => {
-    if (filtroMes === null && filtroAnio === null) return turnos;
-    return turnos.filter(t => {
-      if (!t.fecha_cierre) return false;
-      const f = new Date(t.fecha_cierre);
-      const mesOk  = filtroMes  === null || f.getMonth()     === filtroMes;
-      const anioOk = filtroAnio === null || f.getFullYear()  === filtroAnio;
-      return mesOk && anioOk;
-    });
-  }, [turnos, filtroMes, filtroAnio]);
 
   // ── Helpers de formato ──────────────────────────────────────────────────
   function formatearFecha(iso: string): string {
@@ -152,16 +143,6 @@ export default function PantallaHistorial({ navigation }: Props) {
     </View>
   );
 
-  const mesesConTurnos = useMemo(() =>
-    Array.from(
-      new Set(
-        turnos
-          .filter(t => t.fecha_cierre)
-          .map(t => new Date(t.fecha_cierre!).getMonth())
-      )
-    ).sort((a, b) => a - b),
-  [turnos]);
-
   return (
     <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
 
@@ -169,13 +150,13 @@ export default function PantallaHistorial({ navigation }: Props) {
         <>
           <View style={estilos.encabezado}>
             <Text style={estilos.textoEncabezado}>
-              {turnosFiltrados.length} {turnosFiltrados.length === 1 ? 'turno' : 'turnos'}
+              {turnos.length} {turnos.length === 1 ? 'turno' : 'turnos'}
               {(filtroMes !== null || filtroAnio !== null)
                 ? ` · ${filtroMes !== null
                     ? new Date(2000, filtroMes).toLocaleString('es-CU', { month: 'long' })
                     : ''}${filtroMes !== null && filtroAnio !== null ? ' ' : ''}${filtroAnio ?? ''}`
                 : ' cerrados'}
-              {hayMas && filtroMes === null && filtroAnio === null
+              {hayMas
                 ? ' (mostrando primeros)'
                 : ''}
             </Text>
@@ -197,7 +178,7 @@ export default function PantallaHistorial({ navigation }: Props) {
                 </Text>
               </TouchableOpacity>
 
-              {mesesConTurnos.map(mes => (
+              {mesesDisponibles.map(mes => (
                 <TouchableOpacity
                   key={mes}
                   style={[estilos.chip, filtroMes === mes && estilos.chipActivo]}
@@ -245,13 +226,9 @@ export default function PantallaHistorial({ navigation }: Props) {
         renderSkeleton()
       ) : (
         <FlatList
-          data={turnosFiltrados}
+          data={turnos}
           keyExtractor={item => item.id.toString()}
-          onEndReached={
-            // Solo paginar si no hay filtros activos; con filtros
-            // trabajamos sobre los datos ya cargados
-            filtroMes === null && filtroAnio === null ? cargarMas : undefined
-          }
+          onEndReached={cargarMas}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
           renderItem={({ item }) => {

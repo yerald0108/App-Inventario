@@ -170,6 +170,61 @@ export async function obtenerTurnosCerrados(
   );
 }
 
+// Obtener turnos cerrados aplicando filtros por mes/año desde la base de datos
+export async function obtenerTurnosCerradosFiltrados(
+  mes: number | null,
+  anio: number | null,
+  limite: number = 20,
+  offset: number = 0
+): Promise<Turno[]> {
+  const db = await getDatabase();
+  let query = 'SELECT * FROM turnos WHERE cerrado = 1';
+  const params: any[] = [];
+
+  if (anio !== null && mes !== null) {
+    const mesStr = (mes + 1).toString().padStart(2, '0');
+    query += ' AND strftime("%Y-%m", fecha_cierre) = ?';
+    params.push(`${anio}-${mesStr}`);
+  } else if (anio !== null) {
+    query += ' AND strftime("%Y", fecha_cierre) = ?';
+    params.push(`${anio}`);
+  } else if (mes !== null) {
+    const mesStr = (mes + 1).toString().padStart(2, '0');
+    query += ' AND strftime("%m", fecha_cierre) = ?';
+    params.push(`${mesStr}`);
+  }
+
+  query += ' ORDER BY fecha_cierre DESC LIMIT ? OFFSET ?';
+  params.push(limite, offset);
+
+  return await db.getAllAsync<Turno>(query, params);
+}
+
+// Obtener meses y años disponibles para los filtros
+export async function obtenerFiltrosDisponiblesHistorial(): Promise<{
+  meses: number[];
+  anios: number[];
+}> {
+  const db = await getDatabase();
+  const resultados = await db.getAllAsync<{ mes: string, anio: string }>(
+    `SELECT DISTINCT strftime("%m", fecha_cierre) as mes, strftime("%Y", fecha_cierre) as anio
+     FROM turnos WHERE cerrado = 1 AND fecha_cierre IS NOT NULL`
+  );
+  
+  const mesesSet = new Set<number>();
+  const aniosSet = new Set<number>();
+  
+  resultados.forEach(r => {
+    if (r.mes) mesesSet.add(parseInt(r.mes, 10) - 1);
+    if (r.anio) aniosSet.add(parseInt(r.anio, 10));
+  });
+  
+  return {
+    meses: Array.from(mesesSet).sort((a, b) => a - b),
+    anios: Array.from(aniosSet).sort((a, b) => b - a),
+  };
+}
+
 // Obtener el resumen de un turno cerrado (solo lectura)
 export async function obtenerDetalleTurno(turnoId: number) {
   const db = await getDatabase();

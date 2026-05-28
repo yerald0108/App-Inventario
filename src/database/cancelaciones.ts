@@ -126,29 +126,32 @@ export async function obtenerAnulacionesTurno(turnoId: number): Promise<VentaAgr
 
 // Cancelar una venta completa por su venta_id
 export async function cancelarVenta(ventaId: string): Promise<void> {
-  // Obtener todos los movimientos de esa venta
-  const movimientos = await getDatabase().getAllAsync<{
-    producto_id: number;
-    cantidad: number;
-  }>(
-    `SELECT producto_id, cantidad FROM movimientos 
-     WHERE venta_id = ? AND tipo = 'venta'`,
-    [ventaId]
-  );
-
-  // Marcar todos los movimientos de esa venta como cancelacion
-  await getDatabase().runAsync(
-    `UPDATE movimientos SET tipo = 'cancelacion' WHERE venta_id = ? AND tipo = 'venta'`,
-    [ventaId]
-  );
-
-  // Devolver las cantidades al inventario
-  for (const mov of movimientos) {
-    await getDatabase().runAsync(
-      'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
-      [mov.cantidad, mov.producto_id]
+  const db = await getDatabase();
+  await db.withTransactionAsync(async () => {
+    // Obtener todos los movimientos de esa venta
+    const movimientos = await db.getAllAsync<{
+      producto_id: number;
+      cantidad: number;
+    }>(
+      `SELECT producto_id, cantidad FROM movimientos 
+       WHERE venta_id = ? AND tipo = 'venta'`,
+      [ventaId]
     );
-  }
+
+    // Marcar todos los movimientos de esa venta como cancelacion
+    await db.runAsync(
+      `UPDATE movimientos SET tipo = 'cancelacion' WHERE venta_id = ? AND tipo = 'venta'`,
+      [ventaId]
+    );
+
+    // Devolver las cantidades al inventario
+    for (const mov of movimientos) {
+      await db.runAsync(
+        'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
+        [mov.cantidad, mov.producto_id]
+      );
+    }
+  });
 }
 
 // Cambiar el método de pago de todos los movimientos de una venta
