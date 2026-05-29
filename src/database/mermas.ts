@@ -45,7 +45,27 @@ export async function registrarMerma(
     const db = await getDatabase();
     await db.withTransactionAsync(async () => {
       for (const item of items) {
-        // Insertar el registro de merma
+
+        // ── NUEVO: Validar stock real antes de descontar ──────────────────
+        const stockActual = await db.getFirstAsync<{ existencia: number }>(
+          'SELECT existencia FROM productos WHERE id = ?',
+          [item.productoId]
+        );
+
+        if (!stockActual) {
+          throw new Error(
+            `El producto "${item.nombreProducto}" ya no existe en el inventario.`
+          );
+        }
+
+        if (stockActual.existencia < item.cantidad) {
+          throw new Error(
+            `Stock insuficiente para "${item.nombreProducto}".\n` +
+            `Disponible: ${stockActual.existencia} · Intentas dar de baja: ${item.cantidad}`
+          );
+        }
+        // ─────────────────────────────────────────────────────────────────
+
         await db.runAsync(
           `INSERT INTO mermas 
             (turno_id, fecha_hora, grupo_id, producto_id, cantidad, motivo, motivo_detalle)
@@ -53,7 +73,6 @@ export async function registrarMerma(
           [turnoId, fechaHora, grupoId, item.productoId, item.cantidad, motivo, motivoDetalle]
         );
 
-        // Descontar del inventario
         await db.runAsync(
           'UPDATE productos SET existencia = existencia - ? WHERE id = ?',
           [item.cantidad, item.productoId]

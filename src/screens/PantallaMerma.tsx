@@ -166,12 +166,18 @@ export default function PantallaMerma() {
         position: 'top',
         visibilityTime: 4000,
       });
-    } catch (error) {
+    } catch (error: any) {
+      const mensaje = error?.message?.includes('Stock insuficiente') || 
+                      error?.message?.includes('ya no existe')
+        ? error.message
+        : 'No se pudo registrar la merma. Intenta de nuevo.';
+
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'No se pudo registrar la merma.',
+        text1: 'Error al registrar merma',
+        text2: mensaje,
         position: 'top',
+        visibilityTime: 5000,
       });
       console.error(error);
     } finally {
