@@ -16,7 +16,7 @@ export async function inicializarDB(): Promise<void> {
   try {
     // Abrir la base de datos AQUÍ, no antes
     db = await SQLite.openDatabaseAsync('micaja.db');
-    
+
     // 1. Tablas core siempre presentes
     await db.execAsync(`
 
