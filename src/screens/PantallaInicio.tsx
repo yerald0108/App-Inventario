@@ -29,6 +29,7 @@ export default function PantallaInicio({ navigation }: Props) {
     transferencia: 0,
   });
   const [pedidosAbiertos, setPedidosAbiertos] = useState(0);
+  const [totalPropinas, setTotalPropinas] = useState(0);
   const [abriendoTurno, setAbriendoTurno] = useState(false);
   const [totalDespachos, setTotalDespachos] = useState(0);
   const [cantidadDespachos, setCantidadDespachos] = useState(0);
@@ -51,6 +52,7 @@ export default function PantallaInicio({ navigation }: Props) {
               transferencia: resumen.totalTransferencia,
             });
             setPedidosAbiertos(pedidos.length);
+            setTotalPropinas(resumen.totalPropinas);
 
             // Calcular total de despachos externos
             const totalExt = despachos.reduce(
@@ -63,6 +65,7 @@ export default function PantallaInicio({ navigation }: Props) {
             setPedidosAbiertos(0);
             setTotalDespachos(0);
             setCantidadDespachos(0);
+            setTotalPropinas(0); 
           }
         } catch (error) {
           console.error('Error al cargar turno:', error);
@@ -161,6 +164,15 @@ export default function PantallaInicio({ navigation }: Props) {
               </Text>
             </View>
           </View>
+
+          {totalPropinas > 0 && (
+            <View style={estilosLocal.notaPropinas}>
+              <Ionicons name="star" size={14} color="#b7791f" />
+              <Text style={estilosLocal.textoNotaPropinas}>
+                Propinas acumuladas: ${totalPropinas.toFixed(2)} CUP
+              </Text>
+            </View>
+          )}
 
           {/* Nota de despachos externos */}
           {cantidadDespachos > 0 && (
@@ -479,4 +491,22 @@ const estilosLocal = StyleSheet.create({
     fontWeight: '400',
     fontStyle: 'italic',
   },
+  notaPropinas: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  backgroundColor: '#fffff0',
+  borderWidth: 1,
+  borderColor: '#f6e05e',
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  marginTop: 8,
+},
+textoNotaPropinas: {
+  flex: 1,
+  fontSize: 13,
+  color: '#b7791f',
+  fontWeight: '600',
+},
 });
