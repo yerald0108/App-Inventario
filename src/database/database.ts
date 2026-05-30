@@ -249,14 +249,12 @@ async function aplicarMigraciones() {
       console.log('Migración v7 completada.');
     }
 
-    // ── v8: tipo 'propina' en movimientos ─────────────────────────────────────────
+    // ── v8: tipo 'propina' en movimientos ─────────────────────────────────────
     if (version < 8) {
       console.log('Ejecutando migración v8: soporte propina en movimientos...');
-      await db.execAsync(`
-        -- SQLite no permite modificar CHECK constraints directamente.
-        -- La solución es recrear la tabla con el nuevo constraint.
 
-        -- 1. Crear tabla nueva con el constraint actualizado
+      // Paso 1: Crear tabla nueva con constraint actualizado
+      await db.execAsync(`
         CREATE TABLE IF NOT EXISTS movimientos_v8 (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           tipo TEXT NOT NULL CHECK(tipo IN (
@@ -274,17 +272,38 @@ async function aplicarMigraciones() {
           FOREIGN KEY (producto_id) REFERENCES productos(id),
           FOREIGN KEY (turno_id) REFERENCES turnos(id)
         );
-
-        -- 2. Copiar todos los datos existentes
-        INSERT INTO movimientos_v8
-          SELECT * FROM movimientos;
-
-        -- 3. Eliminar la tabla vieja
-        DROP TABLE movimientos;
-
-        -- 4. Renombrar la nueva
-        ALTER TABLE movimientos_v8 RENAME TO movimientos;
       `);
+
+      // Paso 2: Copiar datos columna a columna de forma explícita.
+      // Usamos COALESCE para que dispositivos donde propina no existía
+      // (fallo previo en v5) no rompan la copia: en ese caso propina = 0.
+      // Listamos cada columna explícitamente — nunca SELECT * en migraciones.
+      await db.execAsync(`
+        INSERT INTO movimientos_v8 (
+          id, tipo, fecha_hora, producto_id, cantidad,
+          precio_aplicado, total, metodo_pago, turno_id, venta_id, propina
+        )
+        SELECT
+          id,
+          tipo,
+          fecha_hora,
+          producto_id,
+          cantidad,
+          precio_aplicado,
+          total,
+          metodo_pago,
+          turno_id,
+          venta_id,
+          COALESCE(propina, 0)
+        FROM movimientos;
+      `);
+
+      // Paso 3: Solo eliminamos la tabla original si la copia fue exitosa.
+      // Si alguno de los pasos anteriores lanzó error, el catch lo captura
+      // ANTES de llegar aquí, así que los datos originales están intactos.
+      await db.execAsync(`DROP TABLE movimientos;`);
+      await db.execAsync(`ALTER TABLE movimientos_v8 RENAME TO movimientos;`);
+
       await db.runAsync(
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '8')"
       );
@@ -303,9 +322,25 @@ async function aplicarMigraciones() {
       console.log('Migración v9 completada.');
     }
 
+    // ── v10: índice único para garantizar propina consistente ─────────────────
+    if (version < 10) {
+      console.log('Ejecutando migración v10: índice de integridad en propinas...');
+      await db.execAsync(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_mov_venta_propina
+        ON movimientos(venta_id, propina)
+        WHERE tipo = 'venta' AND propina > 0;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '10')"
+      );
+      console.log('Migración v10 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     if (db) {
+      // Limpia las tablas temporales que cualquier migración pudo haber dejado
+      await db.execAsync('DROP TABLE IF EXISTS movimientos_v8;').catch(() => {});
       await db.execAsync('DROP TABLE IF EXISTS movimientos_new;').catch(() => {});
     }
     throw error;

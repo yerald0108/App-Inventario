@@ -90,6 +90,7 @@ export default function PantallaVentaExterna({ route }: Props) {
       // No reseteamos la cesta aquí. El reset ocurre solo cuando la venta
       // se registra con éxito (igual que PantallaVenta y PantallaSalidaFamiliar).
       setBusqueda('');
+      resetCesta(NAMESPACE_VENTA_EXTERNA);
     }, [])
   );
 
