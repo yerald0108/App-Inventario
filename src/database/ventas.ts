@@ -50,16 +50,21 @@ export async function registrarVenta(
 
       const total = precio * cantidad;
 
+      const precioCosto = typeof item.producto.precio_costo === 'number' && isFinite(item.producto.precio_costo)
+      ? item.producto.precio_costo
+      : 0;
+
       await db.runAsync(
         `INSERT INTO movimientos 
-          (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total, metodo_pago, turno_id, venta_id, propina)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total, metodo_pago, turno_id, venta_id, propina)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           'venta',
           fechaHora,
           item.producto.id,
           cantidad,
           precio,
+          precioCosto,
           total,
           metodoPago,
           turnoId,

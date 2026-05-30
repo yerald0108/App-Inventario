@@ -136,3 +136,4 @@ export const useCestaStore = create<CestaStore>((set, get) => ({
 export const NAMESPACE_VENTA = 'venta';
 export const NAMESPACE_SALIDA_FAMILIAR = 'salidaFamiliar';
 export const NAMESPACE_MERMA = 'merma';
+export const NAMESPACE_VENTA_EXTERNA = 'ventaExterna';

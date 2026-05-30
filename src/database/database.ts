@@ -291,6 +291,18 @@ async function aplicarMigraciones() {
       console.log('Migración v8 completada.');
     }
 
+    // ── v9: precio_costo en movimientos ──────────────────────────────────────────
+    if (version < 9) {
+      console.log('Ejecutando migración v9: precio_costo en movimientos...');
+      await db.execAsync(`
+        ALTER TABLE movimientos ADD COLUMN precio_costo REAL DEFAULT 0;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '9')"
+      );
+      console.log('Migración v9 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     if (db) {

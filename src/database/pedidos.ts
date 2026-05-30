@@ -323,21 +323,29 @@ export async function cerrarPedidoComoVenta(
 
       // ── 1. Items PROPIOS → movimientos (descuenta inventario, suma a tu caja) ──
       for (const item of itemsPropios) {
+        // Obtener precio_costo actual del producto para el registro histórico
+        const productoDB = await db.getFirstAsync<{ precio_costo: number }>(
+          'SELECT precio_costo FROM productos WHERE id = ?',
+          [item.producto_id]
+        );
+        const precioCostoItem = productoDB?.precio_costo ?? 0;
+
         await db.runAsync(
           `INSERT INTO movimientos
-            (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total,
+            (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total,
             metodo_pago, turno_id, venta_id, propina)
-          VALUES ('venta', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          VALUES ('venta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             fechaHora,
             item.producto_id,
             item.cantidad,
             item.precio_aplicado,
+            precioCostoItem,
             item.subtotal,
             metodoPago,
             turnoId,
             ventaId,
-            propina, 
+            propina,
           ]
         );
 

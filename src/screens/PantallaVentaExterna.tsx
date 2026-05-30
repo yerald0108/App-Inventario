@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useCestaStore, NAMESPACE_VENTA_EXTERNA } from '../store/useCestaStore';
 import {
   View, Text, FlatList, StyleSheet, Alert,
-  TextInput, TouchableOpacity, LayoutAnimation,
+  TextInput, TouchableOpacity,
   ActivityIndicator
 } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -40,10 +41,18 @@ type Tab = 'venta' | 'historial';
 export default function PantallaVentaExterna({ route }: Props) {
   const { despachoId, despachoNombre, despachoColor } = route.params;
 
+  const {
+    namespaces,
+    cambiarCantidad: cambiarCantidadStore,
+    obtenerItemsCesta,
+    resetCesta,
+  } = useCestaStore();
+
+  const { cesta } = namespaces[NAMESPACE_VENTA_EXTERNA] ?? { cesta: {} };
+
   const [tabActiva, setTabActiva] = useState<Tab>('venta');
   const [productos, setProductos] = useState<ProductoDespacho[]>([]);
   const [busqueda, setBusqueda] = useState('');
-  const [cesta, setCesta] = useState<Map<number, number>>(new Map());
   const [cargando, setCargando] = useState(true);
   const [procesando, setProcesando] = useState(false);
   const procesandoRef = useRef(false);
@@ -62,15 +71,13 @@ export default function PantallaVentaExterna({ route }: Props) {
   }, [busqueda, productos]);
 
   const itemsCesta = useMemo((): ItemCestaExterna[] => {
-    const items: ItemCestaExterna[] = [];
-    cesta.forEach((cantidad, productoId) => {
-      const producto = productos.find(p => p.id === productoId);
-      if (producto) {
-        items.push({ productoId, nombre: producto.nombre, precio: producto.precio, cantidad });
-      }
-    });
-    return items;
-  }, [cesta, productos]);
+    return Object.values(cesta).map(item => ({
+      productoId: item.producto.id,
+      nombre: item.producto.nombre,
+      precio: item.precioFinal ?? item.producto.precio,
+      cantidad: item.cantidad,
+    }));
+  }, [cesta]);
 
   const totalCesta = useMemo(
     () => itemsCesta.reduce((acc, i) => acc + i.precio * i.cantidad, 0),
@@ -80,7 +87,8 @@ export default function PantallaVentaExterna({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       cargarDatos();
-      setCesta(new Map());
+      // No reseteamos la cesta aquí. El reset ocurre solo cuando la venta
+      // se registra con éxito (igual que PantallaVenta y PantallaSalidaFamiliar).
       setBusqueda('');
     }, [])
   );
@@ -115,16 +123,6 @@ export default function PantallaVentaExterna({ route }: Props) {
       cargarHistorial();
     }
   }, [tabActiva]);
-
-  function cambiarCantidad(productoId: number, cantidad: number) {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setCesta(prev => {
-      const nueva = new Map(prev);
-      if (cantidad === 0) nueva.delete(productoId);
-      else nueva.set(productoId, cantidad);
-      return nueva;
-    });
-  }
 
   function abrirCobro() {
     if (itemsCesta.length === 0) return;
@@ -219,7 +217,7 @@ export default function PantallaVentaExterna({ route }: Props) {
               keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={{ paddingBottom: itemsCesta.length > 0 ? 140 : 20 }}
               renderItem={({ item }) => {
-                const qty = cesta.get(item.id) ?? 0;
+                const qty = cesta[item.id]?.cantidad ?? 0;
                 const enCesta = qty > 0;
                 return (
                   <View style={[estilos.tarjetaProducto, enCesta && [estilos.tarjetaActiva, { borderColor: despachoColor }]]}>
@@ -232,7 +230,11 @@ export default function PantallaVentaExterna({ route }: Props) {
                     <View style={estilos.controles}>
                       <TouchableOpacity
                         style={[estilos.botonControl, qty === 0 && estilos.botonDeshabilitado, { backgroundColor: qty === 0 ? '#cbd5e0' : despachoColor }]}
-                        onPress={() => cambiarCantidad(item.id, Math.max(0, qty - 1))}
+                        onPress={() => cambiarCantidadStore(
+                          NAMESPACE_VENTA_EXTERNA,
+                          { id: item.id, nombre: item.nombre, precio: item.precio, existencia: 999, alerta_minima: 0, precio_costo: 0 },
+                          Math.max(0, qty - 1)
+                        )}
                         disabled={qty === 0}
                       >
                         <Text style={estilos.textoControl}>−</Text>
@@ -240,7 +242,11 @@ export default function PantallaVentaExterna({ route }: Props) {
                       <Text style={[estilos.cantidad, enCesta && estilos.cantidadActiva]}>{qty}</Text>
                       <TouchableOpacity
                         style={[estilos.botonControl, { backgroundColor: despachoColor }]}
-                        onPress={() => cambiarCantidad(item.id, qty + 1)}
+                        onPress={() => cambiarCantidadStore(
+                          NAMESPACE_VENTA_EXTERNA,
+                          { id: item.id, nombre: item.nombre, precio: item.precio, existencia: 999, alerta_minima: 0, precio_costo: 0 },
+                          qty + 1
+                        )}
                       >
                         <Text style={estilos.textoControl}>+</Text>
                       </TouchableOpacity>
@@ -378,7 +384,7 @@ export default function PantallaVentaExterna({ route }: Props) {
               turno.id
             );
             setModalCobroVisible(false);
-            setCesta(new Map());
+            resetCesta(NAMESPACE_VENTA_EXTERNA);
             const textoCambio =
               metodo === 'efectivo' && cambioCalculado > 0
                 ? ` · Vuelto: ${cambioCalculado.toFixed(2)} CUP`
