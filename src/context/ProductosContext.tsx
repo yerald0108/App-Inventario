@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
 import { Producto } from '../types';
 import { obtenerProductos as dbObtenerProductos } from '../database/productos';
 import { handleError } from '../utils';
@@ -27,20 +27,32 @@ export function ProductosProvider({ children }: { children: React.ReactNode }) {
   const [queryActual, setQueryActual] = useState('');
   const [ultimaActualizacion, setUltimaActualizacion] = useState(Date.now());
 
+  const versionRef = useRef(0);
+
   const cargarProductos = useCallback(async (query: string = '') => {
+    // Incrementar versión invalida cualquier carga anterior en vuelo
+    const version = ++versionRef.current;
+
     setCargandoProductos(true);
     setQueryActual(query);
     setOffsetActual(0);
     try {
       const lista = await dbObtenerProductos(query, LIMITE_POR_PAGINA, 0);
+
+      // Solo aplicar si esta sigue siendo la carga más reciente
+      if (version !== versionRef.current) return;
+
       setProductos(lista);
       setHayMasProductos(lista.length === LIMITE_POR_PAGINA);
       setOffsetActual(LIMITE_POR_PAGINA);
       setUltimaActualizacion(Date.now());
     } catch (e) {
+      if (version !== versionRef.current) return;
       handleError(e, 'Error al cargar inventario');
     } finally {
-      setCargandoProductos(false);
+      if (version === versionRef.current) {
+        setCargandoProductos(false);
+      }
     }
   }, []);
 

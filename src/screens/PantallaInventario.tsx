@@ -30,11 +30,17 @@ export default function PantallaInventario() {
   const [modalVisible, setModalVisible] = useState(false);
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
 
-  // Recargar productos al ganar foco si la búsqueda está vacía
+  // Recarga al ganar foco SOLO si hay búsqueda activa que limpiar,
+  // o si el inventario podría haber cambiado desde otra pantalla.
+  // Cuando busqueda === '' el contexto ya tiene los datos; no hace falta
+  // una segunda petición salvo que queramos forzar refresco explícito.
   useFocusEffect(
     useCallback(() => {
-      if (busqueda === '') {
-        cargarProductos('');
+      // Solo recargamos si hay una búsqueda activa, para sincronizar
+      // el estado del contexto con el término actual de la pantalla.
+      // La carga inicial (busqueda === '') la maneja ProductosContext.
+      if (busqueda !== '') {
+        cargarProductos(busqueda);
       }
     }, [cargarProductos, busqueda])
   );
