@@ -336,6 +336,18 @@ async function aplicarMigraciones() {
       console.log('Migración v10 completada.');
     }
 
+    // ── v11: eliminar índice único incorrecto en propinas ─────────────────────
+    if (version < 11) {
+      console.log('Ejecutando migración v11: eliminando índice incorrecto de propinas...');
+      await db.execAsync(`
+        DROP INDEX IF EXISTS idx_mov_venta_propina;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '11')"
+      );
+      console.log('Migración v11 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     if (db) {

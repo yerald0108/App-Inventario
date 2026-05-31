@@ -261,12 +261,12 @@ export default function PantallaHistorial({ navigation }: Props) {
                     )}
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={estilos.total}>{totalVendido.toFixed(2)} CUP</Text>
-                    {totalExterno > 0 && (
-                      <Text style={estilosLocal.desgloseTotal}>
-                        {totalPropio.toFixed(2)} propio · {totalExterno.toFixed(2)} ext.
-                      </Text>
-                    )}
+                    <Text style={estilos.total}>{totalPropio.toFixed(2)} CUP</Text>
+                      {totalExterno > 0 && (
+                        <Text style={estilosLocal.desgloseTotal}>
+                          +{totalExterno.toFixed(2)} ext. (no es tuyo)
+                        </Text>
+                      )}
                   </View>
                 </View>
 

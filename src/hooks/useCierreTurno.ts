@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAbiertosTurno } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAbiertosTurno, obtenerInventarioInicialTurno } from '../database/turnos';
 import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils';
@@ -43,6 +43,7 @@ export function useCierreTurno(
   const [sinTurno, setSinTurno] = useState(false);
   const [pedidosAbiertos, setPedidosAbiertos] = useState<{ id: number; nombre: string; total: number }[]>([]);
   const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
+  const [inventarioInicial, setInventarioInicial] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [totalPropinas, setTotalPropinas] = useState(0);
   const procesandoRef = useRef(false);
 
@@ -76,11 +77,12 @@ export function useCierreTurno(
       }
       setTurnoId(turno.id);
 
-      const [resumen, despachos, pedidosOpen, listaMermas] = await Promise.all([
+      const [resumen, despachos, pedidosOpen, listaMermas, inventIni] = await Promise.all([
         obtenerResumenTurno(turno.id),
         obtenerResumenExternoPorDespacho(turno.id),
         obtenerPedidosAbiertosTurno(turno.id),
         obtenerMermasTurno(turno.id),
+        obtenerInventarioInicialTurno(turno.id),
       ]);
 
       setPedidosAbiertos(pedidosOpen);
@@ -93,6 +95,7 @@ export function useCierreTurno(
       setCantidadAnulaciones(resumen.cantidadAnulaciones);
       setResumenDespachos(despachos as ResumenDespacho[]);
       setMermas(listaMermas);
+      setInventarioInicial(inventIni);
       setTotalPropinas(resumen.totalPropinas);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar el resumen del turno.');
@@ -214,6 +217,7 @@ export function useCierreTurno(
     pedidosAbiertos,
     mermas,
     totalPropinas,
+    inventarioInicial,
     // Acciones
     cargarResumen,
     handleRefresh,

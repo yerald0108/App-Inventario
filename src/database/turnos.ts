@@ -13,13 +13,8 @@ export async function obtenerTurnoAbierto(): Promise<Turno | null> {
 // Crear un nuevo turno
 export async function crearTurno(): Promise<number> {
   const db = await getDatabase();
-  // Verificar que no haya un turno abierto antes de crear uno nuevo.
-  // Esto es una segunda línea de defensa contra el doble tap u otras
-  // condiciones de carrera.
   const turnoExistente = await obtenerTurnoAbierto();
   if (turnoExistente) {
-    // Si ya existe un turno abierto, devolver su ID en lugar de crear otro.
-    // El comportamiento es idempotente: la operación es segura de llamar dos veces.
     return turnoExistente.id;
   }
 
@@ -28,7 +23,26 @@ export async function crearTurno(): Promise<number> {
     'INSERT INTO turnos (fecha_inicio, cerrado) VALUES (?, 0)',
     [fechaInicio]
   );
-  return resultado.lastInsertRowId;
+  const nuevoTurnoId = resultado.lastInsertRowId;
+
+  // Guardar snapshot del inventario en este momento
+  const productosActuales = await db.getAllAsync<{
+    id: number;
+    nombre: string;
+    existencia: number;
+    alerta_minima: number;
+  }>('SELECT id, nombre, existencia, alerta_minima FROM productos ORDER BY nombre ASC');
+
+  for (const p of productosActuales) {
+    await db.runAsync(
+      `INSERT INTO inventario_inicial_turno
+        (turno_id, producto_id, nombre, existencia, alerta_minima)
+       VALUES (?, ?, ?, ?, ?)`,
+      [nuevoTurnoId, p.id, p.nombre, p.existencia, p.alerta_minima]
+    );
+  }
+
+  return nuevoTurnoId;
 }
 
 // Obtener resumen completo de un turno para el cierre
@@ -338,6 +352,25 @@ export async function obtenerPedidosAbiertosTurno(turnoId: number): Promise<{
     `SELECT id, nombre, total FROM pedidos 
      WHERE turno_id = ? AND estado = 'abierto'
      ORDER BY fecha_apertura ASC`,
+    [turnoId]
+  );
+}
+
+export async function obtenerInventarioInicialTurno(turnoId: number): Promise<{
+  nombre: string;
+  existencia: number;
+  alerta_minima: number;
+}[]> {
+  const db = await getDatabase();
+  return await db.getAllAsync<{
+    nombre: string;
+    existencia: number;
+    alerta_minima: number;
+  }>(
+    `SELECT nombre, existencia, alerta_minima
+     FROM inventario_inicial_turno
+     WHERE turno_id = ?
+     ORDER BY nombre ASC`,
     [turnoId]
   );
 }

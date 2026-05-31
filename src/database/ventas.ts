@@ -55,7 +55,7 @@ export async function registrarVenta(
       : 0;
 
       await db.runAsync(
-        `INSERT OR ROLLBACK INTO movimientos
+        `INSERT INTO movimientos
           (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total, metodo_pago, turno_id, venta_id, propina)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { obtenerDetalleTurno } from '../database/turnos';
+import { obtenerDetalleTurno, obtenerInventarioInicialTurno } from '../database/turnos';
 import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
 import { Turno, VentaAgrupada } from '../types';
 import { obtenerResumenExternoDetalleTurno } from '../database/despachos';
 import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
+
 
 export interface ResumenDespachoDetalle {
   despacho_id: number;
@@ -40,6 +41,7 @@ export function useDetalleTurno(turnoId: number) {
   const [inventario, setInventario] = useState<ItemInventario[]>([]);
   const [resumenDespachos, setResumenDespachos] = useState<ResumenDespachoDetalle[]>([]);
   const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
+  const [inventarioInicial, setInventarioInicial] = useState<ItemInventario[]>([]);
   const [totalPropinas, setTotalPropinas] = useState(0);
 
   // Estado de expansión de ventas y mermas
@@ -66,17 +68,18 @@ export function useDetalleTurno(turnoId: number) {
       setCantidadAnulaciones(detalle.cantidadAnulaciones);
       setTotalPropinas(detalle.totalPropinas ?? 0);
 
-      const [listaVentas, listaAnulaciones, listaDespachos, listaMermas] = await Promise.all([
+      const [listaVentas, listaAnulaciones, listaDespachos, listaMermas, inventIni] = await Promise.all([
         obtenerVentasTurnoActual(turnoId),
         obtenerAnulacionesTurno(turnoId),
         obtenerResumenExternoDetalleTurno(turnoId),
         obtenerMermasTurno(turnoId),
+        obtenerInventarioInicialTurno(turnoId),
       ]);
-
       setVentas(listaVentas);
       setAnulaciones(listaAnulaciones);
       setResumenDespachos(listaDespachos as ResumenDespachoDetalle[]);
       setMermas(listaMermas);
+      setInventarioInicial(inventIni);
     } catch (error) {
       console.error('Error al cargar detalle del turno:', error);
     } finally {
@@ -141,6 +144,7 @@ export function useDetalleTurno(turnoId: number) {
     ventas, anulaciones,
     inventario, resumenDespachos, mermas,
     totalPropinas,
+    inventarioInicial,
     // Expansión
     ventasExpandidas, toggleVenta,
     mermasExpandidas, toggleMerma,

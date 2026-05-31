@@ -10,6 +10,7 @@ import SeccionMovimientos from '../components/cierre/SeccionMovimientos';
 import SeccionMermas from '../components/cierre/SeccionMermas';
 import SeccionInventario from '../components/cierre/SeccionInventario';
 import SeccionAdvertenciaPedidos from '../components/cierre/SeccionAdvertenciaPedidos';
+import SeccionInventarioInicial from '../components/cierre/SeccionInventarioInicial';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
@@ -39,6 +40,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     handleBlurEfectivo,
     calcularDiferencia,
     handleCerrarTurno,
+    inventarioInicial,
   } = useCierreTurno(navigation);
 
   if (cargando || sinTurno) {
@@ -96,6 +98,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
         />
 
         <SeccionMermas mermas={mermas} />
+
+        <SeccionInventarioInicial inventario={inventarioInicial} />
 
         <SeccionInventario inventario={inventario} />
 
