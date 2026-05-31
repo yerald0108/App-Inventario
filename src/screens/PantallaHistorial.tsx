@@ -1,7 +1,8 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ScrollView, ActivityIndicator
+  StyleSheet, ScrollView, ActivityIndicator,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,10 +10,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { Turno } from '../types';
-import { obtenerTurnosCerradosFiltrados, obtenerFiltrosDisponiblesHistorial } from '../database/turnos';
+import { obtenerTurnosCerradosFiltrados, obtenerFiltrosDisponiblesHistorial, eliminarTurno } from '../database/turnos';
 import { obtenerTotalesExternosPorTurnos } from '../database/despachos';
 import { SkeletonTurno } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
+import Toast from 'react-native-toast-message';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Historial'>;
@@ -90,6 +92,60 @@ export default function PantallaHistorial({ navigation }: Props) {
     setHayMas(siguientePagina.length === PAGE_SIZE);
     setCargandoMas(false);
   }
+
+  function handleEliminarTurno(turno: Turno) {
+  const fecha = turno.fecha_cierre
+    ? new Date(turno.fecha_cierre).toLocaleDateString('es-CU', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      })
+    : 'sin fecha';
+
+  const totalPropio =
+    (turno.total_esperado_efectivo ?? 0) +
+    (turno.total_esperado_transferencia ?? 0);
+
+  Alert.alert(
+    '⚠️ Eliminar turno del historial',
+    `Turno del ${fecha} · ${totalPropio.toFixed(2)} CUP\n\n` +
+    'Esta acción eliminará PERMANENTEMENTE:\n\n' +
+    '🧾  Todas las ventas del turno\n' +
+    '📥  Todas las entradas de mercancía\n' +
+    '👨‍👩‍👧‍👦  Las salidas familiares\n' +
+    '🗑️  Las mermas registradas\n' +
+    '🏪  Las ventas de despachos externos\n' +
+    '🍽️  Los pedidos del turno\n\n' +
+    'El inventario actual NO se verá afectado.\n\n' +
+    'Esta acción NO se puede deshacer.',
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar para siempre',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await eliminarTurno(turno.id);
+            setTurnos(prev => prev.filter(t => t.id !== turno.id));
+            setTotalesExternos(prev => {
+              const nuevo = new Map(prev);
+              nuevo.delete(turno.id);
+              return nuevo;
+            });
+            Toast.show({
+              type: 'info',
+              text1: 'Turno eliminado',
+              text2: `El turno del ${fecha} fue eliminado del historial.`,
+              position: 'top',
+              visibilityTime: 3000,
+            });
+          } catch (error) {
+            Alert.alert('Error', 'No se pudo eliminar el turno. Intenta de nuevo.');
+            console.error(error);
+          }
+        },
+      },
+    ]
+  );
+}
 
   // ── Helpers de formato ──────────────────────────────────────────────────
   function formatearFecha(iso: string): string {
@@ -276,7 +332,7 @@ export default function PantallaHistorial({ navigation }: Props) {
                     <Text style={estilos.textoDetalle}>
                       {(item.total_esperado_efectivo ?? 0).toFixed(2)}
                     </Text>
-                    <Text style={estilos.separador}>·</Text>
+                  <Text style={estilos.separador}>·</Text>
                     <Ionicons name="card-outline" size={14} color="#718096" />
                     <Text style={estilos.textoDetalle}>
                       {(item.total_esperado_transferencia ?? 0).toFixed(2)}
@@ -288,7 +344,19 @@ export default function PantallaHistorial({ navigation }: Props) {
                       {cuadre.texto}
                     </Text>
                   </View>
-                </View>
+                  </View>
+
+                {/* Botón eliminar turno */}
+                <TouchableOpacity
+                  style={estilosEliminar.botonEliminar}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleEliminarTurno(item);
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={14} color="#e53e3e" />
+                  <Text style={estilosEliminar.textoBotonEliminar}>Eliminar del historial</Text>
+                </TouchableOpacity>
               </TouchableOpacity>
             );
           }}
@@ -353,5 +421,25 @@ const estilos = StyleSheet.create({
 const estilosLocal = StyleSheet.create({
   desgloseTotal: {
     fontSize: 11, color: '#a0aec0', marginTop: 2, fontStyle: 'italic',
+  },
+});
+
+const estilosEliminar = StyleSheet.create({
+  botonEliminar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#fff5f5',
+    backgroundColor: '#fff5f5',
+    borderRadius: 8,
+  },
+  textoBotonEliminar: {
+    fontSize: 13,
+    color: '#e53e3e',
+    fontWeight: '600',
   },
 });

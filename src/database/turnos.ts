@@ -374,3 +374,70 @@ export async function obtenerInventarioInicialTurno(turnoId: number): Promise<{
     [turnoId]
   );
 }
+
+/**
+ * Elimina permanentemente un turno cerrado y todos sus datos asociados:
+ * movimientos, ventas externas, ítems de ventas externas, pedidos,
+ * ítems de pedidos y mermas del turno.
+ * Solo se puede eliminar un turno que esté cerrado (cerrado = 1).
+ */
+export async function eliminarTurno(turnoId: number): Promise<void> {
+  const db = await getDatabase();
+  await db.withTransactionAsync(async () => {
+    // 1. Eliminar ítems de ventas externas del turno
+    await db.runAsync(
+      `DELETE FROM ventas_externas_items
+       WHERE venta_externa_id IN (
+         SELECT id FROM ventas_externas WHERE turno_id = ?
+       )`,
+      [turnoId]
+    );
+
+    // 2. Eliminar ventas externas del turno
+    await db.runAsync(
+      'DELETE FROM ventas_externas WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 3. Eliminar ítems de pedidos del turno
+    await db.runAsync(
+      `DELETE FROM pedidos_items
+       WHERE pedido_id IN (
+         SELECT id FROM pedidos WHERE turno_id = ?
+       )`,
+      [turnoId]
+    );
+
+    // 4. Eliminar pedidos del turno
+    await db.runAsync(
+      'DELETE FROM pedidos WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 5. Eliminar mermas del turno
+    await db.runAsync(
+      'DELETE FROM mermas WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 6. Eliminar movimientos del turno (ventas, entradas, etc.)
+    await db.runAsync(
+      'DELETE FROM movimientos WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 7. Eliminar el snapshot de inventario inicial del turno (si existe)
+    await db.runAsync(
+      'DELETE FROM inventario_inicial_turno WHERE turno_id = ?',
+      [turnoId]
+    ).catch(() => {
+      // Si la tabla no existe todavía en algún dispositivo antiguo, ignorar
+    });
+
+    // 8. Finalmente, eliminar el turno en sí
+    await db.runAsync(
+      'DELETE FROM turnos WHERE id = ? AND cerrado = 1',
+      [turnoId]
+    );
+  });
+}

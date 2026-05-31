@@ -75,7 +75,30 @@ export default function PantallaInicio({ navigation }: Props) {
     }, [])
   );
 
-  async function handleAbrirTurno() {
+  // Muestra la advertencia de inventario y luego ejecuta la apertura si confirman
+  function handleAbrirTurno() {
+    Alert.alert(
+      '¿Listo para iniciar el turno?',
+      'Antes de comenzar, asegúrate de:\n\n' +
+      '📦  Revisar que el inventario refleje el stock real.\n' +
+      '💰  Tener el precio de tus productos actualizado.\n' +
+      'El inventario al momento de iniciar se guardará como referencia del turno.',
+      [
+        {
+          text: 'Revisar inventario',
+          onPress: () => navigation.navigate('Inventario'),
+        },
+        {
+          text: 'Iniciar turno',
+          style: 'default',
+          onPress: ejecutarAperturaTurno,
+        },
+      ]
+    );
+  }
+
+  // Lógica real de apertura, separada de la advertencia
+  async function ejecutarAperturaTurno() {
     if (abriendoTurnoRef.current) return;
     abriendoTurnoRef.current = true;
     setAbriendoTurno(true);
