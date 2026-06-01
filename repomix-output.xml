@@ -59,6 +59,7 @@ src/components/cierre/SeccionAdvertenciaPedidos.tsx
 src/components/cierre/SeccionCuadreCaja.tsx
 src/components/cierre/SeccionDespachosExternos.tsx
 src/components/cierre/SeccionInventario.tsx
+src/components/cierre/SeccionInventarioInicial.tsx
 src/components/cierre/SeccionMermas.tsx
 src/components/cierre/SeccionMovimientos.tsx
 src/components/cierre/SeccionResumenVentas.tsx
@@ -67,6 +68,7 @@ src/components/detalleTurno/SeccionAnulacionesTurno.tsx
 src/components/detalleTurno/SeccionCuadreCajaTurno.tsx
 src/components/detalleTurno/SeccionDatosTurno.tsx
 src/components/detalleTurno/SeccionDespachosDetalle.tsx
+src/components/detalleTurno/SeccionInventarioInicialTurno.tsx
 src/components/detalleTurno/SeccionInventarioTurno.tsx
 src/components/detalleTurno/SeccionMermasTurno.tsx
 src/components/detalleTurno/SeccionMovimientosTurno.tsx
@@ -684,6 +686,96 @@ const estilos = StyleSheet.create({
   },
   nombreInventario: { flex: 1, fontSize: 15, color: '#1a1a2e', marginRight: 8 },
   stockInventario: { fontSize: 15, fontWeight: '600' },
+});
+</file>
+
+<file path="src/components/cierre/SeccionInventarioInicial.tsx">
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+interface ItemInventario {
+  nombre: string;
+  existencia: number;
+  alerta_minima: number;
+}
+
+interface Props {
+  inventario: ItemInventario[];
+}
+
+export default function SeccionInventarioInicial({ inventario }: Props) {
+  if (inventario.length === 0) return null;
+
+  return (
+    <View style={estilos.seccion}>
+      <View style={estilos.cabeceraSeccion}>
+        <Ionicons name="archive-outline" size={20} color="#2b6cb0" />
+        <Text style={estilos.tituloSeccion}>Inventario al inicio del turno</Text>
+      </View>
+      {inventario.map((item, index) => {
+        const colorStock =
+          item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
+        return (
+          <View key={index} style={estilos.filaInventario}>
+            <Text style={estilos.nombreInventario} numberOfLines={1}>
+              {item.nombre}
+            </Text>
+            <Text style={[estilos.stockInventario, { color: colorStock }]}>
+              {item.existencia} unid.
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const estilos = StyleSheet.create({
+  seccion: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  cabeceraSeccion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#edf2f7',
+    paddingBottom: 8,
+  },
+  tituloSeccion: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    flex: 1,
+  },
+  filaInventario: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f4f8',
+  },
+  nombreInventario: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1a1a2e',
+    marginRight: 8,
+  },
+  stockInventario: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
 </file>
 
@@ -1383,6 +1475,66 @@ const estilos = StyleSheet.create({
   nombreDespacho: { fontSize: 15, fontWeight: '600', color: '#1a1a2e' },
   detalleDespacho: { fontSize: 12, color: '#718096', marginTop: 1 },
   totalDespacho: { fontSize: 15, fontWeight: 'bold' },
+});
+</file>
+
+<file path="src/components/detalleTurno/SeccionInventarioInicialTurno.tsx">
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { estilosSeccion } from './estilosSeccion';
+import { ItemInventario } from '../../hooks/useDetalleTurno';
+
+interface Props {
+  inventario: ItemInventario[];
+}
+
+export default function SeccionInventarioInicialTurno({ inventario }: Props) {
+  if (inventario.length === 0) return null;
+
+  return (
+    <View style={estilosSeccion.seccion}>
+      <View style={estilosSeccion.cabeceraSeccion}>
+        <Ionicons name="archive-outline" size={20} color="#2b6cb0" />
+        <Text style={estilosSeccion.tituloSeccion}>Inventario al inicio del turno</Text>
+      </View>
+
+      {inventario.map((item, index) => {
+        const colorStock =
+          item.existencia < item.alerta_minima ? '#e53e3e' : '#38a169';
+        return (
+          <View key={index} style={estilos.filaInventario}>
+            <Text style={estilos.nombreInventario} numberOfLines={1}>
+              {item.nombre}
+            </Text>
+            <Text style={[estilos.stockInventario, { color: colorStock }]}>
+              {item.existencia} unid.
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const estilos = StyleSheet.create({
+  filaInventario: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f4f8',
+  },
+  nombreInventario: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1a1a2e',
+    marginRight: 8,
+  },
+  stockInventario: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
 });
 </file>
 
@@ -2384,390 +2536,6 @@ const estilos = StyleSheet.create({
 });
 </file>
 
-<file path="src/hooks/useCierreTurno.ts">
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { Alert } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../App';
-import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAbiertosTurno } from '../database/turnos';
-import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
-import { obtenerResumenExternoPorDespacho } from '../database/despachos';
-import { formatCUP } from '../utils';
-
-export type ResumenDespacho = {
-  despacho_id: number;
-  despacho_nombre: string;
-  despacho_color: string;
-  total_efectivo: number;
-  total_transferencia: number;
-  cantidad_ventas: number;
-};
-
-export type ResultadoCuadre = {
-  diferencia: number;
-  mensaje: string;
-  color: string;
-  icono: any;
-};
-
-export function useCierreTurno(
-  navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>
-) {
-  const [cargando, setCargando] = useState(true);
-  const [turnoId, setTurnoId] = useState<number | null>(null);
-  const [totalEfectivo, setTotalEfectivo] = useState(0);
-  const [totalTransferencia, setTotalTransferencia] = useState(0);
-  const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
-  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
-  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
-  const [cantidadVentas, setCantidadVentas] = useState(0);
-  const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
-  const [resumenDespachos, setResumenDespachos] = useState<ResumenDespacho[]>([]);
-  const [efectivoReal, setEfectivoReal] = useState('');
-  const [procesando, setProcesando] = useState(false);
-  const [refrescando, setRefrescando] = useState(false);
-  const [sinTurno, setSinTurno] = useState(false);
-  const [pedidosAbiertos, setPedidosAbiertos] = useState<{ id: number; nombre: string; total: number }[]>([]);
-  const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
-  const [totalPropinas, setTotalPropinas] = useState(0);
-  const procesandoRef = useRef(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      cargarResumen();
-    }, [])
-  );
-
-  useEffect(() => {
-    if (sinTurno) {
-      const timer = setTimeout(() => {
-        Alert.alert(
-          'Sin turno abierto',
-          'No hay un turno abierto. Inicia uno desde la pantalla de inicio.',
-          [{ text: 'Volver', onPress: () => navigation.goBack() }]
-        );
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [sinTurno]);
-
-  async function cargarResumen() {
-    setCargando(true);
-    setSinTurno(false);
-    try {
-      const turno = await obtenerTurnoAbierto();
-      if (!turno) {
-        setSinTurno(true);
-        return;
-      }
-      setTurnoId(turno.id);
-
-      const [resumen, despachos, pedidosOpen, listaMermas] = await Promise.all([
-        obtenerResumenTurno(turno.id),
-        obtenerResumenExternoPorDespacho(turno.id),
-        obtenerPedidosAbiertosTurno(turno.id),
-        obtenerMermasTurno(turno.id),
-      ]);
-
-      setPedidosAbiertos(pedidosOpen);
-      setTotalEfectivo(resumen.totalEfectivo);
-      setTotalTransferencia(resumen.totalTransferencia);
-      setEntradas(resumen.entradas);
-      setSalidasFamiliares(resumen.salidasFamiliares);
-      setInventario(resumen.inventario);
-      setCantidadVentas(resumen.cantidadVentas);
-      setCantidadAnulaciones(resumen.cantidadAnulaciones);
-      setResumenDespachos(despachos as ResumenDespacho[]);
-      setMermas(listaMermas);
-      setTotalPropinas(resumen.totalPropinas);
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo cargar el resumen del turno.');
-      console.error(error);
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  async function handleRefresh() {
-    setRefrescando(true);
-    await cargarResumen();
-    setRefrescando(false);
-  }
-
-  function handleCambioEfectivo(texto: string) {
-    const filtrado = texto.replace(/[^0-9.]/g, '');
-    const partes = filtrado.split('.');
-    if (partes.length > 2) return;
-    if (partes[1] && partes[1].length > 2) return;
-    setEfectivoReal(filtrado);
-  }
-
-  function handleBlurEfectivo() {
-    const num = parseFloat(efectivoReal);
-    if (!isNaN(num)) {
-      setEfectivoReal(num.toFixed(2));
-    }
-  }
-
-  function calcularDiferencia(): ResultadoCuadre | null {
-    const real = parseFloat(efectivoReal);
-    if (isNaN(real)) return null;
-    const diferencia = totalEfectivo - real;
-    if (diferencia === 0) return { diferencia: 0, mensaje: 'Caja cuadrada', color: '#38a169', icono: 'checkmark-circle' };
-    if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${formatCUP(diferencia)} CUP`, color: '#e53e3e', icono: 'warning' };
-    return { diferencia, mensaje: `Sobrante: ${formatCUP(Math.abs(diferencia))} CUP`, color: '#d69e2e', icono: 'information-circle' };
-  }
-
-  function handleCerrarTurno() {
-    const real = parseFloat(efectivoReal);
-    if (isNaN(real) || real < 0) {
-      Alert.alert('Error', 'Ingresa el efectivo físico contado para cerrar el turno.');
-      return;
-    }
-
-    const resultado = calcularDiferencia();
-
-    if (pedidosAbiertos.length > 0) {
-      const totalPendiente = pedidosAbiertos.reduce((acc, p) => acc + p.total, 0);
-      const detalleMesas = pedidosAbiertos
-        .map(p => `• ${p.nombre}: ${formatCUP(p.total)} CUP`)
-        .join('\n');
-
-      Alert.alert(
-        '⚠️ Hay pedidos sin cobrar',
-        `Los siguientes pedidos se cancelarán sin registrar cobro:\n\n${detalleMesas}\n\nTotal pendiente: ${formatCUP(totalPendiente)} CUP\n\n¿Seguro que deseas cerrar el turno y perder estos pedidos?`,
-        [
-          { text: 'Volver y cobrar', style: 'cancel' },
-          {
-            text: 'Cerrar de todas formas',
-            style: 'destructive',
-            onPress: () => mostrarConfirmacionFinal(resultado?.mensaje ?? ''),
-          },
-        ]
-      );
-      return;
-    }
-
-    mostrarConfirmacionFinal(resultado?.mensaje ?? '');
-  }
-
-  function mostrarConfirmacionFinal(mensajeCuadre: string) {
-    Alert.alert(
-      'Cerrar turno',
-      `${mensajeCuadre}\n\n¿Confirmas el cierre del turno?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Cerrar turno', style: 'destructive', onPress: confirmarCierre },
-      ]
-    );
-  }
-
-  async function confirmarCierre() {
-    if (!turnoId || procesandoRef.current) return;
-    procesandoRef.current = true;
-    setProcesando(true);
-    try {
-      const real = parseFloat(efectivoReal);
-      await cerrarTurno(turnoId, totalEfectivo, totalTransferencia, real);
-      Alert.alert('✅ Turno cerrado', 'El turno fue cerrado exitosamente.', [
-        { text: 'OK', onPress: () => navigation.navigate('Inicio') },
-      ]);
-    } catch (error) {
-      Alert.alert('Error', 'No se pudo cerrar el turno.');
-      console.error(error);
-    } finally {
-      procesandoRef.current = false;
-      setProcesando(false);
-    }
-  }
-
-  return {
-    // Estado
-    cargando,
-    turnoId,
-    totalEfectivo,
-    totalTransferencia,
-    entradas,
-    salidasFamiliares,
-    inventario,
-    cantidadVentas,
-    cantidadAnulaciones,
-    resumenDespachos,
-    efectivoReal,
-    procesando,
-    refrescando,
-    sinTurno,
-    pedidosAbiertos,
-    mermas,
-    totalPropinas,
-    // Acciones
-    cargarResumen,
-    handleRefresh,
-    handleCambioEfectivo,
-    handleBlurEfectivo,
-    calcularDiferencia,
-    handleCerrarTurno,
-  };
-}
-</file>
-
-<file path="src/hooks/useDetalleTurno.ts">
-import { useState, useEffect } from 'react';
-import { obtenerDetalleTurno } from '../database/turnos';
-import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
-import { Turno, VentaAgrupada } from '../types';
-import { obtenerResumenExternoDetalleTurno } from '../database/despachos';
-import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
-
-export interface ResumenDespachoDetalle {
-  despacho_id: number;
-  despacho_nombre: string;
-  despacho_color: string;
-  total_efectivo: number;
-  total_transferencia: number;
-  cantidad_ventas: number;
-}
-
-export interface ItemInventario {
-  nombre: string;
-  existencia: number;
-  alerta_minima: number;
-}
-
-export interface ItemMovimiento {
-  nombre: string;
-  cantidad: number;
-  fecha_hora: string;
-}
-
-export function useDetalleTurno(turnoId: number) {
-  const [cargando, setCargando] = useState(true);
-  const [turno, setTurno] = useState<Turno | null>(null);
-  const [totalEfectivo, setTotalEfectivo] = useState(0);
-  const [totalTransferencia, setTotalTransferencia] = useState(0);
-  const [entradas, setEntradas] = useState<ItemMovimiento[]>([]);
-  const [salidasFamiliares, setSalidasFamiliares] = useState<ItemMovimiento[]>([]);
-  const [cantidadVentas, setCantidadVentas] = useState(0);
-  const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
-  const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
-  const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
-  const [inventario, setInventario] = useState<ItemInventario[]>([]);
-  const [resumenDespachos, setResumenDespachos] = useState<ResumenDespachoDetalle[]>([]);
-  const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
-  const [totalPropinas, setTotalPropinas] = useState(0);
-
-  // Estado de expansión de ventas y mermas
-  const [ventasExpandidas, setVentasExpandidas] = useState<Set<string>>(new Set());
-  const [mermasExpandidas, setMermasExpandidas] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    cargarDetalle();
-  }, []);
-
-  async function cargarDetalle() {
-    setCargando(true);
-    try {
-      const detalle = await obtenerDetalleTurno(turnoId);
-      if (!detalle) { setCargando(false); return; }
-
-      setTurno(detalle.turno);
-      setTotalEfectivo(detalle.totalEfectivo);
-      setTotalTransferencia(detalle.totalTransferencia);
-      setEntradas(detalle.entradas);
-      setSalidasFamiliares(detalle.salidasFamiliares);
-      setInventario(detalle.inventario);
-      setCantidadVentas(detalle.cantidadVentas);
-      setCantidadAnulaciones(detalle.cantidadAnulaciones);
-      setTotalPropinas(detalle.totalPropinas ?? 0);
-
-      const [listaVentas, listaAnulaciones, listaDespachos, listaMermas] = await Promise.all([
-        obtenerVentasTurnoActual(turnoId),
-        obtenerAnulacionesTurno(turnoId),
-        obtenerResumenExternoDetalleTurno(turnoId),
-        obtenerMermasTurno(turnoId),
-      ]);
-
-      setVentas(listaVentas);
-      setAnulaciones(listaAnulaciones);
-      setResumenDespachos(listaDespachos as ResumenDespachoDetalle[]);
-      setMermas(listaMermas);
-    } catch (error) {
-      console.error('Error al cargar detalle del turno:', error);
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  function toggleVenta(ventaId: string) {
-    setVentasExpandidas(prev => {
-      const nueva = new Set(prev);
-      nueva.has(ventaId) ? nueva.delete(ventaId) : nueva.add(ventaId);
-      return nueva;
-    });
-  }
-
-  function toggleMerma(grupoId: string) {
-    setMermasExpandidas(prev => {
-      const nueva = new Set(prev);
-      nueva.has(grupoId) ? nueva.delete(grupoId) : nueva.add(grupoId);
-      return nueva;
-    });
-  }
-
-  // Helpers de formato reutilizables por los componentes hijos
-  function formatearFecha(iso: string): string {
-    return new Date(iso).toLocaleString('es-CU', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true,
-    });
-  }
-
-  function formatearHora(iso: string): string {
-    return new Date(iso).toLocaleTimeString('es-CU', {
-      hour: '2-digit', minute: '2-digit', hour12: true,
-    });
-  }
-
-  // Cálculo del cuadre — lo necesitan dos secciones distintas
-  const efectivoReal = turno?.efectivo_real ?? 0;
-  const diferencia = totalEfectivo - efectivoReal;
-
-  let cuadreTexto = 'Caja cuadrada';
-  let cuadreColor = '#38a169';
-  let cuadreIcono: any = 'checkmark-circle';
-
-  if (diferencia > 0) {
-    cuadreTexto = `Faltante: ${diferencia.toFixed(2)} CUP`;
-    cuadreColor = '#e53e3e';
-    cuadreIcono = 'warning';
-  } else if (diferencia < 0) {
-    cuadreTexto = `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP`;
-    cuadreColor = '#d69e2e';
-    cuadreIcono = 'information-circle';
-  }
-
-  return {
-    // Estado
-    cargando, turno,
-    totalEfectivo, totalTransferencia,
-    entradas, salidasFamiliares,
-    cantidadVentas, cantidadAnulaciones,
-    ventas, anulaciones,
-    inventario, resumenDespachos, mermas,
-    totalPropinas,
-    // Expansión
-    ventasExpandidas, toggleVenta,
-    mermasExpandidas, toggleMerma,
-    // Cuadre calculado
-    efectivoReal, diferencia,
-    cuadreTexto, cuadreColor, cuadreIcono,
-    // Helpers
-    formatearFecha, formatearHora,
-  };
-}
-</file>
-
 <file path="src/hooks/usePanResponderSlide.ts">
 import { useRef } from 'react';
 import { Animated, PanResponder } from 'react-native';
@@ -3751,15 +3519,6 @@ export function handleError(
 }
 </file>
 
-<file path="tsconfig.json">
-{
-  "extends": "expo/tsconfig.base",
-  "compilerOptions": {
-    "strict": true
-  }
-}
-</file>
-
 <file path="src/components/EstadoVacio.tsx">
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
@@ -3841,6 +3600,398 @@ const estilos = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+</file>
+
+<file path="src/hooks/useCierreTurno.ts">
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
+import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAbiertosTurno, obtenerInventarioInicialTurno } from '../database/turnos';
+import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
+import { obtenerResumenExternoPorDespacho } from '../database/despachos';
+import { formatCUP } from '../utils';
+
+export type ResumenDespacho = {
+  despacho_id: number;
+  despacho_nombre: string;
+  despacho_color: string;
+  total_efectivo: number;
+  total_transferencia: number;
+  cantidad_ventas: number;
+};
+
+export type ResultadoCuadre = {
+  diferencia: number;
+  mensaje: string;
+  color: string;
+  icono: any;
+};
+
+export function useCierreTurno(
+  navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>
+) {
+  const [cargando, setCargando] = useState(true);
+  const [turnoId, setTurnoId] = useState<number | null>(null);
+  const [totalEfectivo, setTotalEfectivo] = useState(0);
+  const [totalTransferencia, setTotalTransferencia] = useState(0);
+  const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
+  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
+  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
+  const [cantidadVentas, setCantidadVentas] = useState(0);
+  const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
+  const [resumenDespachos, setResumenDespachos] = useState<ResumenDespacho[]>([]);
+  const [efectivoReal, setEfectivoReal] = useState('');
+  const [procesando, setProcesando] = useState(false);
+  const [refrescando, setRefrescando] = useState(false);
+  const [sinTurno, setSinTurno] = useState(false);
+  const [pedidosAbiertos, setPedidosAbiertos] = useState<{ id: number; nombre: string; total: number }[]>([]);
+  const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
+  const [inventarioInicial, setInventarioInicial] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
+  const [totalPropinas, setTotalPropinas] = useState(0);
+  const procesandoRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      cargarResumen();
+    }, [])
+  );
+
+  useEffect(() => {
+    if (sinTurno) {
+      const timer = setTimeout(() => {
+        Alert.alert(
+          'Sin turno abierto',
+          'No hay un turno abierto. Inicia uno desde la pantalla de inicio.',
+          [{ text: 'Volver', onPress: () => navigation.goBack() }]
+        );
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [sinTurno]);
+
+  async function cargarResumen() {
+    setCargando(true);
+    setSinTurno(false);
+    try {
+      const turno = await obtenerTurnoAbierto();
+      if (!turno) {
+        setSinTurno(true);
+        return;
+      }
+      setTurnoId(turno.id);
+
+      const [resumen, despachos, pedidosOpen, listaMermas, inventIni] = await Promise.all([
+        obtenerResumenTurno(turno.id),
+        obtenerResumenExternoPorDespacho(turno.id),
+        obtenerPedidosAbiertosTurno(turno.id),
+        obtenerMermasTurno(turno.id),
+        obtenerInventarioInicialTurno(turno.id),
+      ]);
+
+      setPedidosAbiertos(pedidosOpen);
+      setTotalEfectivo(resumen.totalEfectivo);
+      setTotalTransferencia(resumen.totalTransferencia);
+      setEntradas(resumen.entradas);
+      setSalidasFamiliares(resumen.salidasFamiliares);
+      setInventario(resumen.inventario);
+      setCantidadVentas(resumen.cantidadVentas);
+      setCantidadAnulaciones(resumen.cantidadAnulaciones);
+      setResumenDespachos(despachos as ResumenDespacho[]);
+      setMermas(listaMermas);
+      setInventarioInicial(inventIni);
+      setTotalPropinas(resumen.totalPropinas);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo cargar el resumen del turno.');
+      console.error(error);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  async function handleRefresh() {
+    setRefrescando(true);
+    await cargarResumen();
+    setRefrescando(false);
+  }
+
+  function handleCambioEfectivo(texto: string) {
+    const filtrado = texto.replace(/[^0-9.]/g, '');
+    const partes = filtrado.split('.');
+    if (partes.length > 2) return;
+    if (partes[1] && partes[1].length > 2) return;
+    setEfectivoReal(filtrado);
+  }
+
+  function handleBlurEfectivo() {
+    const num = parseFloat(efectivoReal);
+    if (!isNaN(num)) {
+      setEfectivoReal(num.toFixed(2));
+    }
+  }
+
+  function calcularDiferencia(): ResultadoCuadre | null {
+    const real = parseFloat(efectivoReal);
+    if (isNaN(real)) return null;
+    const diferencia = totalEfectivo - real;
+    if (diferencia === 0) return { diferencia: 0, mensaje: 'Caja cuadrada', color: '#38a169', icono: 'checkmark-circle' };
+    if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${formatCUP(diferencia)} CUP`, color: '#e53e3e', icono: 'warning' };
+    return { diferencia, mensaje: `Sobrante: ${formatCUP(Math.abs(diferencia))} CUP`, color: '#d69e2e', icono: 'information-circle' };
+  }
+
+  function handleCerrarTurno() {
+    const real = parseFloat(efectivoReal);
+    if (isNaN(real) || real < 0) {
+      Alert.alert('Error', 'Ingresa el efectivo físico contado para cerrar el turno.');
+      return;
+    }
+
+    const resultado = calcularDiferencia();
+
+    if (pedidosAbiertos.length > 0) {
+      const totalPendiente = pedidosAbiertos.reduce((acc, p) => acc + p.total, 0);
+      const detalleMesas = pedidosAbiertos
+        .map(p => `• ${p.nombre}: ${formatCUP(p.total)} CUP`)
+        .join('\n');
+
+      Alert.alert(
+        '⚠️ Hay pedidos sin cobrar',
+        `Los siguientes pedidos se cancelarán sin registrar cobro:\n\n${detalleMesas}\n\nTotal pendiente: ${formatCUP(totalPendiente)} CUP\n\n¿Seguro que deseas cerrar el turno y perder estos pedidos?`,
+        [
+          { text: 'Volver y cobrar', style: 'cancel' },
+          {
+            text: 'Cerrar de todas formas',
+            style: 'destructive',
+            onPress: () => mostrarConfirmacionFinal(resultado?.mensaje ?? ''),
+          },
+        ]
+      );
+      return;
+    }
+
+    mostrarConfirmacionFinal(resultado?.mensaje ?? '');
+  }
+
+  function mostrarConfirmacionFinal(mensajeCuadre: string) {
+    Alert.alert(
+      'Cerrar turno',
+      `${mensajeCuadre}\n\n¿Confirmas el cierre del turno?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Cerrar turno', style: 'destructive', onPress: confirmarCierre },
+      ]
+    );
+  }
+
+  async function confirmarCierre() {
+    if (!turnoId || procesandoRef.current) return;
+    procesandoRef.current = true;
+    setProcesando(true);
+    try {
+      const real = parseFloat(efectivoReal);
+      await cerrarTurno(turnoId, totalEfectivo, totalTransferencia, real);
+      Alert.alert('✅ Turno cerrado', 'El turno fue cerrado exitosamente.', [
+        { text: 'OK', onPress: () => navigation.navigate('Inicio') },
+      ]);
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo cerrar el turno.');
+      console.error(error);
+    } finally {
+      procesandoRef.current = false;
+      setProcesando(false);
+    }
+  }
+
+  return {
+    // Estado
+    cargando,
+    turnoId,
+    totalEfectivo,
+    totalTransferencia,
+    entradas,
+    salidasFamiliares,
+    inventario,
+    cantidadVentas,
+    cantidadAnulaciones,
+    resumenDespachos,
+    efectivoReal,
+    procesando,
+    refrescando,
+    sinTurno,
+    pedidosAbiertos,
+    mermas,
+    totalPropinas,
+    inventarioInicial,
+    // Acciones
+    cargarResumen,
+    handleRefresh,
+    handleCambioEfectivo,
+    handleBlurEfectivo,
+    calcularDiferencia,
+    handleCerrarTurno,
+  };
+}
+</file>
+
+<file path="src/hooks/useDetalleTurno.ts">
+import { useState, useEffect } from 'react';
+import { obtenerDetalleTurno, obtenerInventarioInicialTurno } from '../database/turnos';
+import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/cancelaciones';
+import { Turno, VentaAgrupada } from '../types';
+import { obtenerResumenExternoDetalleTurno } from '../database/despachos';
+import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
+
+
+export interface ResumenDespachoDetalle {
+  despacho_id: number;
+  despacho_nombre: string;
+  despacho_color: string;
+  total_efectivo: number;
+  total_transferencia: number;
+  cantidad_ventas: number;
+}
+
+export interface ItemInventario {
+  nombre: string;
+  existencia: number;
+  alerta_minima: number;
+}
+
+export interface ItemMovimiento {
+  nombre: string;
+  cantidad: number;
+  fecha_hora: string;
+}
+
+export function useDetalleTurno(turnoId: number) {
+  const [cargando, setCargando] = useState(true);
+  const [turno, setTurno] = useState<Turno | null>(null);
+  const [totalEfectivo, setTotalEfectivo] = useState(0);
+  const [totalTransferencia, setTotalTransferencia] = useState(0);
+  const [entradas, setEntradas] = useState<ItemMovimiento[]>([]);
+  const [salidasFamiliares, setSalidasFamiliares] = useState<ItemMovimiento[]>([]);
+  const [cantidadVentas, setCantidadVentas] = useState(0);
+  const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
+  const [ventas, setVentas] = useState<VentaAgrupada[]>([]);
+  const [anulaciones, setAnulaciones] = useState<VentaAgrupada[]>([]);
+  const [inventario, setInventario] = useState<ItemInventario[]>([]);
+  const [resumenDespachos, setResumenDespachos] = useState<ResumenDespachoDetalle[]>([]);
+  const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
+  const [inventarioInicial, setInventarioInicial] = useState<ItemInventario[]>([]);
+  const [totalPropinas, setTotalPropinas] = useState(0);
+
+  // Estado de expansión de ventas y mermas
+  const [ventasExpandidas, setVentasExpandidas] = useState<Set<string>>(new Set());
+  const [mermasExpandidas, setMermasExpandidas] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    cargarDetalle();
+  }, []);
+
+  async function cargarDetalle() {
+    setCargando(true);
+    try {
+      const detalle = await obtenerDetalleTurno(turnoId);
+      if (!detalle) { setCargando(false); return; }
+
+      setTurno(detalle.turno);
+      setTotalEfectivo(detalle.totalEfectivo);
+      setTotalTransferencia(detalle.totalTransferencia);
+      setEntradas(detalle.entradas);
+      setSalidasFamiliares(detalle.salidasFamiliares);
+      setInventario(detalle.inventario);
+      setCantidadVentas(detalle.cantidadVentas);
+      setCantidadAnulaciones(detalle.cantidadAnulaciones);
+      setTotalPropinas(detalle.totalPropinas ?? 0);
+
+      const [listaVentas, listaAnulaciones, listaDespachos, listaMermas, inventIni] = await Promise.all([
+        obtenerVentasTurnoActual(turnoId),
+        obtenerAnulacionesTurno(turnoId),
+        obtenerResumenExternoDetalleTurno(turnoId),
+        obtenerMermasTurno(turnoId),
+        obtenerInventarioInicialTurno(turnoId),
+      ]);
+      setVentas(listaVentas);
+      setAnulaciones(listaAnulaciones);
+      setResumenDespachos(listaDespachos as ResumenDespachoDetalle[]);
+      setMermas(listaMermas);
+      setInventarioInicial(inventIni);
+    } catch (error) {
+      console.error('Error al cargar detalle del turno:', error);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  function toggleVenta(ventaId: string) {
+    setVentasExpandidas(prev => {
+      const nueva = new Set(prev);
+      nueva.has(ventaId) ? nueva.delete(ventaId) : nueva.add(ventaId);
+      return nueva;
+    });
+  }
+
+  function toggleMerma(grupoId: string) {
+    setMermasExpandidas(prev => {
+      const nueva = new Set(prev);
+      nueva.has(grupoId) ? nueva.delete(grupoId) : nueva.add(grupoId);
+      return nueva;
+    });
+  }
+
+  // Helpers de formato reutilizables por los componentes hijos
+  function formatearFecha(iso: string): string {
+    return new Date(iso).toLocaleString('es-CU', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    });
+  }
+
+  function formatearHora(iso: string): string {
+    return new Date(iso).toLocaleTimeString('es-CU', {
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    });
+  }
+
+  // Cálculo del cuadre — lo necesitan dos secciones distintas
+  const efectivoReal = turno?.efectivo_real ?? 0;
+  const diferencia = totalEfectivo - efectivoReal;
+
+  let cuadreTexto = 'Caja cuadrada';
+  let cuadreColor = '#38a169';
+  let cuadreIcono: any = 'checkmark-circle';
+
+  if (diferencia > 0) {
+    cuadreTexto = `Faltante: ${diferencia.toFixed(2)} CUP`;
+    cuadreColor = '#e53e3e';
+    cuadreIcono = 'warning';
+  } else if (diferencia < 0) {
+    cuadreTexto = `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP`;
+    cuadreColor = '#d69e2e';
+    cuadreIcono = 'information-circle';
+  }
+
+  return {
+    // Estado
+    cargando, turno,
+    totalEfectivo, totalTransferencia,
+    entradas, salidasFamiliares,
+    cantidadVentas, cantidadAnulaciones,
+    ventas, anulaciones,
+    inventario, resumenDespachos, mermas,
+    totalPropinas,
+    inventarioInicial,
+    // Expansión
+    ventasExpandidas, toggleVenta,
+    mermasExpandidas, toggleMerma,
+    // Cuadre calculado
+    efectivoReal, diferencia,
+    cuadreTexto, cuadreColor, cuadreIcono,
+    // Helpers
+    formatearFecha, formatearHora,
+  };
+}
 </file>
 
 <file path="src/screens/PantallaProductosDespacho.tsx">
@@ -4246,6 +4397,16 @@ export function calcularTotalItemsCesta(items: ItemCesta[]): number {
 // src/utils/index.ts
 export * from './formatters';
 export * from './errorHandler';
+</file>
+
+<file path="tsconfig.json">
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx"
+  }
+}
 </file>
 
 <file path="src/components/ProductoItem.tsx">
@@ -5222,40 +5383,6 @@ export const NAMESPACE_VENTA = 'venta';
 export const NAMESPACE_SALIDA_FAMILIAR = 'salidaFamiliar';
 export const NAMESPACE_MERMA = 'merma';
 export const NAMESPACE_VENTA_EXTERNA = 'ventaExterna';
-</file>
-
-<file path="package.json">
-{
-  "name": "micaja",
-  "version": "1.0.0",
-  "main": "index.ts",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "dependencies": {
-    "@expo/vector-icons": "^15.0.3",
-    "@react-navigation/native": "^7.2.4",
-    "@react-navigation/native-stack": "^7.15.1",
-    "expo": "~54.0.33",
-    "expo-font": "~14.0.11",
-    "expo-sqlite": "~16.0.10",
-    "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0",
-    "react-native-toast-message": "^2.3.3",
-    "zustand": "^5.0.14"
-  },
-  "devDependencies": {
-    "@types/react": "~19.1.0",
-    "typescript": "~5.9.2"
-  },
-  "private": true
-}
 </file>
 
 <file path="src/components/ProductoVenta.tsx">
@@ -7210,6 +7337,40 @@ const estilos = StyleSheet.create({
 });
 </file>
 
+<file path="package.json">
+{
+  "name": "micaja",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
+    "@react-navigation/native": "^7.2.4",
+    "@react-navigation/native-stack": "^7.15.1",
+    "expo": "~54.0.35",
+    "expo-font": "~14.0.12",
+    "expo-sqlite": "~16.0.10",
+    "expo-status-bar": "~3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-toast-message": "^2.3.3",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.0",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}
+</file>
+
 <file path="src/database/productos.ts">
 import { getDatabase } from '../database/database';
 import { Producto } from '../types';
@@ -8445,366 +8606,6 @@ export async function cambiarMetodoPagoVenta(
 }
 </file>
 
-<file path="src/screens/PantallaHistorial.tsx">
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import {
-  View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ScrollView, ActivityIndicator
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
-import { RootStackParamList } from '../../App';
-import { Turno } from '../types';
-import { obtenerTurnosCerradosFiltrados, obtenerFiltrosDisponiblesHistorial } from '../database/turnos';
-import { obtenerTotalesExternosPorTurnos } from '../database/despachos';
-import { SkeletonTurno } from '../components/Skeleton';
-import EstadoVacio from '../components/EstadoVacio';
-
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Historial'>;
-};
-
-const PAGE_SIZE = 20;
-
-export default function PantallaHistorial({ navigation }: Props) {
-  const [turnos, setTurnos] = useState<Turno[]>([]);
-  const [totalesExternos, setTotalesExternos] = useState<Map<number, number>>(new Map());
-  const [cargando, setCargando] = useState(true);
-  const [cargandoMas, setCargandoMas] = useState(false);
-  const [hayMas, setHayMas] = useState(true);
-  
-  const [filtroMes, setFiltroMes] = useState<number | null>(null);
-  const [filtroAnio, setFiltroAnio] = useState<number | null>(null);
-
-  const [mesesDisponibles, setMesesDisponibles] = useState<number[]>([]);
-  const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([]);
-
-  // Usamos un ref para el offset para evitar closures obsoletos en onEndReached
-  const offsetRef = useRef(0);
-
-  // ── Cargar filtros disponibles ───────────────────────────
-  useFocusEffect(
-    useCallback(() => {
-      obtenerFiltrosDisponiblesHistorial().then(({ meses, anios }) => {
-        setMesesDisponibles(meses);
-        setAniosDisponibles(anios);
-      });
-    }, [])
-  );
-
-  // ── Carga inicial (o al cambiar filtros) ───────────────────────────
-  useEffect(() => {
-    cargarDesdeElPrincipio();
-  }, [filtroMes, filtroAnio]);
-
-  async function cargarDesdeElPrincipio() {
-    setCargando(true);
-    setHayMas(true);
-    offsetRef.current = 0;
-
-    const lista = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, 0);
-    const ids = lista.map(t => t.id);
-    const mapaExternos = ids.length > 0 ? await obtenerTotalesExternosPorTurnos(ids) : new Map();
-
-    setTurnos(lista);
-    setTotalesExternos(mapaExternos);
-    offsetRef.current = lista.length;
-    setHayMas(lista.length === PAGE_SIZE);
-    setCargando(false);
-  }
-
-  // ── Cargar página siguiente ─────────────────────────────────────────────
-  async function cargarMas() {
-    if (cargandoMas || !hayMas) return;
-    setCargandoMas(true);
-
-    const siguientePagina = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, offsetRef.current);
-
-    if (siguientePagina.length > 0) {
-      const ids = siguientePagina.map(t => t.id);
-      const mapaExternos = await obtenerTotalesExternosPorTurnos(ids);
-
-      setTurnos(prev => [...prev, ...siguientePagina]);
-      setTotalesExternos(prev => {
-        const nuevo = new Map(prev);
-        mapaExternos.forEach((v, k) => nuevo.set(k, v));
-        return nuevo;
-      });
-      offsetRef.current += siguientePagina.length;
-    }
-
-    setHayMas(siguientePagina.length === PAGE_SIZE);
-    setCargandoMas(false);
-  }
-
-  // ── Helpers de formato ──────────────────────────────────────────────────
-  function formatearFecha(iso: string): string {
-    return new Date(iso).toLocaleDateString('es-CU', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true,
-    });
-  }
-
-  function calcularDuracion(inicio: string, cierre: string | null): string {
-    if (!cierre) return '';
-    const diffMin = Math.floor(
-      (new Date(cierre).getTime() - new Date(inicio).getTime()) / 60000
-    );
-    const h = Math.floor(diffMin / 60);
-    const m = diffMin % 60;
-    return h === 0 ? `${m} min` : `${h} h ${m} min`;
-  }
-
-  function estadoCuadre(turno: Turno): { texto: string; color: string; icono: any } {
-    if (turno.efectivo_real == null || turno.total_esperado_efectivo == null) {
-      return { texto: 'Sin datos', color: '#a0aec0', icono: 'help-circle' };
-    }
-    const diferencia = turno.total_esperado_efectivo - turno.efectivo_real;
-    if (diferencia === 0)
-      return { texto: 'Cuadrado', color: '#38a169', icono: 'checkmark-circle' };
-    if (diferencia > 0)
-      return { texto: `Faltante: ${diferencia.toFixed(2)} CUP`, color: '#e53e3e', icono: 'warning' };
-    return {
-      texto: `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP`,
-      color: '#d69e2e',
-      icono: 'information-circle',
-    };
-  }
-
-  // ── Footer de la lista ──────────────────────────────────────────────────
-  function renderFooter() {
-    if (!cargandoMas) return null;
-    return (
-      <View style={estilos.footerCarga}>
-        <ActivityIndicator size="small" color="#2b6cb0" />
-        <Text style={estilos.textoFooterCarga}>Cargando más turnos...</Text>
-      </View>
-    );
-  }
-
-  // ── Render ──────────────────────────────────────────────────────────────
-  const renderSkeleton = () => (
-    <View style={{ padding: 16 }}>
-      {[1, 2, 3, 4].map(i => <SkeletonTurno key={i} />)}
-    </View>
-  );
-
-  return (
-    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-
-      {!cargando && (
-        <>
-          <View style={estilos.encabezado}>
-            <Text style={estilos.textoEncabezado}>
-              {turnos.length} {turnos.length === 1 ? 'turno' : 'turnos'}
-              {(filtroMes !== null || filtroAnio !== null)
-                ? ` · ${filtroMes !== null
-                    ? new Date(2000, filtroMes).toLocaleString('es-CU', { month: 'long' })
-                    : ''}${filtroMes !== null && filtroAnio !== null ? ' ' : ''}${filtroAnio ?? ''}`
-                : ' cerrados'}
-              {hayMas
-                ? ' (mostrando primeros)'
-                : ''}
-            </Text>
-          </View>
-
-          {/* Filtros */}
-          <View style={estilos.contenedorFiltros}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={estilos.scrollChips}
-            >
-              <TouchableOpacity
-                style={[estilos.chip, filtroMes === null && estilos.chipActivo]}
-                onPress={() => setFiltroMes(null)}
-              >
-                <Text style={[estilos.textoChip, filtroMes === null && estilos.textoChipActivo]}>
-                  Todos
-                </Text>
-              </TouchableOpacity>
-
-              {mesesDisponibles.map(mes => (
-                <TouchableOpacity
-                  key={mes}
-                  style={[estilos.chip, filtroMes === mes && estilos.chipActivo]}
-                  onPress={() => setFiltroMes(filtroMes === mes ? null : mes)}
-                >
-                  <Text style={[estilos.textoChip, filtroMes === mes && estilos.textoChipActivo]}>
-                    {new Date(2000, mes).toLocaleString('es-CU', { month: 'short' })}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {aniosDisponibles.length > 1 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={estilos.scrollChips}
-              >
-                <TouchableOpacity
-                  style={[estilos.chip, filtroAnio === null && estilos.chipActivo]}
-                  onPress={() => setFiltroAnio(null)}
-                >
-                  <Text style={[estilos.textoChip, filtroAnio === null && estilos.textoChipActivo]}>
-                    Todos
-                  </Text>
-                </TouchableOpacity>
-                {aniosDisponibles.map(anio => (
-                  <TouchableOpacity
-                    key={anio}
-                    style={[estilos.chip, filtroAnio === anio && estilos.chipActivo]}
-                    onPress={() => setFiltroAnio(filtroAnio === anio ? null : anio)}
-                  >
-                    <Text style={[estilos.textoChip, filtroAnio === anio && estilos.textoChipActivo]}>
-                      {anio}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </>
-      )}
-
-      {cargando ? (
-        renderSkeleton()
-      ) : (
-        <FlatList
-          data={turnos}
-          keyExtractor={item => item.id.toString()}
-          onEndReached={cargarMas}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={renderFooter}
-          renderItem={({ item }) => {
-            const totalPropio =
-              (item.total_esperado_efectivo ?? 0) +
-              (item.total_esperado_transferencia ?? 0);
-            const totalExterno = totalesExternos.get(item.id) ?? 0;
-            const totalVendido = totalPropio + totalExterno;
-            const cuadre = estadoCuadre(item);
-            const duracion = calcularDuracion(item.fecha_inicio, item.fecha_cierre);
-
-            return (
-              <TouchableOpacity
-                style={estilos.tarjeta}
-                onPress={() => navigation.navigate('DetalleTurno', {
-                  turnoId: item.id,
-                  fechaCierre: item.fecha_cierre ?? undefined,
-                })}
-              >
-                <View style={estilos.filaSuperior}>
-                  <View>
-                    <Text style={estilos.fecha}>
-                      {item.fecha_cierre ? formatearFecha(item.fecha_cierre) : '—'}
-                    </Text>
-                    {duracion !== '' && (
-                      <View style={estilos.filaDuracion}>
-                        <Ionicons name="time-outline" size={12} color="#a0aec0" />
-                        <Text style={estilos.textoDuracion}>Duración: {duracion}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={estilos.total}>{totalVendido.toFixed(2)} CUP</Text>
-                    {totalExterno > 0 && (
-                      <Text style={estilosLocal.desgloseTotal}>
-                        {totalPropio.toFixed(2)} propio · {totalExterno.toFixed(2)} ext.
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                <View style={estilos.filaInferior}>
-                  <View style={estilos.metodosPago}>
-                    <Ionicons name="cash-outline" size={14} color="#718096" />
-                    <Text style={estilos.textoDetalle}>
-                      {(item.total_esperado_efectivo ?? 0).toFixed(2)}
-                    </Text>
-                    <Text style={estilos.separador}>·</Text>
-                    <Ionicons name="card-outline" size={14} color="#718096" />
-                    <Text style={estilos.textoDetalle}>
-                      {(item.total_esperado_transferencia ?? 0).toFixed(2)}
-                    </Text>
-                  </View>
-                  <View style={estilos.contenedorEstado}>
-                    <Ionicons name={cuadre.icono} size={14} color={cuadre.color} />
-                    <Text style={[estilos.estadoCuadre, { color: cuadre.color }]}>
-                      {cuadre.texto}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-          ListEmptyComponent={
-            <EstadoVacio
-              icono="calendar-outline"
-              titulo="Historial vacío"
-              descripcion="Aquí aparecerán los turnos una vez que los hayas cerrado."
-            />
-          }
-          contentContainerStyle={{ paddingBottom: 24 }}
-        />
-      )}
-    </SafeAreaView>
-  );
-}
-
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f7fafc' },
-  encabezado: {
-    backgroundColor: '#1a1a2e', padding: 12, alignItems: 'center',
-  },
-  textoEncabezado: { fontSize: 14, color: '#a0aec0', fontWeight: '600' },
-  contenedorFiltros: { paddingBottom: 4 },
-  scrollChips: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  chip: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#e2e8f0',
-  },
-  chipActivo: { backgroundColor: '#1a1a2e', borderColor: '#1a1a2e' },
-  textoChip: { fontSize: 14, color: '#4a5568', fontWeight: '600' },
-  textoChipActivo: { color: '#ffffff' },
-  tarjeta: {
-    backgroundColor: '#ffffff', marginHorizontal: 16, marginTop: 12,
-    padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#edf2f7',
-    elevation: 2, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2,
-  },
-  filaSuperior: {
-    flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12,
-  },
-  fecha: { fontSize: 15, fontWeight: '700', color: '#2d3748' },
-  filaDuracion: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  textoDuracion: { fontSize: 12, color: '#a0aec0', fontWeight: '500' },
-  total: { fontSize: 16, fontWeight: '900', color: '#1a1a2e' },
-  filaInferior: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f7fafc',
-  },
-  metodosPago: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  textoDetalle: { fontSize: 13, color: '#718096', fontWeight: '500' },
-  separador: { marginHorizontal: 4, color: '#cbd5e0' },
-  contenedorEstado: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  estadoCuadre: { fontSize: 13, fontWeight: '700' },
-  footerCarga: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, paddingVertical: 20,
-  },
-  textoFooterCarga: { fontSize: 14, color: '#718096' },
-});
-
-const estilosLocal = StyleSheet.create({
-  desgloseTotal: {
-    fontSize: 11, color: '#a0aec0', marginTop: 2, fontStyle: 'italic',
-  },
-});
-</file>
-
 <file path="src/screens/PantallaEntrada.tsx">
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
@@ -9551,91 +9352,6 @@ const estilos = StyleSheet.create({
 });
 </file>
 
-<file path="src/database/ventas.ts">
-import { getDatabase } from '../database/database';
-import { Producto } from '../types';
-
-// Obtener productos disponibles para vender (existencia > 0)
-export async function obtenerProductosDisponibles(): Promise<Producto[]> {
-  const db = await getDatabase();
-  return await db.getAllAsync<Producto>(
-    'SELECT * FROM productos WHERE existencia > 0 ORDER BY nombre ASC'
-  );
-}
-
-// Registrar una venta completa con múltiples productos usando una transacción
-export async function registrarVenta(
-  items: { producto: Producto; cantidad: number }[],
-  metodoPago: 'efectivo' | 'transferencia',
-  turnoId: number,
-  propina: number = 0
-): Promise<void> {
-  const ventaId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-  const fechaHora = new Date().toISOString();
-
-  const db = await getDatabase();
-  await db.withTransactionAsync(async () => {
-    for (const item of items) {
-      // Validar que precio y cantidad son números finitos antes de operar.
-      // Esto previene que un dato corrupto propague NaN a la BD.
-      const precio = typeof item.producto.precio === 'number' && isFinite(item.producto.precio)
-        ? item.producto.precio
-        : 0;
-      const cantidad = typeof item.cantidad === 'number' && isFinite(item.cantidad) && item.cantidad > 0
-        ? item.cantidad
-        : 0;
-
-      // Si la validación falla (cantidad 0 o precio 0), no tiene sentido registrar.
-      // Lanzar un error explícito es mejor que insertar un movimiento inválido.
-      if (precio <= 0 || cantidad <= 0) {
-        throw new Error(
-          `Datos inválidos para el producto "${item.producto.nombre}": precio=${precio}, cantidad=${cantidad}`
-        );
-      }
-
-      const prodInDB = await db.getFirstAsync<{ existencia: number }>(
-        'SELECT existencia FROM productos WHERE id = ?',
-        [item.producto.id]
-      );
-
-      if (!prodInDB || prodInDB.existencia < cantidad) {
-        throw new Error(`Stock insuficiente para el producto "${item.producto.nombre}". Disponible: ${prodInDB?.existencia ?? 0}, Solicitado: ${cantidad}`);
-      }
-
-      const total = precio * cantidad;
-
-      const precioCosto = typeof item.producto.precio_costo === 'number' && isFinite(item.producto.precio_costo)
-      ? item.producto.precio_costo
-      : 0;
-
-      await db.runAsync(
-        `INSERT OR ROLLBACK INTO movimientos
-          (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total, metodo_pago, turno_id, venta_id, propina)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          'venta',
-          fechaHora,
-          item.producto.id,
-          cantidad,
-          precio,
-          precioCosto,
-          total,
-          metodoPago,
-          turnoId,
-          ventaId,
-          propina,
-        ]
-      );
-
-      await db.runAsync(
-        'UPDATE productos SET existencia = existencia - ? WHERE id = ?',
-        [cantidad, item.producto.id]
-      );
-    }
-  });
-}
-</file>
-
 <file path="src/screens/PantallaDetallePedido.tsx">
 import { useRef } from 'react';
 import {
@@ -10194,6 +9910,454 @@ const estilos = StyleSheet.create({
 });
 </file>
 
+<file path="src/screens/PantallaHistorial.tsx">
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity,
+  StyleSheet, ScrollView, ActivityIndicator,
+  Alert
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { RootStackParamList } from '../../App';
+import { Turno } from '../types';
+import { obtenerTurnosCerradosFiltrados, obtenerFiltrosDisponiblesHistorial, eliminarTurno } from '../database/turnos';
+import { obtenerTotalesExternosPorTurnos } from '../database/despachos';
+import { SkeletonTurno } from '../components/Skeleton';
+import EstadoVacio from '../components/EstadoVacio';
+import Toast from 'react-native-toast-message';
+
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Historial'>;
+};
+
+const PAGE_SIZE = 20;
+
+export default function PantallaHistorial({ navigation }: Props) {
+  const [turnos, setTurnos] = useState<Turno[]>([]);
+  const [totalesExternos, setTotalesExternos] = useState<Map<number, number>>(new Map());
+  const [cargando, setCargando] = useState(true);
+  const [cargandoMas, setCargandoMas] = useState(false);
+  const [hayMas, setHayMas] = useState(true);
+  
+  const [filtroMes, setFiltroMes] = useState<number | null>(null);
+  const [filtroAnio, setFiltroAnio] = useState<number | null>(null);
+
+  const [mesesDisponibles, setMesesDisponibles] = useState<number[]>([]);
+  const [aniosDisponibles, setAniosDisponibles] = useState<number[]>([]);
+
+  // Usamos un ref para el offset para evitar closures obsoletos en onEndReached
+  const offsetRef = useRef(0);
+
+  // ── Cargar filtros disponibles ───────────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      obtenerFiltrosDisponiblesHistorial().then(({ meses, anios }) => {
+        setMesesDisponibles(meses);
+        setAniosDisponibles(anios);
+      });
+    }, [])
+  );
+
+  // ── Carga inicial (o al cambiar filtros) ───────────────────────────
+  useEffect(() => {
+    cargarDesdeElPrincipio();
+  }, [filtroMes, filtroAnio]);
+
+  async function cargarDesdeElPrincipio() {
+    setCargando(true);
+    setHayMas(true);
+    offsetRef.current = 0;
+
+    const lista = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, 0);
+    const ids = lista.map(t => t.id);
+    const mapaExternos = ids.length > 0 ? await obtenerTotalesExternosPorTurnos(ids) : new Map();
+
+    setTurnos(lista);
+    setTotalesExternos(mapaExternos);
+    offsetRef.current = lista.length;
+    setHayMas(lista.length === PAGE_SIZE);
+    setCargando(false);
+  }
+
+  // ── Cargar página siguiente ─────────────────────────────────────────────
+  async function cargarMas() {
+    if (cargandoMas || !hayMas) return;
+    setCargandoMas(true);
+
+    const siguientePagina = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, offsetRef.current);
+
+    if (siguientePagina.length > 0) {
+      const ids = siguientePagina.map(t => t.id);
+      const mapaExternos = await obtenerTotalesExternosPorTurnos(ids);
+
+      setTurnos(prev => [...prev, ...siguientePagina]);
+      setTotalesExternos(prev => {
+        const nuevo = new Map(prev);
+        mapaExternos.forEach((v, k) => nuevo.set(k, v));
+        return nuevo;
+      });
+      offsetRef.current += siguientePagina.length;
+    }
+
+    setHayMas(siguientePagina.length === PAGE_SIZE);
+    setCargandoMas(false);
+  }
+
+  function handleEliminarTurno(turno: Turno) {
+  const fecha = turno.fecha_cierre
+    ? new Date(turno.fecha_cierre).toLocaleDateString('es-CU', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+      })
+    : 'sin fecha';
+
+  const totalPropio =
+    (turno.total_esperado_efectivo ?? 0) +
+    (turno.total_esperado_transferencia ?? 0);
+
+  Alert.alert(
+    '⚠️ Eliminar turno del historial',
+    `Turno del ${fecha} · ${totalPropio.toFixed(2)} CUP\n\n` +
+    'Esta acción eliminará PERMANENTEMENTE:\n\n' +
+    '🧾  Todas las ventas del turno\n' +
+    '📥  Todas las entradas de mercancía\n' +
+    '👨‍👩‍👧‍👦  Las salidas familiares\n' +
+    '🗑️  Las mermas registradas\n' +
+    '🏪  Las ventas de despachos externos\n' +
+    '🍽️  Los pedidos del turno\n\n' +
+    'El inventario actual NO se verá afectado.\n\n' +
+    'Esta acción NO se puede deshacer.',
+    [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar para siempre',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await eliminarTurno(turno.id);
+            setTurnos(prev => prev.filter(t => t.id !== turno.id));
+            setTotalesExternos(prev => {
+              const nuevo = new Map(prev);
+              nuevo.delete(turno.id);
+              return nuevo;
+            });
+            Toast.show({
+              type: 'info',
+              text1: 'Turno eliminado',
+              text2: `El turno del ${fecha} fue eliminado del historial.`,
+              position: 'top',
+              visibilityTime: 3000,
+            });
+          } catch (error) {
+            Alert.alert('Error', 'No se pudo eliminar el turno. Intenta de nuevo.');
+            console.error(error);
+          }
+        },
+      },
+    ]
+  );
+}
+
+  // ── Helpers de formato ──────────────────────────────────────────────────
+  function formatearFecha(iso: string): string {
+    return new Date(iso).toLocaleDateString('es-CU', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    });
+  }
+
+  function calcularDuracion(inicio: string, cierre: string | null): string {
+    if (!cierre) return '';
+    const diffMin = Math.floor(
+      (new Date(cierre).getTime() - new Date(inicio).getTime()) / 60000
+    );
+    const h = Math.floor(diffMin / 60);
+    const m = diffMin % 60;
+    return h === 0 ? `${m} min` : `${h} h ${m} min`;
+  }
+
+  function estadoCuadre(turno: Turno): { texto: string; color: string; icono: any } {
+    if (turno.efectivo_real == null || turno.total_esperado_efectivo == null) {
+      return { texto: 'Sin datos', color: '#a0aec0', icono: 'help-circle' };
+    }
+    const diferencia = turno.total_esperado_efectivo - turno.efectivo_real;
+    if (diferencia === 0)
+      return { texto: 'Cuadrado', color: '#38a169', icono: 'checkmark-circle' };
+    if (diferencia > 0)
+      return { texto: `Faltante: ${diferencia.toFixed(2)} CUP`, color: '#e53e3e', icono: 'warning' };
+    return {
+      texto: `Sobrante: ${Math.abs(diferencia).toFixed(2)} CUP`,
+      color: '#d69e2e',
+      icono: 'information-circle',
+    };
+  }
+
+  // ── Footer de la lista ──────────────────────────────────────────────────
+  function renderFooter() {
+    if (!cargandoMas) return null;
+    return (
+      <View style={estilos.footerCarga}>
+        <ActivityIndicator size="small" color="#2b6cb0" />
+        <Text style={estilos.textoFooterCarga}>Cargando más turnos...</Text>
+      </View>
+    );
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────
+  const renderSkeleton = () => (
+    <View style={{ padding: 16 }}>
+      {[1, 2, 3, 4].map(i => <SkeletonTurno key={i} />)}
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+
+      {!cargando && (
+        <>
+          <View style={estilos.encabezado}>
+            <Text style={estilos.textoEncabezado}>
+              {turnos.length} {turnos.length === 1 ? 'turno' : 'turnos'}
+              {(filtroMes !== null || filtroAnio !== null)
+                ? ` · ${filtroMes !== null
+                    ? new Date(2000, filtroMes).toLocaleString('es-CU', { month: 'long' })
+                    : ''}${filtroMes !== null && filtroAnio !== null ? ' ' : ''}${filtroAnio ?? ''}`
+                : ' cerrados'}
+              {hayMas
+                ? ' (mostrando primeros)'
+                : ''}
+            </Text>
+          </View>
+
+          {/* Filtros */}
+          <View style={estilos.contenedorFiltros}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={estilos.scrollChips}
+            >
+              <TouchableOpacity
+                style={[estilos.chip, filtroMes === null && estilos.chipActivo]}
+                onPress={() => setFiltroMes(null)}
+              >
+                <Text style={[estilos.textoChip, filtroMes === null && estilos.textoChipActivo]}>
+                  Todos
+                </Text>
+              </TouchableOpacity>
+
+              {mesesDisponibles.map(mes => (
+                <TouchableOpacity
+                  key={mes}
+                  style={[estilos.chip, filtroMes === mes && estilos.chipActivo]}
+                  onPress={() => setFiltroMes(filtroMes === mes ? null : mes)}
+                >
+                  <Text style={[estilos.textoChip, filtroMes === mes && estilos.textoChipActivo]}>
+                    {new Date(2000, mes).toLocaleString('es-CU', { month: 'short' })}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {aniosDisponibles.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={estilos.scrollChips}
+              >
+                <TouchableOpacity
+                  style={[estilos.chip, filtroAnio === null && estilos.chipActivo]}
+                  onPress={() => setFiltroAnio(null)}
+                >
+                  <Text style={[estilos.textoChip, filtroAnio === null && estilos.textoChipActivo]}>
+                    Todos
+                  </Text>
+                </TouchableOpacity>
+                {aniosDisponibles.map(anio => (
+                  <TouchableOpacity
+                    key={anio}
+                    style={[estilos.chip, filtroAnio === anio && estilos.chipActivo]}
+                    onPress={() => setFiltroAnio(filtroAnio === anio ? null : anio)}
+                  >
+                    <Text style={[estilos.textoChip, filtroAnio === anio && estilos.textoChipActivo]}>
+                      {anio}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </>
+      )}
+
+      {cargando ? (
+        renderSkeleton()
+      ) : (
+        <FlatList
+          data={turnos}
+          keyExtractor={item => item.id.toString()}
+          onEndReached={cargarMas}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={renderFooter}
+          renderItem={({ item }) => {
+            const totalPropio =
+              (item.total_esperado_efectivo ?? 0) +
+              (item.total_esperado_transferencia ?? 0);
+            const totalExterno = totalesExternos.get(item.id) ?? 0;
+            const totalVendido = totalPropio + totalExterno;
+            const cuadre = estadoCuadre(item);
+            const duracion = calcularDuracion(item.fecha_inicio, item.fecha_cierre);
+
+            return (
+              <TouchableOpacity
+                style={estilos.tarjeta}
+                onPress={() => navigation.navigate('DetalleTurno', {
+                  turnoId: item.id,
+                  fechaCierre: item.fecha_cierre ?? undefined,
+                })}
+              >
+                <View style={estilos.filaSuperior}>
+                  <View>
+                    <Text style={estilos.fecha}>
+                      {item.fecha_cierre ? formatearFecha(item.fecha_cierre) : '—'}
+                    </Text>
+                    {duracion !== '' && (
+                      <View style={estilos.filaDuracion}>
+                        <Ionicons name="time-outline" size={12} color="#a0aec0" />
+                        <Text style={estilos.textoDuracion}>Duración: {duracion}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={estilos.total}>{totalPropio.toFixed(2)} CUP</Text>
+                      {totalExterno > 0 && (
+                        <Text style={estilosLocal.desgloseTotal}>
+                          +{totalExterno.toFixed(2)} ext. (no es tuyo)
+                        </Text>
+                      )}
+                  </View>
+                </View>
+
+                <View style={estilos.filaInferior}>
+                  <View style={estilos.metodosPago}>
+                    <Ionicons name="cash-outline" size={14} color="#718096" />
+                    <Text style={estilos.textoDetalle}>
+                      {(item.total_esperado_efectivo ?? 0).toFixed(2)}
+                    </Text>
+                  <Text style={estilos.separador}>·</Text>
+                    <Ionicons name="card-outline" size={14} color="#718096" />
+                    <Text style={estilos.textoDetalle}>
+                      {(item.total_esperado_transferencia ?? 0).toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={estilos.contenedorEstado}>
+                    <Ionicons name={cuadre.icono} size={14} color={cuadre.color} />
+                    <Text style={[estilos.estadoCuadre, { color: cuadre.color }]}>
+                      {cuadre.texto}
+                    </Text>
+                  </View>
+                  </View>
+
+                {/* Botón eliminar turno */}
+                <TouchableOpacity
+                  style={estilosEliminar.botonEliminar}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleEliminarTurno(item);
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={14} color="#e53e3e" />
+                  <Text style={estilosEliminar.textoBotonEliminar}>Eliminar del historial</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            );
+          }}
+          ListEmptyComponent={
+            <EstadoVacio
+              icono="calendar-outline"
+              titulo="Historial vacío"
+              descripcion="Aquí aparecerán los turnos una vez que los hayas cerrado."
+            />
+          }
+          contentContainerStyle={{ paddingBottom: 24 }}
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: '#f7fafc' },
+  encabezado: {
+    backgroundColor: '#1a1a2e', padding: 12, alignItems: 'center',
+  },
+  textoEncabezado: { fontSize: 14, color: '#a0aec0', fontWeight: '600' },
+  contenedorFiltros: { paddingBottom: 4 },
+  scrollChips: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#e2e8f0',
+  },
+  chipActivo: { backgroundColor: '#1a1a2e', borderColor: '#1a1a2e' },
+  textoChip: { fontSize: 14, color: '#4a5568', fontWeight: '600' },
+  textoChipActivo: { color: '#ffffff' },
+  tarjeta: {
+    backgroundColor: '#ffffff', marginHorizontal: 16, marginTop: 12,
+    padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#edf2f7',
+    elevation: 2, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2,
+  },
+  filaSuperior: {
+    flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12,
+  },
+  fecha: { fontSize: 15, fontWeight: '700', color: '#2d3748' },
+  filaDuracion: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  textoDuracion: { fontSize: 12, color: '#a0aec0', fontWeight: '500' },
+  total: { fontSize: 16, fontWeight: '900', color: '#1a1a2e' },
+  filaInferior: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f7fafc',
+  },
+  metodosPago: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  textoDetalle: { fontSize: 13, color: '#718096', fontWeight: '500' },
+  separador: { marginHorizontal: 4, color: '#cbd5e0' },
+  contenedorEstado: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  estadoCuadre: { fontSize: 13, fontWeight: '700' },
+  footerCarga: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, paddingVertical: 20,
+  },
+  textoFooterCarga: { fontSize: 14, color: '#718096' },
+});
+
+const estilosLocal = StyleSheet.create({
+  desgloseTotal: {
+    fontSize: 11, color: '#a0aec0', marginTop: 2, fontStyle: 'italic',
+  },
+});
+
+const estilosEliminar = StyleSheet.create({
+  botonEliminar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#fff5f5',
+    backgroundColor: '#fff5f5',
+    borderRadius: 8,
+  },
+  textoBotonEliminar: {
+    fontSize: 13,
+    color: '#e53e3e',
+    fontWeight: '600',
+  },
+});
+</file>
+
 <file path="src/screens/PantallaInventario.tsx">
 import { useState, useCallback, useEffect } from 'react';
 import {
@@ -10479,6 +10643,91 @@ const estilos = StyleSheet.create({
     borderColor: '#edf2f7',
   },
 });
+</file>
+
+<file path="src/database/ventas.ts">
+import { getDatabase } from '../database/database';
+import { Producto } from '../types';
+
+// Obtener productos disponibles para vender (existencia > 0)
+export async function obtenerProductosDisponibles(): Promise<Producto[]> {
+  const db = await getDatabase();
+  return await db.getAllAsync<Producto>(
+    'SELECT * FROM productos WHERE existencia > 0 ORDER BY nombre ASC'
+  );
+}
+
+// Registrar una venta completa con múltiples productos usando una transacción
+export async function registrarVenta(
+  items: { producto: Producto; cantidad: number }[],
+  metodoPago: 'efectivo' | 'transferencia',
+  turnoId: number,
+  propina: number = 0
+): Promise<void> {
+  const ventaId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  const fechaHora = new Date().toISOString();
+
+  const db = await getDatabase();
+  await db.withTransactionAsync(async () => {
+    for (const item of items) {
+      // Validar que precio y cantidad son números finitos antes de operar.
+      // Esto previene que un dato corrupto propague NaN a la BD.
+      const precio = typeof item.producto.precio === 'number' && isFinite(item.producto.precio)
+        ? item.producto.precio
+        : 0;
+      const cantidad = typeof item.cantidad === 'number' && isFinite(item.cantidad) && item.cantidad > 0
+        ? item.cantidad
+        : 0;
+
+      // Si la validación falla (cantidad 0 o precio 0), no tiene sentido registrar.
+      // Lanzar un error explícito es mejor que insertar un movimiento inválido.
+      if (precio <= 0 || cantidad <= 0) {
+        throw new Error(
+          `Datos inválidos para el producto "${item.producto.nombre}": precio=${precio}, cantidad=${cantidad}`
+        );
+      }
+
+      const prodInDB = await db.getFirstAsync<{ existencia: number }>(
+        'SELECT existencia FROM productos WHERE id = ?',
+        [item.producto.id]
+      );
+
+      if (!prodInDB || prodInDB.existencia < cantidad) {
+        throw new Error(`Stock insuficiente para el producto "${item.producto.nombre}". Disponible: ${prodInDB?.existencia ?? 0}, Solicitado: ${cantidad}`);
+      }
+
+      const total = precio * cantidad;
+
+      const precioCosto = typeof item.producto.precio_costo === 'number' && isFinite(item.producto.precio_costo)
+      ? item.producto.precio_costo
+      : 0;
+
+      await db.runAsync(
+        `INSERT INTO movimientos
+          (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total, metodo_pago, turno_id, venta_id, propina)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          'venta',
+          fechaHora,
+          item.producto.id,
+          cantidad,
+          precio,
+          precioCosto,
+          total,
+          metodoPago,
+          turnoId,
+          ventaId,
+          propina,
+        ]
+      );
+
+      await db.runAsync(
+        'UPDATE productos SET existencia = existencia - ? WHERE id = ?',
+        [cantidad, item.producto.id]
+      );
+    }
+  });
+}
 </file>
 
 <file path="src/database/pedidos.ts">
@@ -10815,7 +11064,7 @@ export async function cerrarPedidoComoVenta(
         const precioCostoItem = productoDB?.precio_costo ?? 0;
 
         await db.runAsync(
-          `INSERT OR ROLLBACK INTO movimientos
+          `INSERT INTO movimientos
             (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total,
             metodo_pago, turno_id, venta_id, propina)
           VALUES ('venta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -10933,521 +11182,6 @@ export async function obtenerPedidosCerradosTurno(turnoId: number): Promise<Pedi
     throw error;
   }
 }
-</file>
-
-<file path="src/screens/PantallaInicio.tsx">
-import { useState, useCallback, useRef } from 'react';
-import {
-  View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../App';
-import {
-  obtenerTurnoAbierto,
-  crearTurno,
-  obtenerResumenTurno,
-} from '../database/turnos';
-import { obtenerPedidosAbiertos } from '../database/pedidos';
-import { Turno } from '../types';
-import { obtenerResumenExternoPorDespacho } from '../database/despachos';
-
-
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Inicio'>;
-};
-
-export default function PantallaInicio({ navigation }: Props) {
-  const [turnoActual, setTurnoActual] = useState<Turno | null>(null);
-  const [totalesActuales, setTotalesActuales] = useState({
-    efectivo: 0,
-    transferencia: 0,
-  });
-  const [pedidosAbiertos, setPedidosAbiertos] = useState(0);
-  const [totalPropinas, setTotalPropinas] = useState(0);
-  const [abriendoTurno, setAbriendoTurno] = useState(false);
-  const [totalDespachos, setTotalDespachos] = useState(0);
-  const [cantidadDespachos, setCantidadDespachos] = useState(0);
-  const abriendoTurnoRef = useRef(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      async function cargarTurno() {
-        try {
-          const turno = await obtenerTurnoAbierto();
-          setTurnoActual(turno);
-          if (turno) {
-            const [resumen, pedidos, despachos] = await Promise.all([
-              obtenerResumenTurno(turno.id),
-              obtenerPedidosAbiertos(turno.id),
-              obtenerResumenExternoPorDespacho(turno.id),
-            ]);
-            setTotalesActuales({
-              efectivo: resumen.totalEfectivo,
-              transferencia: resumen.totalTransferencia,
-            });
-            setPedidosAbiertos(pedidos.length);
-            setTotalPropinas(resumen.totalPropinas);
-
-            // Calcular total de despachos externos
-            const totalExt = despachos.reduce(
-              (acc: number, d: any) => acc + d.total_efectivo + d.total_transferencia,
-              0
-            );
-            setTotalDespachos(totalExt);
-            setCantidadDespachos(despachos.length);
-          } else {
-            setPedidosAbiertos(0);
-            setTotalDespachos(0);
-            setCantidadDespachos(0);
-            setTotalPropinas(0); 
-          }
-        } catch (error) {
-          console.error('Error al cargar turno:', error);
-        }
-      }
-      cargarTurno();
-    }, [])
-  );
-
-  async function handleAbrirTurno() {
-    if (abriendoTurnoRef.current) return;
-    abriendoTurnoRef.current = true;
-    setAbriendoTurno(true);
-    try {
-      await crearTurno();
-      const turno = await obtenerTurnoAbierto();
-      setTurnoActual(turno);
-      if (turno) {
-        setTotalesActuales({ efectivo: 0, transferencia: 0 });
-        setPedidosAbiertos(0);
-      }
-    } catch (error) {
-      console.error('Error al abrir turno:', error);
-      Alert.alert('Error', 'No se pudo iniciar el turno. Intenta de nuevo.');
-    } finally {
-      abriendoTurnoRef.current = false;
-      setAbriendoTurno(false);
-    }
-  }
-
-  function handleAccionSinTurno(nombreAccion: string) {
-    Alert.alert(
-      'Turno cerrado',
-      `Para ${nombreAccion} necesitas iniciar un nuevo turno primero.`,
-      [{ text: 'Entendido', style: 'default' }]
-    );
-  }
-
-  function formatearFecha(iso: string): string {
-    const fecha = new Date(iso);
-    return fecha.toLocaleString('es-CU', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
-  return (
-    <SafeAreaView style={estilos.contenedor} edges={['top', 'left', 'right', 'bottom']}>
-      <ScrollView contentContainerStyle={estilos.scrollContent}>
-
-        {/* ── Cabecera ── */}
-        <View style={estilos.cabecera}>
-          <Text style={estilos.titulo}>MiCaja</Text>
-          <View
-            style={[
-              estilos.indicadorTurno,
-              turnoActual ? estilos.turnoAbierto : estilos.turnoCerrado,
-            ]}
-          >
-            <Ionicons
-              name={turnoActual ? 'checkmark-circle' : 'alert-circle'}
-              size={18}
-              color={turnoActual ? '#2f855a' : '#c53030'}
-            />
-            <Text
-              style={[
-                estilos.textoIndicador,
-                { color: turnoActual ? '#2f855a' : '#c53030' },
-              ]}
-            >
-              {turnoActual ? 'Turno Abierto' : 'Turno Cerrado'}
-            </Text>
-          </View>
-        </View>
-
-        {/* ── Tarjeta del turno activo ── */}
-        {turnoActual && (
-          <View style={estilos.tarjetaTurno}>
-            <Text style={estilos.tarjetaTitulo}>Sesión actual</Text>
-            <Text style={estilos.tarjetaInfo}>
-              Iniciado: {formatearFecha(turnoActual.fecha_inicio)}
-            </Text>
-            <View style={estilos.filaTotales}>
-            <View style={estilos.colTotal}>
-              <Text style={estilos.totalEtiqueta}>💵 Efectivo</Text>
-              <Text style={estilos.totalValor}>
-                ${totalesActuales.efectivo.toFixed(2)}
-              </Text>
-            </View>
-            <View style={estilos.colTotal}>
-              <Text style={estilos.totalEtiqueta}>📱 Transf.</Text>
-              <Text style={estilos.totalValor}>
-                ${totalesActuales.transferencia.toFixed(2)}
-              </Text>
-            </View>
-          </View>
-
-          {totalPropinas > 0 && (
-            <View style={estilosLocal.notaPropinas}>
-              <Ionicons name="star" size={14} color="#b7791f" />
-              <Text style={estilosLocal.textoNotaPropinas}>
-                Propinas acumuladas: ${totalPropinas.toFixed(2)} CUP
-              </Text>
-            </View>
-          )}
-
-          {/* Nota de despachos externos */}
-          {cantidadDespachos > 0 && (
-            <View style={estilosLocal.notaDespachos}>
-              <Ionicons name="storefront-outline" size={14} color="#2c7a7b" />
-              <Text style={estilosLocal.textoNotaDespachos}>
-                +${totalDespachos.toFixed(2)} CUP de {cantidadDespachos}{' '}
-                despacho{cantidadDespachos > 1 ? 's' : ''} externos{' '}
-                <Text style={estilosLocal.textoNotaDespachosAclaracion}>
-                  (no es tuyo)
-                </Text>
-            </Text>
-            </View>
-          )}
-          </View>
-        )}
-
-        {/* ── Botón abrir turno ── */}
-        {!turnoActual && (
-          <TouchableOpacity
-            style={[
-              estilos.botonAbrirTurno,
-              abriendoTurno && estilos.botonAbrirTurnoDeshabilitado,
-            ]}
-            onPress={handleAbrirTurno}
-            disabled={abriendoTurno}
-            activeOpacity={0.8}
-          >
-            {abriendoTurno ? (
-              <>
-                <ActivityIndicator size="small" color="#ffffff" />
-                <Text style={estilos.textoBotonAbrir}>INICIANDO...</Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="play" size={24} color="#ffffff" />
-                <Text style={estilos.textoBotonAbrir}>INICIAR NUEVO TURNO</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* ── Grid de acciones ── */}
-        <View style={estilos.grid}>
-
-          {/* ── PEDIDOS (destacado, ancho completo cuando hay pedidos abiertos) ── */}
-          <TouchableOpacity
-            style={[
-              estilos.tarjetaAccion,
-              estilos.tarjetaPedidos,
-              turnoActual ? { backgroundColor: '#e53e3e' } : { backgroundColor: '#a0aec0' },
-              pedidosAbiertos > 0 && estilos.tarjetaPedidosConBadge,
-            ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('Pedidos')
-                : handleAccionSinTurno('gestionar pedidos')
-            }
-          >
-            <View style={estilos.filaIconoPedido}>
-              <Ionicons name="restaurant" size={32} color="#ffffff" />
-              {pedidosAbiertos > 0 && (
-                <View style={estilos.badgePedidos}>
-                  <Text style={estilos.textoBadgePedidos}>{pedidosAbiertos}</Text>
-                </View>
-              )}
-            </View>
-            <Text style={estilos.textoTarjeta}>Pedidos</Text>
-            {pedidosAbiertos > 0 && (
-              <Text style={estilos.subtextoTarjeta}>
-                {pedidosAbiertos} abierto{pedidosAbiertos > 1 ? 's' : ''}
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Venta */}
-          <TouchableOpacity
-            style={[
-              estilos.tarjetaAccion,
-              { backgroundColor: turnoActual ? '#38a169' : '#a0aec0' },
-            ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('Venta')
-                : handleAccionSinTurno('registrar ventas')
-            }
-          >
-            <Ionicons name="cart" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Venta</Text>
-          </TouchableOpacity>
-
-          {/* Entrada */}
-          <TouchableOpacity
-            style={[
-              estilos.tarjetaAccion,
-              { backgroundColor: turnoActual ? '#d69e2e' : '#a0aec0' },
-            ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('Entrada')
-                : handleAccionSinTurno('registrar entradas de mercancía')
-            }
-          >
-            <Ionicons name="download" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Entrada</Text>
-          </TouchableOpacity>
-
-          {/* Inventario */}
-          <TouchableOpacity
-            style={[estilos.tarjetaAccion, { backgroundColor: '#2b6cb0' }]}
-            onPress={() => navigation.navigate('Inventario')}
-          >
-            <Ionicons name="cube" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Inventario</Text>
-          </TouchableOpacity>
-
-          {/* Resumen de ventas */}
-          <TouchableOpacity
-            style={[estilos.tarjetaAccion, { backgroundColor: '#805ad5' }]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('UltimasVentas')
-                : handleAccionSinTurno('ver el resumen de ventas')
-            }
-          >
-            <Ionicons name="receipt" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Resumen de Ventas</Text>
-          </TouchableOpacity>
-
-          {/* Salida Familiar */}
-          <TouchableOpacity
-            style={[
-              estilos.tarjetaAccion,
-              { backgroundColor: turnoActual ? '#ed64a6' : '#a0aec0' },
-            ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('SalidaFamiliar')
-                : handleAccionSinTurno('registrar salidas familiares')
-            }
-          >
-            <Ionicons name="people" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Salida Familiar</Text>
-          </TouchableOpacity>
-
-          {/* Merma */}
-          <TouchableOpacity
-            style={[
-              estilos.tarjetaAccion,
-              { backgroundColor: turnoActual ? '#c05621' : '#a0aec0' },
-            ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('Merma')
-                : handleAccionSinTurno('registrar mermas')
-            }
-          >
-            <Ionicons name="trash-outline" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Merma</Text>
-          </TouchableOpacity>
-
-          {/* Despachos Externos */}
-          <TouchableOpacity
-            style={[
-              estilos.tarjetaAccion,
-              { backgroundColor: turnoActual ? '#319795' : '#a0aec0' },
-            ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('Despachos')
-                : handleAccionSinTurno('registrar ventas de despachos externos')
-            }
-          >
-            <Ionicons name="storefront" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Despachos</Text>
-          </TouchableOpacity>
-
-          {/* Historial */}
-          <TouchableOpacity
-            style={[estilos.tarjetaAccion, { backgroundColor: '#4a5568' }]}
-            onPress={() => navigation.navigate('Historial')}
-          >
-            <Ionicons name="bar-chart" size={32} color="#ffffff" />
-            <Text style={estilos.textoTarjeta}>Historial</Text>
-          </TouchableOpacity>
-
-          {/* Cerrar turno — solo visible cuando hay turno abierto */}
-          {turnoActual && (
-            <TouchableOpacity
-              style={[estilos.tarjetaAccion, { backgroundColor: '#718096' }]}
-              onPress={() => navigation.navigate('CierreTurno')}
-            >
-              <Ionicons name="lock-closed" size={32} color="#ffffff" />
-              <Text style={estilos.textoTarjeta}>Cerrar</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  scrollContent: { padding: 20 },
-
-  // Cabecera
-  cabecera: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 10,
-  },
-  titulo: { fontSize: 32, fontWeight: 'bold', color: '#1a1a2e' },
-  indicadorTurno: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 6, paddingHorizontal: 12,
-    borderRadius: 20, borderWidth: 1,
-  },
-  turnoAbierto: { backgroundColor: '#c6f6d5', borderColor: '#9ae6b4' },
-  turnoCerrado: { backgroundColor: '#fed7d7', borderColor: '#feb2b2' },
-  textoIndicador: { fontSize: 13, fontWeight: '700' },
-
-  // Tarjeta turno activo
-  tarjetaTurno: {
-    backgroundColor: '#ffffff', borderRadius: 16, padding: 20,
-    marginBottom: 24, elevation: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 4,
-  },
-  tarjetaTitulo: { fontSize: 14, color: '#718096', fontWeight: '600', marginBottom: 4 },
-  tarjetaInfo: { fontSize: 18, color: '#1a1a2e', fontWeight: 'bold', marginBottom: 16 },
-  filaTotales: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    borderTopWidth: 1, borderTopColor: '#edf2f7', paddingTop: 16,
-  },
-  colTotal: { flex: 1 },
-  totalEtiqueta: { fontSize: 12, color: '#718096', marginBottom: 2 },
-  totalValor: { fontSize: 20, color: '#2d3748', fontWeight: 'bold' },
-
-  // Botón abrir turno
-  botonAbrirTurno: {
-    backgroundColor: '#3182ce', borderRadius: 16, padding: 20, marginBottom: 24,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
-    elevation: 4, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
-  },
-  botonAbrirTurnoDeshabilitado: { backgroundColor: '#2c7cc1', elevation: 1 },
-  textoBotonAbrir: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
-
-  // Grid
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 },
-
-  // Tarjeta genérica
-  tarjetaAccion: {
-    width: '47%', aspectRatio: 1, borderRadius: 20, padding: 20,
-    justifyContent: 'center', alignItems: 'center',
-    elevation: 5, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5,
-  },
-  textoTarjeta: {
-    color: '#ffffff', fontSize: 16, fontWeight: 'bold', marginTop: 12, textAlign: 'center',
-  },
-  subtextoTarjeta: {
-    color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '600', marginTop: 4,
-  },
-
-  // Tarjeta Pedidos (ancho completo)
-  tarjetaPedidos: {
-    width: '100%',
-    aspectRatio: undefined,
-    paddingVertical: 20,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 24,
-    gap: 16,
-  },
-  tarjetaPedidosConBadge: {
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  filaIconoPedido: { position: 'relative' },
-  badgePedidos: {
-    position: 'absolute', top: -6, right: -10,
-    backgroundColor: '#ffffff', borderRadius: 10,
-    minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 1.5, borderColor: '#e53e3e',
-  },
-  textoBadgePedidos: { fontSize: 11, fontWeight: '900', color: '#e53e3e' },
-});
-
-const estilosLocal = StyleSheet.create({
-  notaDespachos: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#e6fffa',
-    borderWidth: 1,
-    borderColor: '#81e6d9',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 12,
-  },
-  textoNotaDespachos: {
-    flex: 1,
-    fontSize: 13,
-    color: '#2c7a7b',
-    fontWeight: '600',
-  },
-  textoNotaDespachosAclaracion: {
-    fontSize: 12,
-    color: '#4fd1c5',
-    fontWeight: '400',
-    fontStyle: 'italic',
-  },
-  notaPropinas: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  backgroundColor: '#fffff0',
-  borderWidth: 1,
-  borderColor: '#f6e05e',
-  borderRadius: 10,
-  paddingHorizontal: 12,
-  paddingVertical: 8,
-  marginTop: 8,
-},
-textoNotaPropinas: {
-  flex: 1,
-  fontSize: 13,
-  color: '#b7791f',
-  fontWeight: '600',
-},
-});
 </file>
 
 <file path="src/screens/PantallaSalidaFamiliar.tsx">
@@ -12214,107 +11948,402 @@ const estilosLocal = StyleSheet.create({
 });
 </file>
 
-<file path="src/screens/PantallaDetalleTurno.tsx">
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+<file path="src/screens/PantallaInicio.tsx">
+import { useState, useCallback, useRef } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet,
+  ScrollView, Alert, ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { useDetalleTurno } from '../hooks/useDetalleTurno';
-import SeccionDatosTurno from '../components/detalleTurno/SeccionDatosTurno';
-import SeccionResumenVentasTurno from '../components/detalleTurno/SeccionResumenVentasTurno';
-import SeccionCuadreCajaTurno from '../components/detalleTurno/SeccionCuadreCajaTurno';
-import SeccionVentasTurno from '../components/detalleTurno/SeccionVentasTurno';
-import SeccionAnulacionesTurno from '../components/detalleTurno/SeccionAnulacionesTurno';
-import SeccionDespachosDetalle from '../components/detalleTurno/SeccionDespachosDetalle';
-import SeccionMovimientosTurno from '../components/detalleTurno/SeccionMovimientosTurno';
-import SeccionMermasTurno from '../components/detalleTurno/SeccionMermasTurno';
-import SeccionInventarioTurno from '../components/detalleTurno/SeccionInventarioTurno';
+import {
+  obtenerTurnoAbierto,
+  crearTurno,
+  obtenerResumenTurno,
+} from '../database/turnos';
+import { obtenerPedidosAbiertos } from '../database/pedidos';
+import { Turno } from '../types';
+import { obtenerResumenExternoPorDespacho } from '../database/despachos';
+
 
 type Props = {
-  route: RouteProp<RootStackParamList, 'DetalleTurno'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'Inicio'>;
 };
 
-export default function PantallaDetalleTurno({ route }: Props) {
-  const { turnoId } = route.params;
-  const hook = useDetalleTurno(turnoId);
+export default function PantallaInicio({ navigation }: Props) {
+  const [turnoActual, setTurnoActual] = useState<Turno | null>(null);
+  const [totalesActuales, setTotalesActuales] = useState({
+    efectivo: 0,
+    transferencia: 0,
+  });
+  const [pedidosAbiertos, setPedidosAbiertos] = useState(0);
+  const [totalPropinas, setTotalPropinas] = useState(0);
+  const [abriendoTurno, setAbriendoTurno] = useState(false);
+  const [totalDespachos, setTotalDespachos] = useState(0);
+  const [cantidadDespachos, setCantidadDespachos] = useState(0);
+  const abriendoTurnoRef = useRef(false);
 
-  if (hook.cargando) {
-    return (
-      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-        <View style={estilos.centrado}>
-          <ActivityIndicator size="large" color="#2b6cb0" />
-        </View>
-      </SafeAreaView>
+  useFocusEffect(
+    useCallback(() => {
+      async function cargarTurno() {
+        try {
+          const turno = await obtenerTurnoAbierto();
+          setTurnoActual(turno);
+          if (turno) {
+            const [resumen, pedidos, despachos] = await Promise.all([
+              obtenerResumenTurno(turno.id),
+              obtenerPedidosAbiertos(turno.id),
+              obtenerResumenExternoPorDespacho(turno.id),
+            ]);
+            setTotalesActuales({
+              efectivo: resumen.totalEfectivo,
+              transferencia: resumen.totalTransferencia,
+            });
+            setPedidosAbiertos(pedidos.length);
+            setTotalPropinas(resumen.totalPropinas);
+
+            // Calcular total de despachos externos
+            const totalExt = despachos.reduce(
+              (acc: number, d: any) => acc + d.total_efectivo + d.total_transferencia,
+              0
+            );
+            setTotalDespachos(totalExt);
+            setCantidadDespachos(despachos.length);
+          } else {
+            setPedidosAbiertos(0);
+            setTotalDespachos(0);
+            setCantidadDespachos(0);
+            setTotalPropinas(0); 
+          }
+        } catch (error) {
+          console.error('Error al cargar turno:', error);
+        }
+      }
+      cargarTurno();
+    }, [])
+  );
+
+  // Muestra la advertencia de inventario y luego ejecuta la apertura si confirman
+  function handleAbrirTurno() {
+    Alert.alert(
+      '¿Listo para iniciar el turno?',
+      'Antes de comenzar, asegúrate de:\n\n' +
+      '📦  Revisar que el inventario refleje el stock real.\n' +
+      '💰  Tener el precio de tus productos actualizado.\n' +
+      'El inventario al momento de iniciar se guardará como referencia del turno.',
+      [
+        {
+          text: 'Revisar inventario',
+          onPress: () => navigation.navigate('Inventario'),
+        },
+        {
+          text: 'Iniciar turno',
+          style: 'default',
+          onPress: ejecutarAperturaTurno,
+        },
+      ]
     );
   }
 
-  if (!hook.turno) {
-    return (
-      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-        <View style={estilos.centrado}>
-          <Text style={estilos.textoVacio}>No se encontró el turno.</Text>
-        </View>
-      </SafeAreaView>
+  // Lógica real de apertura, separada de la advertencia
+  async function ejecutarAperturaTurno() {
+    if (abriendoTurnoRef.current) return;
+    abriendoTurnoRef.current = true;
+    setAbriendoTurno(true);
+    try {
+      await crearTurno();
+      const turno = await obtenerTurnoAbierto();
+      setTurnoActual(turno);
+      if (turno) {
+        setTotalesActuales({ efectivo: 0, transferencia: 0 });
+        setPedidosAbiertos(0);
+      }
+    } catch (error) {
+      console.error('Error al abrir turno:', error);
+      Alert.alert('Error', 'No se pudo iniciar el turno. Intenta de nuevo.');
+    } finally {
+      abriendoTurnoRef.current = false;
+      setAbriendoTurno(false);
+    }
+  }
+
+  function handleAccionSinTurno(nombreAccion: string) {
+    Alert.alert(
+      'Turno cerrado',
+      `Para ${nombreAccion} necesitas iniciar un nuevo turno primero.`,
+      [{ text: 'Entendido', style: 'default' }]
     );
+  }
+
+  function formatearFecha(iso: string): string {
+    const fecha = new Date(iso);
+    return fecha.toLocaleString('es-CU', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 
   return (
-    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      <ScrollView style={estilos.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
+    <SafeAreaView style={estilos.contenedor} edges={['top', 'left', 'right', 'bottom']}>
+      <ScrollView contentContainerStyle={estilos.scrollContent}>
 
-        <SeccionDatosTurno
-          turno={hook.turno}
-          formatearFecha={hook.formatearFecha}
-        />
+        {/* ── Cabecera ── */}
+        <View style={estilos.cabecera}>
+          <Text style={estilos.titulo}>MiCaja</Text>
+          <View
+            style={[
+              estilos.indicadorTurno,
+              turnoActual ? estilos.turnoAbierto : estilos.turnoCerrado,
+            ]}
+          >
+            <Ionicons
+              name={turnoActual ? 'checkmark-circle' : 'alert-circle'}
+              size={18}
+              color={turnoActual ? '#2f855a' : '#c53030'}
+            />
+            <Text
+              style={[
+                estilos.textoIndicador,
+                { color: turnoActual ? '#2f855a' : '#c53030' },
+              ]}
+            >
+              {turnoActual ? 'Turno Abierto' : 'Turno Cerrado'}
+            </Text>
+          </View>
+        </View>
 
-        <SeccionResumenVentasTurno
-          cantidadVentas={hook.cantidadVentas}
-          cantidadAnulaciones={hook.cantidadAnulaciones}
-          totalEfectivo={hook.totalEfectivo}
-          totalTransferencia={hook.totalTransferencia}
-          totalPropinas={hook.totalPropinas}
-        />
+        {/* ── Tarjeta del turno activo ── */}
+        {turnoActual && (
+          <View style={estilos.tarjetaTurno}>
+            <Text style={estilos.tarjetaTitulo}>Sesión actual</Text>
+            <Text style={estilos.tarjetaInfo}>
+              Iniciado: {formatearFecha(turnoActual.fecha_inicio)}
+            </Text>
+            <View style={estilos.filaTotales}>
+            <View style={estilos.colTotal}>
+              <Text style={estilos.totalEtiqueta}>💵 Efectivo</Text>
+              <Text style={estilos.totalValor}>
+                ${totalesActuales.efectivo.toFixed(2)}
+              </Text>
+            </View>
+            <View style={estilos.colTotal}>
+              <Text style={estilos.totalEtiqueta}>📱 Transf.</Text>
+              <Text style={estilos.totalValor}>
+                ${totalesActuales.transferencia.toFixed(2)}
+              </Text>
+            </View>
+          </View>
 
-        <SeccionCuadreCajaTurno
-          totalEfectivo={hook.totalEfectivo}
-          efectivoReal={hook.efectivoReal}
-          cuadreTexto={hook.cuadreTexto}
-          cuadreColor={hook.cuadreColor}
-          cuadreIcono={hook.cuadreIcono}
-        />
+          {totalPropinas > 0 && (
+            <View style={estilosLocal.notaPropinas}>
+              <Ionicons name="star" size={14} color="#b7791f" />
+              <Text style={estilosLocal.textoNotaPropinas}>
+                Propinas acumuladas: ${totalPropinas.toFixed(2)} CUP
+              </Text>
+            </View>
+          )}
 
-        <SeccionVentasTurno
-          ventas={hook.ventas}
-          ventasExpandidas={hook.ventasExpandidas}
-          onToggle={hook.toggleVenta}
-          formatearHora={hook.formatearHora}
-        />
+          {/* Nota de despachos externos */}
+          {cantidadDespachos > 0 && (
+            <View style={estilosLocal.notaDespachos}>
+              <Ionicons name="storefront-outline" size={14} color="#2c7a7b" />
+              <Text style={estilosLocal.textoNotaDespachos}>
+                +${totalDespachos.toFixed(2)} CUP de {cantidadDespachos}{' '}
+                despacho{cantidadDespachos > 1 ? 's' : ''} externos{' '}
+                <Text style={estilosLocal.textoNotaDespachosAclaracion}>
+                  (no es tuyo)
+                </Text>
+            </Text>
+            </View>
+          )}
+          </View>
+        )}
 
-        <SeccionAnulacionesTurno
-          anulaciones={hook.anulaciones}
-          formatearHora={hook.formatearHora}
-        />
+        {/* ── Botón abrir turno ── */}
+        {!turnoActual && (
+          <TouchableOpacity
+            style={[
+              estilos.botonAbrirTurno,
+              abriendoTurno && estilos.botonAbrirTurnoDeshabilitado,
+            ]}
+            onPress={handleAbrirTurno}
+            disabled={abriendoTurno}
+            activeOpacity={0.8}
+          >
+            {abriendoTurno ? (
+              <>
+                <ActivityIndicator size="small" color="#ffffff" />
+                <Text style={estilos.textoBotonAbrir}>INICIANDO...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="play" size={24} color="#ffffff" />
+                <Text style={estilos.textoBotonAbrir}>INICIAR NUEVO TURNO</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
 
-        <SeccionDespachosDetalle
-          resumenDespachos={hook.resumenDespachos}
-        />
+        {/* ── Grid de acciones ── */}
+        <View style={estilos.grid}>
 
-        <SeccionMovimientosTurno
-          entradas={hook.entradas}
-          salidasFamiliares={hook.salidasFamiliares}
-          formatearHora={hook.formatearHora}
-        />
+          {/* ── PEDIDOS (destacado, ancho completo cuando hay pedidos abiertos) ── */}
+          <TouchableOpacity
+            style={[
+              estilos.tarjetaAccion,
+              estilos.tarjetaPedidos,
+              turnoActual ? { backgroundColor: '#e53e3e' } : { backgroundColor: '#a0aec0' },
+              pedidosAbiertos > 0 && estilos.tarjetaPedidosConBadge,
+            ]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('Pedidos')
+                : handleAccionSinTurno('gestionar pedidos')
+            }
+          >
+            <View style={estilos.filaIconoPedido}>
+              <Ionicons name="restaurant" size={32} color="#ffffff" />
+              {pedidosAbiertos > 0 && (
+                <View style={estilos.badgePedidos}>
+                  <Text style={estilos.textoBadgePedidos}>{pedidosAbiertos}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={estilos.textoTarjeta}>Pedidos</Text>
+            {pedidosAbiertos > 0 && (
+              <Text style={estilos.subtextoTarjeta}>
+                {pedidosAbiertos} abierto{pedidosAbiertos > 1 ? 's' : ''}
+              </Text>
+            )}
+          </TouchableOpacity>
 
-        <SeccionMermasTurno
-          mermas={hook.mermas}
-          mermasExpandidas={hook.mermasExpandidas}
-          onToggle={hook.toggleMerma}
-        />
+          {/* Venta */}
+          <TouchableOpacity
+            style={[
+              estilos.tarjetaAccion,
+              { backgroundColor: turnoActual ? '#38a169' : '#a0aec0' },
+            ]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('Venta')
+                : handleAccionSinTurno('registrar ventas')
+            }
+          >
+            <Ionicons name="cart" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Venta</Text>
+          </TouchableOpacity>
 
-        <SeccionInventarioTurno
-          inventario={hook.inventario}
-        />
+          {/* Entrada */}
+          <TouchableOpacity
+            style={[
+              estilos.tarjetaAccion,
+              { backgroundColor: turnoActual ? '#d69e2e' : '#a0aec0' },
+            ]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('Entrada')
+                : handleAccionSinTurno('registrar entradas de mercancía')
+            }
+          >
+            <Ionicons name="download" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Entrada</Text>
+          </TouchableOpacity>
 
+          {/* Inventario */}
+          <TouchableOpacity
+            style={[estilos.tarjetaAccion, { backgroundColor: '#2b6cb0' }]}
+            onPress={() => navigation.navigate('Inventario')}
+          >
+            <Ionicons name="cube" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Inventario</Text>
+          </TouchableOpacity>
+
+          {/* Resumen de ventas */}
+          <TouchableOpacity
+            style={[estilos.tarjetaAccion, { backgroundColor: '#805ad5' }]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('UltimasVentas')
+                : handleAccionSinTurno('ver el resumen de ventas')
+            }
+          >
+            <Ionicons name="receipt" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Resumen de Ventas</Text>
+          </TouchableOpacity>
+
+          {/* Salida Familiar */}
+          <TouchableOpacity
+            style={[
+              estilos.tarjetaAccion,
+              { backgroundColor: turnoActual ? '#ed64a6' : '#a0aec0' },
+            ]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('SalidaFamiliar')
+                : handleAccionSinTurno('registrar salidas familiares')
+            }
+          >
+            <Ionicons name="people" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Salida Familiar</Text>
+          </TouchableOpacity>
+
+          {/* Merma */}
+          <TouchableOpacity
+            style={[
+              estilos.tarjetaAccion,
+              { backgroundColor: turnoActual ? '#c05621' : '#a0aec0' },
+            ]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('Merma')
+                : handleAccionSinTurno('registrar mermas')
+            }
+          >
+            <Ionicons name="trash-outline" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Merma</Text>
+          </TouchableOpacity>
+
+          {/* Despachos Externos */}
+          <TouchableOpacity
+            style={[
+              estilos.tarjetaAccion,
+              { backgroundColor: turnoActual ? '#319795' : '#a0aec0' },
+            ]}
+            onPress={() =>
+              turnoActual
+                ? navigation.navigate('Despachos')
+                : handleAccionSinTurno('registrar ventas de despachos externos')
+            }
+          >
+            <Ionicons name="storefront" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Despachos</Text>
+          </TouchableOpacity>
+
+          {/* Historial */}
+          <TouchableOpacity
+            style={[estilos.tarjetaAccion, { backgroundColor: '#4a5568' }]}
+            onPress={() => navigation.navigate('Historial')}
+          >
+            <Ionicons name="bar-chart" size={32} color="#ffffff" />
+            <Text style={estilos.textoTarjeta}>Historial</Text>
+          </TouchableOpacity>
+
+          {/* Cerrar turno — solo visible cuando hay turno abierto */}
+          {turnoActual && (
+            <TouchableOpacity
+              style={[estilos.tarjetaAccion, { backgroundColor: '#718096' }]}
+              onPress={() => navigation.navigate('CierreTurno')}
+            >
+              <Ionicons name="lock-closed" size={32} color="#ffffff" />
+              <Text style={estilos.textoTarjeta}>Cerrar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -12322,9 +12351,138 @@ export default function PantallaDetalleTurno({ route }: Props) {
 
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { flex: 1 },
-  textoVacio: { fontSize: 16, color: '#718096', textAlign: 'center' },
+  scrollContent: { padding: 20 },
+
+  // Cabecera
+  cabecera: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    marginTop: 10,
+  },
+  titulo: { fontSize: 32, fontWeight: 'bold', color: '#1a1a2e' },
+  indicadorTurno: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 6, paddingHorizontal: 12,
+    borderRadius: 20, borderWidth: 1,
+  },
+  turnoAbierto: { backgroundColor: '#c6f6d5', borderColor: '#9ae6b4' },
+  turnoCerrado: { backgroundColor: '#fed7d7', borderColor: '#feb2b2' },
+  textoIndicador: { fontSize: 13, fontWeight: '700' },
+
+  // Tarjeta turno activo
+  tarjetaTurno: {
+    backgroundColor: '#ffffff', borderRadius: 16, padding: 20,
+    marginBottom: 24, elevation: 4,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4,
+  },
+  tarjetaTitulo: { fontSize: 14, color: '#718096', fontWeight: '600', marginBottom: 4 },
+  tarjetaInfo: { fontSize: 18, color: '#1a1a2e', fontWeight: 'bold', marginBottom: 16 },
+  filaTotales: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    borderTopWidth: 1, borderTopColor: '#edf2f7', paddingTop: 16,
+  },
+  colTotal: { flex: 1 },
+  totalEtiqueta: { fontSize: 12, color: '#718096', marginBottom: 2 },
+  totalValor: { fontSize: 20, color: '#2d3748', fontWeight: 'bold' },
+
+  // Botón abrir turno
+  botonAbrirTurno: {
+    backgroundColor: '#3182ce', borderRadius: 16, padding: 20, marginBottom: 24,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+    elevation: 4, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
+  },
+  botonAbrirTurnoDeshabilitado: { backgroundColor: '#2c7cc1', elevation: 1 },
+  textoBotonAbrir: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
+
+  // Grid
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 },
+
+  // Tarjeta genérica
+  tarjetaAccion: {
+    width: '47%', aspectRatio: 1, borderRadius: 20, padding: 20,
+    justifyContent: 'center', alignItems: 'center',
+    elevation: 5, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5,
+  },
+  textoTarjeta: {
+    color: '#ffffff', fontSize: 16, fontWeight: 'bold', marginTop: 12, textAlign: 'center',
+  },
+  subtextoTarjeta: {
+    color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '600', marginTop: 4,
+  },
+
+  // Tarjeta Pedidos (ancho completo)
+  tarjetaPedidos: {
+    width: '100%',
+    aspectRatio: undefined,
+    paddingVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  tarjetaPedidosConBadge: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  filaIconoPedido: { position: 'relative' },
+  badgePedidos: {
+    position: 'absolute', top: -6, right: -10,
+    backgroundColor: '#ffffff', borderRadius: 10,
+    minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5, borderColor: '#e53e3e',
+  },
+  textoBadgePedidos: { fontSize: 11, fontWeight: '900', color: '#e53e3e' },
+});
+
+const estilosLocal = StyleSheet.create({
+  notaDespachos: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#e6fffa',
+    borderWidth: 1,
+    borderColor: '#81e6d9',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 12,
+  },
+  textoNotaDespachos: {
+    flex: 1,
+    fontSize: 13,
+    color: '#2c7a7b',
+    fontWeight: '600',
+  },
+  textoNotaDespachosAclaracion: {
+    fontSize: 12,
+    color: '#4fd1c5',
+    fontWeight: '400',
+    fontStyle: 'italic',
+  },
+  notaPropinas: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  backgroundColor: '#fffff0',
+  borderWidth: 1,
+  borderColor: '#f6e05e',
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  marginTop: 8,
+},
+textoNotaPropinas: {
+  flex: 1,
+  fontSize: 13,
+  color: '#b7791f',
+  fontWeight: '600',
+},
 });
 </file>
 
@@ -12485,6 +12643,261 @@ const estilosApp = StyleSheet.create({
 });
 </file>
 
+<file path="src/screens/PantallaDetalleTurno.tsx">
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../App';
+import { useDetalleTurno } from '../hooks/useDetalleTurno';
+import SeccionDatosTurno from '../components/detalleTurno/SeccionDatosTurno';
+import SeccionResumenVentasTurno from '../components/detalleTurno/SeccionResumenVentasTurno';
+import SeccionCuadreCajaTurno from '../components/detalleTurno/SeccionCuadreCajaTurno';
+import SeccionVentasTurno from '../components/detalleTurno/SeccionVentasTurno';
+import SeccionAnulacionesTurno from '../components/detalleTurno/SeccionAnulacionesTurno';
+import SeccionDespachosDetalle from '../components/detalleTurno/SeccionDespachosDetalle';
+import SeccionMovimientosTurno from '../components/detalleTurno/SeccionMovimientosTurno';
+import SeccionMermasTurno from '../components/detalleTurno/SeccionMermasTurno';
+import SeccionInventarioTurno from '../components/detalleTurno/SeccionInventarioTurno';
+import SeccionInventarioInicialTurno from '../components/detalleTurno/SeccionInventarioInicialTurno';
+
+type Props = {
+  route: RouteProp<RootStackParamList, 'DetalleTurno'>;
+};
+
+export default function PantallaDetalleTurno({ route }: Props) {
+  const { turnoId } = route.params;
+  const hook = useDetalleTurno(turnoId);
+
+  if (hook.cargando) {
+    return (
+      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!hook.turno) {
+    return (
+      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+        <View style={estilos.centrado}>
+          <Text style={estilos.textoVacio}>No se encontró el turno.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+      <ScrollView style={estilos.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
+
+        <SeccionDatosTurno
+          turno={hook.turno}
+          formatearFecha={hook.formatearFecha}
+        />
+
+        <SeccionResumenVentasTurno
+          cantidadVentas={hook.cantidadVentas}
+          cantidadAnulaciones={hook.cantidadAnulaciones}
+          totalEfectivo={hook.totalEfectivo}
+          totalTransferencia={hook.totalTransferencia}
+          totalPropinas={hook.totalPropinas}
+        />
+
+        <SeccionCuadreCajaTurno
+          totalEfectivo={hook.totalEfectivo}
+          efectivoReal={hook.efectivoReal}
+          cuadreTexto={hook.cuadreTexto}
+          cuadreColor={hook.cuadreColor}
+          cuadreIcono={hook.cuadreIcono}
+        />
+
+        <SeccionVentasTurno
+          ventas={hook.ventas}
+          ventasExpandidas={hook.ventasExpandidas}
+          onToggle={hook.toggleVenta}
+          formatearHora={hook.formatearHora}
+        />
+
+        <SeccionAnulacionesTurno
+          anulaciones={hook.anulaciones}
+          formatearHora={hook.formatearHora}
+        />
+
+        <SeccionDespachosDetalle
+          resumenDespachos={hook.resumenDespachos}
+        />
+
+        <SeccionMovimientosTurno
+          entradas={hook.entradas}
+          salidasFamiliares={hook.salidasFamiliares}
+          formatearHora={hook.formatearHora}
+        />
+
+        <SeccionMermasTurno
+          mermas={hook.mermas}
+          mermasExpandidas={hook.mermasExpandidas}
+          onToggle={hook.toggleMerma}
+        />
+
+        <SeccionInventarioInicialTurno
+          inventario={hook.inventarioInicial}
+        />
+
+        <SeccionInventarioTurno
+          inventario={hook.inventario}
+        />
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
+  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  textoVacio: { fontSize: 16, color: '#718096', textAlign: 'center' },
+});
+</file>
+
+<file path="src/screens/PantallaCierreTurno.tsx">
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../App';
+import { useCierreTurno } from '../hooks/useCierreTurno';
+import SeccionResumenVentas from '../components/cierre/SeccionResumenVentas';
+import SeccionDespachosExternos from '../components/cierre/SeccionDespachosExternos';
+import SeccionCuadreCaja from '../components/cierre/SeccionCuadreCaja';
+import SeccionMovimientos from '../components/cierre/SeccionMovimientos';
+import SeccionMermas from '../components/cierre/SeccionMermas';
+import SeccionInventario from '../components/cierre/SeccionInventario';
+import SeccionAdvertenciaPedidos from '../components/cierre/SeccionAdvertenciaPedidos';
+import SeccionInventarioInicial from '../components/cierre/SeccionInventarioInicial';
+
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
+};
+
+export default function PantallaCierreTurno({ navigation }: Props) {
+  const {
+    cargando,
+    sinTurno,
+    totalEfectivo,
+    totalTransferencia,
+    entradas,
+    salidasFamiliares,
+    inventario,
+    cantidadVentas,
+    cantidadAnulaciones,
+    resumenDespachos,
+    efectivoReal,
+    procesando,
+    refrescando,
+    pedidosAbiertos,
+    mermas,
+    totalPropinas,
+    cargarResumen,
+    handleRefresh,
+    handleCambioEfectivo,
+    handleBlurEfectivo,
+    calcularDiferencia,
+    handleCerrarTurno,
+    inventarioInicial,
+  } = useCierreTurno(navigation);
+
+  if (cargando || sinTurno) {
+    return (
+      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+        <View style={estilos.centrado}>
+          <ActivityIndicator size="large" color="#2b6cb0" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const totalGeneral = totalEfectivo + totalTransferencia;
+  const resultadoCuadre = calcularDiferencia();
+
+  return (
+    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
+      <ScrollView
+        style={estilos.scroll}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refrescando}
+            onRefresh={handleRefresh}
+            tintColor="#2b6cb0"
+          />
+        }
+      >
+        <SeccionResumenVentas
+          cantidadVentas={cantidadVentas}
+          cantidadAnulaciones={cantidadAnulaciones}
+          totalEfectivo={totalEfectivo}
+          totalTransferencia={totalTransferencia}
+          totalPropinas={totalPropinas}
+          cargando={cargando}
+          onRefrescar={cargarResumen}
+        />
+
+        <SeccionDespachosExternos
+          despachos={resumenDespachos}
+          totalGeneral={totalGeneral}
+        />
+
+        <SeccionCuadreCaja
+          efectivoReal={efectivoReal}
+          totalEfectivo={totalEfectivo}
+          resultadoCuadre={resultadoCuadre}
+          onCambioEfectivo={handleCambioEfectivo}
+          onBlurEfectivo={handleBlurEfectivo}
+        />
+
+        <SeccionMovimientos
+          entradas={entradas}
+          salidasFamiliares={salidasFamiliares}
+        />
+
+        <SeccionMermas mermas={mermas} />
+
+        <SeccionInventarioInicial inventario={inventarioInicial} />
+
+        <SeccionInventario inventario={inventario} />
+
+        <SeccionAdvertenciaPedidos pedidos={pedidosAbiertos} />
+
+        <TouchableOpacity
+          style={[estilos.botonCerrar, procesando && estilos.botonDeshabilitado]}
+          onPress={handleCerrarTurno}
+          disabled={procesando}
+        >
+          <Text style={estilos.textoBotonCerrar}>
+            {procesando ? 'Cerrando turno...' : 'CERRAR TURNO'}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const estilos = StyleSheet.create({
+  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
+  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flex: 1 },
+  botonCerrar: {
+    backgroundColor: '#e53e3e', borderRadius: 16,
+    padding: 20, margin: 16, marginTop: 20,
+    alignItems: 'center', elevation: 3,
+  },
+  botonDeshabilitado: { backgroundColor: '#a0aec0' },
+  textoBotonCerrar: { color: '#ffffff', fontSize: 18, fontWeight: 'bold' },
+});
+</file>
+
 <file path="src/database/turnos.ts">
 import { getDatabase } from '../database/database';
 import { sumaSegura, calcularTotalItemsBD } from '../utils';
@@ -12501,13 +12914,8 @@ export async function obtenerTurnoAbierto(): Promise<Turno | null> {
 // Crear un nuevo turno
 export async function crearTurno(): Promise<number> {
   const db = await getDatabase();
-  // Verificar que no haya un turno abierto antes de crear uno nuevo.
-  // Esto es una segunda línea de defensa contra el doble tap u otras
-  // condiciones de carrera.
   const turnoExistente = await obtenerTurnoAbierto();
   if (turnoExistente) {
-    // Si ya existe un turno abierto, devolver su ID en lugar de crear otro.
-    // El comportamiento es idempotente: la operación es segura de llamar dos veces.
     return turnoExistente.id;
   }
 
@@ -12516,7 +12924,26 @@ export async function crearTurno(): Promise<number> {
     'INSERT INTO turnos (fecha_inicio, cerrado) VALUES (?, 0)',
     [fechaInicio]
   );
-  return resultado.lastInsertRowId;
+  const nuevoTurnoId = resultado.lastInsertRowId;
+
+  // Guardar snapshot del inventario en este momento
+  const productosActuales = await db.getAllAsync<{
+    id: number;
+    nombre: string;
+    existencia: number;
+    alerta_minima: number;
+  }>('SELECT id, nombre, existencia, alerta_minima FROM productos ORDER BY nombre ASC');
+
+  for (const p of productosActuales) {
+    await db.runAsync(
+      `INSERT INTO inventario_inicial_turno
+        (turno_id, producto_id, nombre, existencia, alerta_minima)
+       VALUES (?, ?, ?, ?, ?)`,
+      [nuevoTurnoId, p.id, p.nombre, p.existencia, p.alerta_minima]
+    );
+  }
+
+  return nuevoTurnoId;
 }
 
 // Obtener resumen completo de un turno para el cierre
@@ -12829,138 +13256,92 @@ export async function obtenerPedidosAbiertosTurno(turnoId: number): Promise<{
     [turnoId]
   );
 }
-</file>
 
-<file path="src/screens/PantallaCierreTurno.tsx">
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, ActivityIndicator, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../App';
-import { useCierreTurno } from '../hooks/useCierreTurno';
-import SeccionResumenVentas from '../components/cierre/SeccionResumenVentas';
-import SeccionDespachosExternos from '../components/cierre/SeccionDespachosExternos';
-import SeccionCuadreCaja from '../components/cierre/SeccionCuadreCaja';
-import SeccionMovimientos from '../components/cierre/SeccionMovimientos';
-import SeccionMermas from '../components/cierre/SeccionMermas';
-import SeccionInventario from '../components/cierre/SeccionInventario';
-import SeccionAdvertenciaPedidos from '../components/cierre/SeccionAdvertenciaPedidos';
-
-type Props = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
-};
-
-export default function PantallaCierreTurno({ navigation }: Props) {
-  const {
-    cargando,
-    sinTurno,
-    totalEfectivo,
-    totalTransferencia,
-    entradas,
-    salidasFamiliares,
-    inventario,
-    cantidadVentas,
-    cantidadAnulaciones,
-    resumenDespachos,
-    efectivoReal,
-    procesando,
-    refrescando,
-    pedidosAbiertos,
-    mermas,
-    totalPropinas,
-    cargarResumen,
-    handleRefresh,
-    handleCambioEfectivo,
-    handleBlurEfectivo,
-    calcularDiferencia,
-    handleCerrarTurno,
-  } = useCierreTurno(navigation);
-
-  if (cargando || sinTurno) {
-    return (
-      <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-        <View style={estilos.centrado}>
-          <ActivityIndicator size="large" color="#2b6cb0" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const totalGeneral = totalEfectivo + totalTransferencia;
-  const resultadoCuadre = calcularDiferencia();
-
-  return (
-    <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-      <ScrollView
-        style={estilos.scroll}
-        contentContainerStyle={{ paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refrescando}
-            onRefresh={handleRefresh}
-            tintColor="#2b6cb0"
-          />
-        }
-      >
-        <SeccionResumenVentas
-          cantidadVentas={cantidadVentas}
-          cantidadAnulaciones={cantidadAnulaciones}
-          totalEfectivo={totalEfectivo}
-          totalTransferencia={totalTransferencia}
-          totalPropinas={totalPropinas}
-          cargando={cargando}
-          onRefrescar={cargarResumen}
-        />
-
-        <SeccionDespachosExternos
-          despachos={resumenDespachos}
-          totalGeneral={totalGeneral}
-        />
-
-        <SeccionCuadreCaja
-          efectivoReal={efectivoReal}
-          totalEfectivo={totalEfectivo}
-          resultadoCuadre={resultadoCuadre}
-          onCambioEfectivo={handleCambioEfectivo}
-          onBlurEfectivo={handleBlurEfectivo}
-        />
-
-        <SeccionMovimientos
-          entradas={entradas}
-          salidasFamiliares={salidasFamiliares}
-        />
-
-        <SeccionMermas mermas={mermas} />
-
-        <SeccionInventario inventario={inventario} />
-
-        <SeccionAdvertenciaPedidos pedidos={pedidosAbiertos} />
-
-        <TouchableOpacity
-          style={[estilos.botonCerrar, procesando && estilos.botonDeshabilitado]}
-          onPress={handleCerrarTurno}
-          disabled={procesando}
-        >
-          <Text style={estilos.textoBotonCerrar}>
-            {procesando ? 'Cerrando turno...' : 'CERRAR TURNO'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+export async function obtenerInventarioInicialTurno(turnoId: number): Promise<{
+  nombre: string;
+  existencia: number;
+  alerta_minima: number;
+}[]> {
+  const db = await getDatabase();
+  return await db.getAllAsync<{
+    nombre: string;
+    existencia: number;
+    alerta_minima: number;
+  }>(
+    `SELECT nombre, existencia, alerta_minima
+     FROM inventario_inicial_turno
+     WHERE turno_id = ?
+     ORDER BY nombre ASC`,
+    [turnoId]
   );
 }
 
-const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { flex: 1 },
-  botonCerrar: {
-    backgroundColor: '#e53e3e', borderRadius: 16,
-    padding: 20, margin: 16, marginTop: 20,
-    alignItems: 'center', elevation: 3,
-  },
-  botonDeshabilitado: { backgroundColor: '#a0aec0' },
-  textoBotonCerrar: { color: '#ffffff', fontSize: 18, fontWeight: 'bold' },
-});
+/**
+ * Elimina permanentemente un turno cerrado y todos sus datos asociados:
+ * movimientos, ventas externas, ítems de ventas externas, pedidos,
+ * ítems de pedidos y mermas del turno.
+ * Solo se puede eliminar un turno que esté cerrado (cerrado = 1).
+ */
+export async function eliminarTurno(turnoId: number): Promise<void> {
+  const db = await getDatabase();
+  await db.withTransactionAsync(async () => {
+    // 1. Eliminar ítems de ventas externas del turno
+    await db.runAsync(
+      `DELETE FROM ventas_externas_items
+       WHERE venta_externa_id IN (
+         SELECT id FROM ventas_externas WHERE turno_id = ?
+       )`,
+      [turnoId]
+    );
+
+    // 2. Eliminar ventas externas del turno
+    await db.runAsync(
+      'DELETE FROM ventas_externas WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 3. Eliminar ítems de pedidos del turno
+    await db.runAsync(
+      `DELETE FROM pedidos_items
+       WHERE pedido_id IN (
+         SELECT id FROM pedidos WHERE turno_id = ?
+       )`,
+      [turnoId]
+    );
+
+    // 4. Eliminar pedidos del turno
+    await db.runAsync(
+      'DELETE FROM pedidos WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 5. Eliminar mermas del turno
+    await db.runAsync(
+      'DELETE FROM mermas WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 6. Eliminar movimientos del turno (ventas, entradas, etc.)
+    await db.runAsync(
+      'DELETE FROM movimientos WHERE turno_id = ?',
+      [turnoId]
+    );
+
+    // 7. Eliminar el snapshot de inventario inicial del turno (si existe)
+    await db.runAsync(
+      'DELETE FROM inventario_inicial_turno WHERE turno_id = ?',
+      [turnoId]
+    ).catch(() => {
+      // Si la tabla no existe todavía en algún dispositivo antiguo, ignorar
+    });
+
+    // 8. Finalmente, eliminar el turno en sí
+    await db.runAsync(
+      'DELETE FROM turnos WHERE id = ? AND cerrado = 1',
+      [turnoId]
+    );
+  });
+}
 </file>
 
 <file path="src/database/database.ts">
@@ -13300,6 +13681,18 @@ async function aplicarMigraciones() {
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '10')"
       );
       console.log('Migración v10 completada.');
+    }
+
+    // ── v11: eliminar índice único incorrecto en propinas ─────────────────────
+    if (version < 11) {
+      console.log('Ejecutando migración v11: eliminando índice incorrecto de propinas...');
+      await db.execAsync(`
+        DROP INDEX IF EXISTS idx_mov_venta_propina;
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '11')"
+      );
+      console.log('Migración v11 completada.');
     }
 
   } catch (error) {

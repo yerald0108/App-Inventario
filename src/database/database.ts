@@ -348,6 +348,26 @@ async function aplicarMigraciones() {
       console.log('Migración v11 completada.');
     }
 
+    // ── v12: tabla inventario_inicial_turno ───────────────────────────────────
+    if (version < 12) {
+      console.log('Ejecutando migración v12: tabla inventario_inicial_turno...');
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS inventario_inicial_turno (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          turno_id INTEGER NOT NULL,
+          producto_id INTEGER NOT NULL,
+          nombre TEXT NOT NULL,
+          existencia REAL NOT NULL,
+          alerta_minima REAL DEFAULT 5,
+          FOREIGN KEY (turno_id) REFERENCES turnos(id)
+        );
+      `);
+      await db.runAsync(
+        "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '12')"
+      );
+      console.log('Migración v12 completada.');
+    }
+
   } catch (error) {
     console.error('Fallo crítico en migración:', error);
     if (db) {
