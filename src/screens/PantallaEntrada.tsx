@@ -3,7 +3,8 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, TextInput, Modal,
   Animated, Pressable, PanResponder, KeyboardAvoidingView, Platform,
-  LayoutAnimation, ActivityIndicator
+  LayoutAnimation, ActivityIndicator,
+  ScrollView
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -200,7 +201,7 @@ export default function PantallaEntrada() {
       }
 
       // 1. Crear el producto y obtener su id directamente
-      const nuevoId = await crearProducto(nombreTrimmed, precioNum, cantidadNum, 5);
+      const nuevoId = await crearProducto(nombreTrimmed, precioNum, 0, 5);
 
       // 2. Registrar la entrada usando el id real, sin búsqueda por nombre
       await registrarEntrada(nuevoId, cantidadNum, turno.id);
@@ -384,6 +385,8 @@ export default function PantallaEntrada() {
           <Animated.View style={[estilos.modal, { transform: [{ translateY: slideAnim }] }]}>
             <View style={estilos.barraArrastre} {...panResponder.panHandlers} />
 
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+
             {/* Cabecera del modal nuevo */}
             <View style={estilos.cabeceraModalNuevo}>
               <View style={estilos.badgeNuevo}>
@@ -452,6 +455,7 @@ export default function PantallaEntrada() {
             <TouchableOpacity style={estilos.botonCancelar} onPress={cerrarModal}>
               <Text style={estilos.textoBotonCancelar}>Cancelar</Text>
             </TouchableOpacity>
+            </ScrollView>
           </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
