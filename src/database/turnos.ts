@@ -4,7 +4,7 @@ import { Turno } from '../types';
 
 // Obtener el turno actualmente abierto
 export async function obtenerTurnoAbierto(): Promise<Turno | null> {
-  const db = await getDatabase();
+  const db = getDatabase();
   return await db.getFirstAsync<Turno>(
     'SELECT * FROM turnos WHERE cerrado = 0 ORDER BY id DESC LIMIT 1'
   );
@@ -12,7 +12,7 @@ export async function obtenerTurnoAbierto(): Promise<Turno | null> {
 
 // Crear un nuevo turno
 export async function crearTurno(): Promise<number> {
-  const db = await getDatabase();
+  const db = getDatabase();
   const turnoExistente = await obtenerTurnoAbierto();
   if (turnoExistente) {
     return turnoExistente.id;
@@ -47,7 +47,7 @@ export async function crearTurno(): Promise<number> {
 
 // Obtener resumen completo de un turno para el cierre
 export async function obtenerResumenTurno(turnoId: number) {
-  const db = await getDatabase();
+  const db = getDatabase();
   // Total en efectivo (solo ventas no canceladas)
   const efectivo = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(total), 0) as total 
@@ -164,7 +164,7 @@ export async function cerrarTurno(
   efectivoReal: number
 ): Promise<void> {
   const fechaCierre = new Date().toISOString();
-  const db = await getDatabase();
+  const db = getDatabase();
   await db.withTransactionAsync(async () => {
     // 1. Cancelar los pedidos abiertos que pertenecen a este turno
     await db.runAsync(
@@ -193,7 +193,7 @@ export async function obtenerTurnosCerrados(
   limite: number = 20,
   offset: number = 0
 ): Promise<Turno[]> {
-  const db = await getDatabase();
+  const db = getDatabase();
   return await db.getAllAsync<Turno>(
     `SELECT * FROM turnos
      WHERE cerrado = 1
@@ -210,7 +210,7 @@ export async function obtenerTurnosCerradosFiltrados(
   limite: number = 20,
   offset: number = 0
 ): Promise<Turno[]> {
-  const db = await getDatabase();
+  const db = getDatabase();
   let query = 'SELECT * FROM turnos WHERE cerrado = 1';
   const params: any[] = [];
 
@@ -238,7 +238,7 @@ export async function obtenerFiltrosDisponiblesHistorial(): Promise<{
   meses: number[];
   anios: number[];
 }> {
-  const db = await getDatabase();
+  const db = getDatabase();
   const resultados = await db.getAllAsync<{ mes: string, anio: string }>(
     `SELECT DISTINCT strftime("%m", fecha_cierre) as mes, strftime("%Y", fecha_cierre) as anio
      FROM turnos WHERE cerrado = 1 AND fecha_cierre IS NOT NULL`
@@ -260,7 +260,7 @@ export async function obtenerFiltrosDisponiblesHistorial(): Promise<{
 
 // Obtener el resumen de un turno cerrado (solo lectura)
 export async function obtenerDetalleTurno(turnoId: number) {
-  const db = await getDatabase();
+  const db = getDatabase();
   const turno = await db.getFirstAsync<Turno>(
     'SELECT * FROM turnos WHERE id = ?',
     [turnoId]
@@ -275,7 +275,7 @@ export async function obtenerDetalleTurno(turnoId: number) {
 
 // Obtener ventas agrupadas de un turno cerrado
 export async function obtenerVentasDetalleTurno(turnoId: number) {
-  const db = await getDatabase();
+  const db = getDatabase();
   const movimientos = await db.getAllAsync<{
     venta_id: string;
     fecha_hora: string;
@@ -347,7 +347,7 @@ export async function obtenerPedidosAbiertosTurno(turnoId: number): Promise<{
   nombre: string;
   total: number;
 }[]> {
-  const db = await getDatabase();
+  const db = getDatabase();
   return await db.getAllAsync<{ id: number; nombre: string; total: number }>(
     `SELECT id, nombre, total FROM pedidos 
      WHERE turno_id = ? AND estado = 'abierto'
@@ -361,7 +361,7 @@ export async function obtenerInventarioInicialTurno(turnoId: number): Promise<{
   existencia: number;
   alerta_minima: number;
 }[]> {
-  const db = await getDatabase();
+  const db = getDatabase();
   return await db.getAllAsync<{
     nombre: string;
     existencia: number;
@@ -382,7 +382,7 @@ export async function obtenerInventarioInicialTurno(turnoId: number): Promise<{
  * Solo se puede eliminar un turno que esté cerrado (cerrado = 1).
  */
 export async function eliminarTurno(turnoId: number): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   await db.withTransactionAsync(async () => {
     // 1. Eliminar ítems de ventas externas del turno
     await db.runAsync(

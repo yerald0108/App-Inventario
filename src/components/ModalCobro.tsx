@@ -8,6 +8,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { ItemCesta } from '../types';
 import { calcularTotalItemsCesta } from '../utils';
 
+interface DesglosePago {
+  propio: number;
+  porDespacho: Map<number, { nombre: string; color: string; total: number }>;
+}
+
 interface Props {
   visible: boolean;
   items: ItemCesta[];
@@ -20,6 +25,9 @@ interface Props {
   onCancelar: () => void;
   procesando?: boolean;
   metodoPagoInicial?: 'efectivo' | 'transferencia';
+  // Props nuevas — opcionales para no romper los otros usos
+  tituloPedido?: string;         // ← nombre del pedido bajo el total
+  desglose?: DesglosePago;       // ← desglose propio/despachos
 }
 
 export default function ModalCobro({ 
@@ -29,6 +37,8 @@ export default function ModalCobro({
   onCancelar,
   procesando = false,
   metodoPagoInicial = 'efectivo',
+  tituloPedido,
+  desglose,
 }: Props) {
   const [metodoPago, setMetodoPago] = useState<'efectivo' | 'transferencia'>('efectivo');
   const [montoRecibido, setMontoRecibido] = useState('');
@@ -146,7 +156,51 @@ export default function ModalCobro({
             <View style={estilos.seccionTotal}>
               <Text style={estilos.etiquetaTotal}>TOTAL A PAGAR</Text>
               <Text style={estilos.valorTotal}>${total.toFixed(2)} CUP</Text>
+              {tituloPedido && (
+                <Text style={estilosDesglose.nombrePedido}>{tituloPedido}</Text>
+              )}
             </View>
+
+            {desglose && desglose.propio > 0 && desglose.porDespacho.size > 0 && (
+              <View style={estilosDesglose.seccion}>
+                <Text style={estilosDesglose.titulo}>Composición del cobro</Text>
+
+                <View style={estilosDesglose.fila}>
+                  <View style={estilosDesglose.filaIcono}>
+                    <Ionicons name="home-outline" size={16} color="#2b6cb0" />
+                    <Text style={estilosDesglose.etiqueta}>Tu negocio</Text>
+                  </View>
+                  <View style={estilosDesglose.ladoDerecho}>
+                    <Text style={estilosDesglose.valor}>{desglose.propio.toFixed(2)} CUP</Text>
+                    <View style={estilosDesglose.badgePropio}>
+                      <Text style={estilosDesglose.textoPropio}>va a tu caja</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {[...desglose.porDespacho.entries()].map(([id, d]) => (
+                  <View key={id} style={estilosDesglose.fila}>
+                    <View style={estilosDesglose.filaIcono}>
+                      <Ionicons name="storefront-outline" size={16} color={d.color} />
+                      <Text style={[estilosDesglose.etiqueta, { color: d.color }]}>{d.nombre}</Text>
+                    </View>
+                    <View style={estilosDesglose.ladoDerecho}>
+                      <Text style={[estilosDesglose.valor, { color: d.color }]}>{d.total.toFixed(2)} CUP</Text>
+                      <View style={[estilosDesglose.badgeDespacho, { borderColor: d.color }]}>
+                        <Text style={[estilosDesglose.textoDespacho, { color: d.color }]}>entregar al despacho</Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+
+                <View style={estilosDesglose.nota}>
+                  <Ionicons name="information-circle-outline" size={14} color="#718096" />
+                  <Text style={estilosDesglose.textoNota}>
+                    Cobra el total al cliente, luego entrega la parte del despacho por separado.
+                  </Text>
+                </View>
+              </View>
+            )}
 
             <Text style={estilos.subtitulo}>Método de Pago</Text>
             <View style={estilos.gridMetodos}>
@@ -414,5 +468,93 @@ const estilosLocal = StyleSheet.create({
   },
   textoBotonSelectorActivo: {
     color: '#ffffff',
+  },
+});
+
+const estilosDesglose = StyleSheet.create({
+  nombrePedido: {
+    fontSize: 14,
+    color: '#2b6cb0',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  seccion: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  titulo: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4a5568',
+    marginBottom: 10,
+  },
+  fila: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  filaIcono: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+  },
+  etiqueta: {
+    fontSize: 14,
+    color: '#4a5568',
+    fontWeight: '600',
+  },
+  ladoDerecho: {
+    alignItems: 'flex-end',
+    gap: 3,
+  },
+  valor: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#2b6cb0',
+  },
+  badgePropio: {
+    backgroundColor: '#f0fff4',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#9ae6b4',
+  },
+  textoPropio: {
+    fontSize: 10,
+    color: '#2f855a',
+    fontWeight: '700',
+  },
+  badgeDespacho: {
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  textoDespacho: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  nota: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#edf2f7',
+  },
+  textoNota: {
+    flex: 1,
+    fontSize: 12,
+    color: '#718096',
+    lineHeight: 16,
   },
 });

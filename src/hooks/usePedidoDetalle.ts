@@ -241,7 +241,11 @@ export function usePedidoDetalle(
     } catch (e) { console.error(e); }
   }
 
-  async function handleCerrarCuenta() {
+  async function handleCerrarCuenta(
+    metodoPagoParam?: 'efectivo' | 'transferencia',
+    cambioParam?: number,
+    propinaParam?: number
+  ) {
     if (!pedido || pedido.items.length === 0) {
       Alert.alert('Pedido vacío', 'Agrega al menos un producto antes de cobrar.');
       return;
@@ -254,14 +258,18 @@ export function usePedidoDetalle(
       const turno = await obtenerTurnoAbierto();
       if (!turno) { Alert.alert('Error', 'No hay turno abierto.'); return; }
 
-      const propinaFinal = usarPropina ? cambio : 0;
-      await cerrarPedidoComoVenta(pedidoId, metodoPago, turno.id, propinaFinal);
+      // Usar los parámetros recibidos, o caer en el estado local si no vienen
+      const metodoFinal = metodoPagoParam ?? metodoPago;
+      const cambioFinal = cambioParam ?? cambio;
+      const propinaFinal = propinaParam !== undefined ? propinaParam : (usarPropina ? cambio : 0);
+
+      await cerrarPedidoComoVenta(pedidoId, metodoFinal, turno.id, propinaFinal);
       await cargarProductos();
       cerrarModal();
 
       const totalDespachos = sumaSegura([...totalesSeparados.porDespacho.values()].map(d => d.total));
-      const textoCambio = metodoPago === 'efectivo' && cambio > 0 && !usarPropina
-        ? ` · Vuelto: ${formatCUP(cambio)} CUP` : '';
+      const textoCambio = metodoFinal === 'efectivo' && cambioFinal > 0 && propinaFinal === 0
+        ? ` · Vuelto: ${formatCUP(cambioFinal)} CUP` : '';
       const textoPropina = propinaFinal > 0 ? ` · Propina: ${formatCUP(propinaFinal)} CUP` : '';
       const texto2 = totalesSeparados.propio > 0 && totalDespachos > 0
         ? `Tuyo: ${formatCUP(totalesSeparados.propio)} · Despachos: ${formatCUP(totalDespachos)} CUP${textoCambio}${textoPropina}`

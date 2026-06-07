@@ -1,6 +1,5 @@
 import { getDatabase } from '../database/database';
 
-// Registrar una entrada de mercancía
 export async function registrarEntrada(
   productoId: number,
   cantidad: number,
@@ -8,7 +7,7 @@ export async function registrarEntrada(
 ): Promise<void> {
   const fechaHora = new Date().toISOString();
   try {
-    const db = await getDatabase();
+    const db = getDatabase();
     await db.runAsync(
       `INSERT INTO movimientos
         (tipo, fecha_hora, producto_id, cantidad, turno_id)
@@ -21,6 +20,6 @@ export async function registrarEntrada(
     );
   } catch (error) {
     console.error('registrarEntrada: error al registrar entrada', error);
-    throw error; // re-lanzar para que la pantalla lo capture
+    throw error;
   }
 }

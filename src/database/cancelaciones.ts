@@ -126,7 +126,7 @@ export async function obtenerAnulacionesTurno(turnoId: number): Promise<VentaAgr
 
 // Cancelar una venta completa por su venta_id
 export async function cancelarVenta(ventaId: string): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   await db.withTransactionAsync(async () => {
     // Obtener todos los movimientos de esa venta
     const movimientos = await db.getAllAsync<{

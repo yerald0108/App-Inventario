@@ -1,8 +1,7 @@
 import { useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  TextInput, Modal, ScrollView, Animated, Pressable, Platform,
-  KeyboardAvoidingView, ActivityIndicator,
+  TextInput, Animated, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
@@ -15,24 +14,7 @@ import EstadoVacio from '../components/EstadoVacio';
 import ModalAgregarProductoPedido from '../components/pedido/ModalAgregarProductoPedido';
 import { usePedidoDetalle } from '../hooks/usePedidoDetalle';
 import { usePanResponderSlide } from '../hooks/usePanResponderSlide';
-
-// ── Estilos del modal de cobro (propina) ──────────────────────────────────────
-const estilosModalCobro = StyleSheet.create({
-  contenedorPropina: { backgroundColor: '#fffff0', borderColor: '#d69e2e' },
-  etiquetaPropina: { color: '#b7791f' },
-  valorPropina: { color: '#744210' },
-  etiquetaSelector: { fontSize: 13, color: '#64748b', fontWeight: '600', marginTop: 12, marginBottom: 8 },
-  gridSelector: { flexDirection: 'row', gap: 10, marginBottom: 8 },
-  botonSelector: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 12, borderRadius: 12, borderWidth: 2,
-    borderColor: '#bee3f8', backgroundColor: '#ebf8ff',
-  },
-  botonSelectorActivo: { backgroundColor: '#2b6cb0', borderColor: '#2b6cb0' },
-  botonSelectorPropina: { backgroundColor: '#d69e2e', borderColor: '#d69e2e' },
-  textoBotonSelector: { fontSize: 13, fontWeight: '700', color: '#2b6cb0' },
-  textoBotonSelectorActivo: { color: '#ffffff' },
-});
+import ModalCobro from '../components/ModalCobro';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetallePedido'>;
@@ -229,167 +211,29 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
       />
 
       {/* ── Modal cobro ── */}
-      <Modal visible={hook.modalActivo === 'cobro'} transparent animationType="fade">
-        <KeyboardAvoidingView
-          style={estilos.overlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          pointerEvents="box-none"
-        >
-          <Pressable style={StyleSheet.absoluteFillObject} onPress={hook.cerrarModal} />
-          <Animated.View style={[estilos.modalCobro, { transform: [{ translateY: slideAnim }] }]}>
-            <View style={estilos.barraArrastre} {...panHandlers} />
-            <ScrollView showsVerticalScrollIndicator={false}>
-
-              <View style={estilos.seccionTotalCobro}>
-                <Text style={estilos.etiquetaTotalCobro}>TOTAL A COBRAR</Text>
-                <Text style={estilos.valorTotalCobro}>{formatCUP(pedido.total)} CUP</Text>
-                <Text style={estilos.nombreEnCobro}>{pedido.nombre}</Text>
-              </View>
-
-              {totalesSeparados.propio > 0 && totalDespachoGlobal > 0 && (
-                <View style={estilos.seccionDesgloseCobro}>
-                  <Text style={estilos.tituloDesgloseCobro}>Composición del cobro</Text>
-                  <View style={estilos.filaDesgloseCobro}>
-                    <View style={estilos.filaIconoDesglose}>
-                      <Ionicons name="home-outline" size={16} color="#2b6cb0" />
-                      <Text style={estilos.etiquetaDesgloseCobro}>Tu negocio</Text>
-                    </View>
-                    <View style={estilos.ladoDerechoDesglose}>
-                      <Text style={estilos.valorDesgloseCobro}>{formatCUP(totalesSeparados.propio)} CUP</Text>
-                      <View style={estilos.badgeVaTuCaja}>
-                        <Text style={estilos.textoVaTuCaja}>va a tu caja</Text>
-                      </View>
-                    </View>
-                  </View>
-                  {[...totalesSeparados.porDespacho.entries()].map(([id, d]) => (
-                    <View key={id} style={estilos.filaDesgloseCobro}>
-                      <View style={estilos.filaIconoDesglose}>
-                        <Ionicons name="storefront-outline" size={16} color={d.color} />
-                        <Text style={[estilos.etiquetaDesgloseCobro, { color: d.color }]}>{d.nombre}</Text>
-                      </View>
-                      <View style={estilos.ladoDerechoDesglose}>
-                        <Text style={[estilos.valorDesgloseCobro, { color: d.color }]}>{formatCUP(d.total)} CUP</Text>
-                        <View style={[estilos.badgeNoTuCaja, { borderColor: d.color }]}>
-                          <Text style={[estilos.textoNoTuCaja, { color: d.color }]}>entregar al despacho</Text>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                  <View style={estilos.notaDesglose}>
-                    <Ionicons name="information-circle-outline" size={14} color="#718096" />
-                    <Text style={estilos.textoNotaDesglose}>
-                      Cobra el total al cliente, luego entrega la parte del despacho por separado.
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              <Text style={estilos.subtituloCobro}>Método de Pago</Text>
-              <View style={estilos.gridMetodos}>
-                {(['efectivo', 'transferencia'] as const).map((m) => (
-                  <TouchableOpacity
-                    key={m}
-                    style={[estilos.botonMetodo, hook.metodoPago === m && estilos.botonMetodoActivo]}
-                    onPress={() => hook.setMetodoPago(m)}
-                  >
-                    <Ionicons name={m === 'efectivo' ? 'cash' : 'card'} size={30}
-                      color={hook.metodoPago === m ? '#ffffff' : '#718096'} />
-                    <Text style={[estilos.textoMetodo, hook.metodoPago === m && { color: '#ffffff' }]}>
-                      {m === 'efectivo' ? 'Efectivo' : 'Transferencia'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {hook.metodoPago === 'efectivo' && (
-                <View style={estilos.seccionEfectivo}>
-                  <Text style={estilos.etiquetaInput}>Monto recibido</Text>
-                  <View style={estilos.contenedorInputMonto}>
-                    <TextInput
-                      style={estilos.inputMonto}
-                      placeholder="0.00"
-                      keyboardType="numeric"
-                      value={hook.montoRecibido}
-                      onChangeText={hook.setMontoRecibido}
-                      autoFocus
-                    />
-                    <Text style={estilos.sufijoMonto}>CUP</Text>
-                  </View>
-                  {hook.montoRecibido !== '' && parseFloat(hook.montoRecibido) < pedido.total && (
-                    <Text style={estilos.textoError}>Monto insuficiente para cubrir el total</Text>
-                  )}
-
-                  {hook.cambio > 0 && (
-                    <View>
-                      <View style={[estilos.contenedorCambio, hook.usarPropina && estilosModalCobro.contenedorPropina]}>
-                        <Text style={[estilos.etiquetaCambio, hook.usarPropina && estilosModalCobro.etiquetaPropina]}>
-                          {hook.usarPropina ? '⭐ PROPINA' : 'CAMBIO (VUELTO)'}
-                        </Text>
-                        <Text style={[estilos.valorCambio, hook.usarPropina && estilosModalCobro.valorPropina]}>
-                          {formatCUP(hook.cambio)} CUP
-                        </Text>
-                      </View>
-                      <Text style={estilosModalCobro.etiquetaSelector}>¿Qué hacer con este dinero?</Text>
-                      <View style={estilosModalCobro.gridSelector}>
-                        <TouchableOpacity
-                          style={[estilosModalCobro.botonSelector, !hook.usarPropina && estilosModalCobro.botonSelectorActivo]}
-                          onPress={() => hook.setUsarPropina(false)}
-                        >
-                          <Ionicons name="arrow-undo-outline" size={20} color={!hook.usarPropina ? '#ffffff' : '#2b6cb0'} />
-                          <Text style={[estilosModalCobro.textoBotonSelector, !hook.usarPropina && estilosModalCobro.textoBotonSelectorActivo]}>
-                            Devolver al cliente
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[estilosModalCobro.botonSelector, hook.usarPropina && estilosModalCobro.botonSelectorPropina]}
-                          onPress={() => hook.setUsarPropina(true)}
-                        >
-                          <Ionicons name="star-outline" size={20} color={hook.usarPropina ? '#ffffff' : '#d69e2e'} />
-                          <Text style={[estilosModalCobro.textoBotonSelector, hook.usarPropina && estilosModalCobro.textoBotonSelectorActivo]}>
-                            Registrar propina
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              <Text style={estilos.subtituloCobro}>Resumen ({pedido.items.length} productos)</Text>
-              {pedido.items.map((item) => {
-                const esDespacho = item.origen === 'despacho';
-                const despacho = esDespacho ? hook.despachos.find(d => d.id === item.despacho_id) : null;
-                return (
-                  <View key={item.id} style={estilos.filaResumenItem}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={estilos.nombreResumenItem}>{item.cantidad}× {item.nombre_producto}</Text>
-                      {esDespacho && despacho && (
-                        <Text style={[estilos.etiquetaResumenDespacho, { color: despacho.color }]}>
-                          {despacho.nombre}
-                        </Text>
-                      )}
-                    </View>
-                    <Text style={estilos.subtotalResumenItem}>{formatCUP(item.subtotal)} CUP</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[estilos.botonConfirmarCobro, hook.botonCobroDeshabilitado && estilos.botonDeshabilitado]}
-              onPress={hook.handleCerrarCuenta}
-              disabled={hook.botonCobroDeshabilitado}
-            >
-              <View style={estilos.filaBotonCobro}>
-                {hook.procesando && <ActivityIndicator size="small" color="#ffffff" />}
-                <Text style={estilos.textoBotonConfirmarCobro}>
-                  {hook.procesando ? 'PROCESANDO...' : 'CONFIRMAR COBRO'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Modal>
+      <ModalCobro
+        visible={hook.modalActivo === 'cobro'}
+        items={pedido.items.map(item => ({
+          producto: {
+            id: item.producto_id ?? item.id,
+            nombre: item.nombre_producto,
+            precio: item.precio_aplicado,
+            existencia: 999,
+            alerta_minima: 0,
+            precio_costo: 0,
+          },
+          cantidad: item.cantidad,
+          precioFinal: item.precio_aplicado,
+        }))}
+        metodoPagoInicial="efectivo"
+        tituloPedido={pedido.nombre}
+        desglose={totalesSeparados}
+        onConfirmar={(metodo, _monto, cambio, propina) => {
+          hook.handleCerrarCuenta(metodo, cambio, propina);
+        }}
+        onCancelar={hook.cerrarModal}
+        procesando={hook.procesando}
+      />
     </SafeAreaView>
   );
 }
@@ -398,11 +242,6 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 const estilos = StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
   centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  barraArrastre: {
-    width: 40, height: 5, backgroundColor: '#e2e8f0',
-    borderRadius: 3, alignSelf: 'center', marginBottom: 16,
-  },
 
   headerPedido: {
     backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 12,
@@ -477,77 +316,4 @@ const estilos = StyleSheet.create({
   },
   textoBotonCerrarCuenta: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
   botonDeshabilitado: { backgroundColor: '#4a5568', opacity: 0.5 },
-
-  // Modal cobro
-  modalCobro: {
-    backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    paddingTop: 12, maxHeight: '92%', elevation: 20,
-  },
-  seccionTotalCobro: {
-    backgroundColor: '#f8fafc', padding: 20, borderRadius: 16, alignItems: 'center',
-    marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0',
-  },
-  etiquetaTotalCobro: { fontSize: 11, color: '#64748b', fontWeight: 'bold', letterSpacing: 1, marginBottom: 4 },
-  valorTotalCobro: { fontSize: 36, fontWeight: '900', color: '#1e293b', marginBottom: 4 },
-  nombreEnCobro: { fontSize: 14, color: '#2b6cb0', fontWeight: '600' },
-  seccionDesgloseCobro: {
-    backgroundColor: '#f8fafc', borderRadius: 14, padding: 14,
-    marginBottom: 16, borderWidth: 1, borderColor: '#e2e8f0',
-  },
-  tituloDesgloseCobro: { fontSize: 13, fontWeight: '700', color: '#4a5568', marginBottom: 10 },
-  filaDesgloseCobro: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8,
-  },
-  filaIconoDesglose: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  etiquetaDesgloseCobro: { fontSize: 14, color: '#4a5568', fontWeight: '600' },
-  ladoDerechoDesglose: { alignItems: 'flex-end', gap: 3 },
-  valorDesgloseCobro: { fontSize: 14, fontWeight: '800', color: '#2b6cb0' },
-  badgeVaTuCaja: {
-    backgroundColor: '#f0fff4', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
-    borderWidth: 1, borderColor: '#9ae6b4',
-  },
-  textoVaTuCaja: { fontSize: 10, color: '#2f855a', fontWeight: '700' },
-  badgeNoTuCaja: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, backgroundColor: 'transparent' },
-  textoNoTuCaja: { fontSize: 10, fontWeight: '700' },
-  notaDesglose: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
-    marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#edf2f7',
-  },
-  textoNotaDesglose: { flex: 1, fontSize: 12, color: '#718096', lineHeight: 16 },
-  subtituloCobro: { fontSize: 15, fontWeight: 'bold', color: '#475569', marginBottom: 12 },
-  gridMetodos: { flexDirection: 'row', gap: 12, marginBottom: 20 },
-  botonMetodo: {
-    flex: 1, height: 96, borderRadius: 16, borderWidth: 2, borderColor: '#e2e8f0',
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff',
-  },
-  botonMetodoActivo: { borderColor: '#1e293b', backgroundColor: '#1e293b' },
-  textoMetodo: { fontSize: 13, fontWeight: 'bold', color: '#475569', marginTop: 8 },
-  seccionEfectivo: { marginBottom: 20 },
-  etiquetaInput: { fontSize: 13, color: '#64748b', marginBottom: 8 },
-  contenedorInputMonto: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 2,
-    borderColor: '#cbd5e0', borderRadius: 12, backgroundColor: '#f7fafc', paddingRight: 14,
-  },
-  inputMonto: { flex: 1, padding: 14, fontSize: 24, fontWeight: 'bold', color: '#1a1a2e' },
-  sufijoMonto: { fontSize: 15, fontWeight: 'bold', color: '#a0aec0' },
-  contenedorCambio: {
-    marginTop: 12, backgroundColor: '#f0fff4', padding: 14, borderRadius: 10,
-    borderWidth: 1, borderColor: '#c6f6d5', alignItems: 'center',
-  },
-  etiquetaCambio: { fontSize: 11, color: '#2f855a', fontWeight: 'bold', marginBottom: 2 },
-  valorCambio: { fontSize: 22, fontWeight: '900', color: '#22543d' },
-  textoError: { color: '#e53e3e', fontSize: 12, marginTop: 6 },
-  filaResumenItem: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f0f4f8',
-  },
-  nombreResumenItem: { fontSize: 13, color: '#64748b', flex: 1 },
-  etiquetaResumenDespacho: { fontSize: 11, fontWeight: '700', marginTop: 2 },
-  subtotalResumenItem: { fontSize: 13, fontWeight: '600', color: '#1e293b' },
-  botonConfirmarCobro: {
-    backgroundColor: '#38a169', padding: 18, borderRadius: 16, alignItems: 'center', marginTop: 20,
-  },
-  filaBotonCobro: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  textoBotonConfirmarCobro: { color: '#ffffff', fontSize: 18, fontWeight: 'bold', letterSpacing: 1 },
 });

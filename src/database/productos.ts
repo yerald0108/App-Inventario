@@ -1,9 +1,8 @@
 import { getDatabase } from '../database/database';
 import { Producto } from '../types';
 
-// Los productos con existencia > 0 primero, luego los agotados, ambos por nombre
 export async function obtenerProductos(query: string = '', limit: number = 20, offset: number = 0): Promise<Producto[]> {
-  const db = await getDatabase();
+  const db = getDatabase();
   const searchQuery = `%${query}%`;
   return await db.getAllAsync<Producto>(
     `SELECT * FROM productos
@@ -17,7 +16,7 @@ export async function obtenerProductos(query: string = '', limit: number = 20, o
 }
 
 export async function obtenerProductoPorId(id: number): Promise<Producto | null> {
-  const db = await getDatabase();
+  const db = getDatabase();
   return await db.getFirstAsync<Producto>(
     'SELECT * FROM productos WHERE id = ?',
     [id]
@@ -49,7 +48,7 @@ export async function actualizarProducto(
   alerta_minima: number,
   precio_costo: number = 0
 ): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   await db.runAsync(
     `UPDATE productos
      SET nombre = ?, precio = ?, existencia = ?,
@@ -60,6 +59,6 @@ export async function actualizarProducto(
 }
 
 export async function eliminarProducto(id: number): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   await db.runAsync('DELETE FROM productos WHERE id = ?', [id]);
 }

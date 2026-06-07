@@ -39,7 +39,7 @@ export interface PedidoConItems extends Pedido {
 
 export async function crearPedido(nombre: string, turnoId: number): Promise<number> {
   try {
-    const db = await getDatabase();
+    const db = getDatabase();
     const result = await db.runAsync(
       `INSERT INTO pedidos (nombre, fecha_apertura, estado, turno_id, total)
        VALUES (?, ?, 'abierto', ?, 0)`,
@@ -54,7 +54,7 @@ export async function crearPedido(nombre: string, turnoId: number): Promise<numb
 
 export async function obtenerPedidosAbiertos(turnoId: number): Promise<Pedido[]> {
   try {
-    const db = await getDatabase();
+    const db = getDatabase();
     return await db.getAllAsync<Pedido>(
       `SELECT * FROM pedidos WHERE turno_id = ? AND estado = 'abierto'
        ORDER BY fecha_apertura ASC`,
@@ -68,7 +68,7 @@ export async function obtenerPedidosAbiertos(turnoId: number): Promise<Pedido[]>
 
 export async function obtenerPedidoConItems(pedidoId: number): Promise<PedidoConItems | null> {
   try {
-    const db = await getDatabase();
+    const db = getDatabase();
     const pedido = await db.getFirstAsync<Pedido>(
       'SELECT * FROM pedidos WHERE id = ?',
       [pedidoId]
@@ -111,7 +111,7 @@ export async function agregarItemPedido(
   cantidad: number
 ): Promise<void> {
   try {
-    const db = await getDatabase();
+    const db = getDatabase();
     // Validar stock actual en BD
     const stockActual = await db.getFirstAsync<{ existencia: number }>(
       'SELECT existencia FROM productos WHERE id = ?',
@@ -171,7 +171,7 @@ export async function agregarItemDespachoAlPedido(
   cantidad: number
 ): Promise<void> {
   try {
-    const db = await getDatabase();
+    const db = getDatabase();
     // Los productos de despacho no tienen stock propio,
     // pero sí pueden repetirse en el pedido: acumulamos.
     const existente = await db.getFirstAsync<PedidoItem>(
@@ -215,7 +215,7 @@ export async function agregarItemDespachoAlPedido(
 // ─── Recalcular total interno ─────────────────────────────────────────────────
 
 async function recalcularTotalPedidoInterno(pedidoId: number): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   const resultado = await db.getFirstAsync<{ total: number }>(
     'SELECT COALESCE(SUM(subtotal), 0) as total FROM pedidos_items WHERE pedido_id = ?',
     [pedidoId]
@@ -234,7 +234,7 @@ export async function actualizarCantidadItem(
   nuevaCantidad: number,
   precioAplicado: number
 ): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   await db.withTransactionAsync(async () => {
     if (nuevaCantidad <= 0) {
       await db.runAsync('DELETE FROM pedidos_items WHERE id = ?', [itemId]);
@@ -250,7 +250,7 @@ export async function actualizarCantidadItem(
 }
 
 export async function eliminarItemPedido(itemId: number, pedidoId: number): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM pedidos_items WHERE id = ?', [itemId]);
     await recalcularTotalPedidoInterno(pedidoId);
@@ -258,7 +258,7 @@ export async function eliminarItemPedido(itemId: number, pedidoId: number): Prom
 }
 
 export async function renombrarPedido(pedidoId: number, nuevoNombre: string): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   try {
     await db.runAsync(
       'UPDATE pedidos SET nombre = ? WHERE id = ?',
@@ -279,7 +279,7 @@ export async function cerrarPedidoComoVenta(
   propina: number = 0
 ): Promise<void> {
   try {
-    const db = await getDatabase();
+    const db = getDatabase();
     const pedido = await obtenerPedidoConItems(pedidoId);
     if (!pedido || pedido.items.length === 0) {
       throw new Error('El pedido está vacío o no existe.');
@@ -422,7 +422,7 @@ export async function cerrarPedidoComoVenta(
 // ─── Cancelar pedido ──────────────────────────────────────────────────────────
 
 export async function cancelarPedido(pedidoId: number): Promise<void> {
-  const db = await getDatabase();
+  const db = getDatabase();
   try {
     await db.runAsync(
       `UPDATE pedidos SET estado = 'cancelado', fecha_cierre = ? WHERE id = ?`,
@@ -437,7 +437,7 @@ export async function cancelarPedido(pedidoId: number): Promise<void> {
 // ─── Historial ────────────────────────────────────────────────────────────────
 
 export async function obtenerPedidosCerradosTurno(turnoId: number): Promise<Pedido[]> {
-  const db = await getDatabase();
+  const db = getDatabase();
   try {
     return await db.getAllAsync<Pedido>(
       `SELECT * FROM pedidos WHERE turno_id = ? AND estado != 'abierto'
