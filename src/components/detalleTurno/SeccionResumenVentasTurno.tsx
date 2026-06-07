@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatCUP } from '../../utils';
-import { estilosSeccion } from './estilosSeccion';
+import { estilosSeccion } from '../shared/estilosSeccion';
 
 interface Props {
   cantidadVentas: number;

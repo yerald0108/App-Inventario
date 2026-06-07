@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { estilosSeccion } from './estilosSeccion';
+import { estilosSeccion } from '../shared/estilosSeccion';
 import { ItemInventario } from '../../hooks/useDetalleTurno';
 
 interface Props {

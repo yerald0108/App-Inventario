@@ -7,6 +7,7 @@ import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAb
 import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils';
+import { useExpandable } from './useExpandable';
 
 export type ResumenDespacho = {
   despacho_id: number;
@@ -46,6 +47,7 @@ export function useCierreTurno(
   const [inventarioInicial, setInventarioInicial] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [totalPropinas, setTotalPropinas] = useState(0);
   const procesandoRef = useRef(false);
+  const { expandidos: mermasExpandidas, toggle: toggleMerma } = useExpandable();
 
   useFocusEffect(
     useCallback(() => {
@@ -218,6 +220,8 @@ export function useCierreTurno(
     mermas,
     totalPropinas,
     inventarioInicial,
+    mermasExpandidas,
+    toggleMerma,
     // Acciones
     cargarResumen,
     handleRefresh,

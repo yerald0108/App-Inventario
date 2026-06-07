@@ -1,38 +1,26 @@
-import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MermaAgrupada, etiquetaMotivo } from '../../database/mermas';
+import { estilosSeccion } from '../shared/estilosSeccion';
 
 interface Props {
   mermas: MermaAgrupada[];
+  mermasExpandidas: Set<string>;
+  onToggle: (grupoId: string) => void;
 }
 
-export default function SeccionMermas({ mermas }: Props) {
-  const [mermasExpandidas, setMermasExpandidas] = useState<Set<string>>(new Set());
-
+export default function SeccionMermas({ mermas, mermasExpandidas, onToggle }: Props) {
   if (mermas.length === 0) return null;
-
-  function toggleMerma(grupoId: string) {
-    setMermasExpandidas(prev => {
-      const nueva = new Set(prev);
-      if (nueva.has(grupoId)) {
-        nueva.delete(grupoId);
-      } else {
-        nueva.add(grupoId);
-      }
-      return nueva;
-    });
-  }
 
   const totalUnidades = mermas.reduce(
     (acc, g) => acc + g.items.reduce((a, i) => a + i.cantidad, 0), 0
   );
 
   return (
-    <View style={estilos.seccion}>
-      <View style={estilos.cabeceraSeccion}>
+    <View style={estilosSeccion.seccion}>
+      <View style={estilosSeccion.cabeceraSeccion}>
         <Ionicons name="trash-outline" size={20} color="#c05621" />
-        <Text style={estilos.tituloSeccion}>Mermas del turno</Text>
+        <Text style={estilosSeccion.tituloSeccion}>Mermas del turno</Text>
       </View>
 
       {mermas.map((grupo) => {
@@ -41,7 +29,7 @@ export default function SeccionMermas({ mermas }: Props) {
           <TouchableOpacity
             key={grupo.grupo_id}
             style={estilos.grupoMerma}
-            onPress={() => toggleMerma(grupo.grupo_id)}
+            onPress={() => onToggle(grupo.grupo_id)}
             activeOpacity={0.7}
           >
             <View style={estilos.cabeceraGrupo}>
@@ -119,24 +107,6 @@ export default function SeccionMermas({ mermas }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  seccion: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  cabeceraSeccion: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginBottom: 16, borderBottomWidth: 1,
-    borderBottomColor: '#edf2f7', paddingBottom: 8,
-  },
-  tituloSeccion: { fontSize: 16, fontWeight: 'bold', color: '#1a1a2e', flex: 1 },
   grupoMerma: {
     marginBottom: 12, borderBottomWidth: 1,
     borderBottomColor: '#feebc8', paddingBottom: 8,

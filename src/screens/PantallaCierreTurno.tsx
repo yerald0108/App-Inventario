@@ -34,6 +34,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     pedidosAbiertos,
     mermas,
     totalPropinas,
+    mermasExpandidas,
+    toggleMerma,
     cargarResumen,
     handleRefresh,
     handleCambioEfectivo,
@@ -97,7 +99,11 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           salidasFamiliares={salidasFamiliares}
         />
 
-        <SeccionMermas mermas={mermas} />
+        <SeccionMermas
+          mermas={mermas}
+          mermasExpandidas={mermasExpandidas}
+          onToggle={toggleMerma}
+        />
 
         <SeccionInventarioInicial inventario={inventarioInicial} />
 

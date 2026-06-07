@@ -1,7 +1,7 @@
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Turno } from '../../types';
-import { estilosSeccion } from './estilosSeccion';
+import { estilosSeccion } from '../shared/estilosSeccion';
 
 interface Props {
   turno: Turno;

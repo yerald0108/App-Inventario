@@ -4,6 +4,7 @@ import { obtenerVentasTurnoActual, obtenerAnulacionesTurno } from '../database/c
 import { Turno, VentaAgrupada } from '../types';
 import { obtenerResumenExternoDetalleTurno } from '../database/despachos';
 import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
+import { useExpandable } from './useExpandable';
 
 
 export interface ResumenDespachoDetalle {
@@ -44,9 +45,9 @@ export function useDetalleTurno(turnoId: number) {
   const [inventarioInicial, setInventarioInicial] = useState<ItemInventario[]>([]);
   const [totalPropinas, setTotalPropinas] = useState(0);
 
-  // Estado de expansión de ventas y mermas
-  const [ventasExpandidas, setVentasExpandidas] = useState<Set<string>>(new Set());
-  const [mermasExpandidas, setMermasExpandidas] = useState<Set<string>>(new Set());
+  // Estado de expansión de ventas y mermas (centralizado en useExpandable)
+  const { expandidos: ventasExpandidas, toggle: toggleVenta } = useExpandable();
+  const { expandidos: mermasExpandidas, toggle: toggleMerma } = useExpandable();
 
   useEffect(() => {
     cargarDetalle();
@@ -87,21 +88,7 @@ export function useDetalleTurno(turnoId: number) {
     }
   }
 
-  function toggleVenta(ventaId: string) {
-    setVentasExpandidas(prev => {
-      const nueva = new Set(prev);
-      nueva.has(ventaId) ? nueva.delete(ventaId) : nueva.add(ventaId);
-      return nueva;
-    });
-  }
 
-  function toggleMerma(grupoId: string) {
-    setMermasExpandidas(prev => {
-      const nueva = new Set(prev);
-      nueva.has(grupoId) ? nueva.delete(grupoId) : nueva.add(grupoId);
-      return nueva;
-    });
-  }
 
   // Helpers de formato reutilizables por los componentes hijos
   function formatearFecha(iso: string): string {

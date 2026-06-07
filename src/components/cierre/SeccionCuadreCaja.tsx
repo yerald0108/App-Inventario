@@ -1,5 +1,6 @@
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { estilosSeccion } from '../shared/estilosSeccion';
 import { ResultadoCuadre } from '../../hooks/useCierreTurno';
 import { formatCUP } from '../../utils';
 
@@ -19,10 +20,10 @@ export default function SeccionCuadreCaja({
   onBlurEfectivo,
 }: Props) {
   return (
-    <View style={estilos.seccion}>
-      <View style={estilos.cabeceraSeccion}>
+    <View style={estilosSeccion.seccion}>
+      <View style={estilosSeccion.cabeceraSeccion}>
         <Ionicons name="receipt-outline" size={20} color="#d69e2e" />
-        <Text style={estilos.tituloSeccion}>Cuadre de caja</Text>
+        <Text style={estilosSeccion.tituloSeccion}>Cuadre de caja</Text>
       </View>
 
       <Text style={estilos.etiquetaCuadre}>Efectivo físico contado (CUP)</Text>
@@ -64,24 +65,6 @@ export default function SeccionCuadreCaja({
 }
 
 const estilos = StyleSheet.create({
-  seccion: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  cabeceraSeccion: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginBottom: 16, borderBottomWidth: 1,
-    borderBottomColor: '#edf2f7', paddingBottom: 8,
-  },
-  tituloSeccion: { fontSize: 16, fontWeight: 'bold', color: '#1a1a2e', flex: 1 },
   etiquetaCuadre: { fontSize: 14, color: '#4a5568', marginBottom: 8, fontWeight: '600' },
   inputEfectivo: {
     borderWidth: 1.5, borderColor: '#cbd5e0', borderRadius: 12,

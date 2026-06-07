@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MermaAgrupada, etiquetaMotivo } from '../../database/mermas';
-import { estilosSeccion } from './estilosSeccion';
+import { estilosSeccion } from '../shared/estilosSeccion';
 
 interface Props {
   mermas: MermaAgrupada[];
