@@ -48,7 +48,10 @@ export default function PantallaInicio({ navigation }: Props) {
               obtenerResumenExternoPorDespacho(turno.id),
             ]);
             setTotalesActuales({
-              efectivo: resumen.totalEfectivo,
+              // Sumamos las propinas al efectivo porque son dinero físico
+              // que también entra a la caja (independiente de si vienen de
+              // ventas normales o de pedidos 100% externos).
+              efectivo: resumen.totalEfectivo + resumen.totalPropinas,
               transferencia: resumen.totalTransferencia,
             });
             setPedidosAbiertos(pedidos.length);
@@ -192,7 +195,7 @@ export default function PantallaInicio({ navigation }: Props) {
             <View style={estilosLocal.notaPropinas}>
               <Ionicons name="star" size={14} color="#b7791f" />
               <Text style={estilosLocal.textoNotaPropinas}>
-                Propinas acumuladas: ${totalPropinas.toFixed(2)} CUP
+                Incluye {totalPropinas.toFixed(2)} CUP en propinas
               </Text>
             </View>
           )}

@@ -1,9 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
-// Guardamos la base de datos aquí, pero NO la abrimos todavía
 let db: SQLite.SQLiteDatabase | null = null;
 
-// Esta función devuelve la base de datos ya abierta
 export function getDatabase(): SQLite.SQLiteDatabase {
   if (!db) {
     throw new Error('La base de datos no está inicializada. Llama a inicializarDB() primero.');
@@ -14,16 +12,20 @@ export function getDatabase(): SQLite.SQLiteDatabase {
 import { crearEsquemaBase } from './schema';
 import { aplicarMigraciones } from './migrations';
 
-// Inicializar tablas y esquema base
 export async function inicializarDB(): Promise<void> {
   try {
-    // Abrir la base de datos AQUÍ, no antes
     db = await SQLite.openDatabaseAsync('micaja.db');
 
-    // 1. Tablas core siempre presentes
-    await crearEsquemaBase(db);
+    // WAL (Write-Ahead Log): más seguro y eficiente para apps POS con escrituras frecuentes.
+    // - Reduce el riesgo de corrupción si el proceso muere durante una escritura (Android).
+    // - Permite que lecturas y escrituras ocurran sin bloquearse mutuamente.
+    // - Se activa una vez por apertura de BD; SQLite recuerda el modo entre sesiones.
+    await db.execAsync('PRAGMA journal_mode = WAL;');
 
-    // 2. Migraciones
+    // Sincronización normal: WAL garantiza durabilidad sin necesidad del modo más lento (FULL).
+    await db.execAsync('PRAGMA synchronous = NORMAL;');
+
+    await crearEsquemaBase(db);
     await aplicarMigraciones(db);
 
   } catch (error) {

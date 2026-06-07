@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  TextInput, Animated, ActivityIndicator,
+  TextInput, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
@@ -15,6 +15,7 @@ import ModalAgregarProductoPedido from '../components/pedido/ModalAgregarProduct
 import { usePedidoDetalle } from '../hooks/usePedidoDetalle';
 import { usePanResponderSlide } from '../hooks/usePanResponderSlide';
 import ModalCobro from '../components/ModalCobro';
+import { SkeletonDetallePedido } from '../components/Skeleton';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetallePedido'>;
@@ -40,7 +41,7 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   if (hook.cargando) {
     return (
       <SafeAreaView style={estilos.contenedor} edges={['left', 'right', 'bottom']}>
-        <View style={estilos.centrado}><ActivityIndicator size="large" color="#2b6cb0" /></View>
+        <SkeletonDetallePedido />
       </SafeAreaView>
     );
   }

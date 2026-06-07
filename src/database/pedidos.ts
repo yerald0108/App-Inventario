@@ -397,14 +397,16 @@ export async function cerrarPedidoComoVenta(
       // Esto ocurre cuando el pedido es 100% de despacho externo.
       // Sin este registro, la propina desaparecería silenciosamente.
       if (itemsPropios.length === 0 && propina > 0) {
-        await db.runAsync(
-          `INSERT INTO movimientos
-            (tipo, fecha_hora, producto_id, cantidad, precio_aplicado,
-            total, metodo_pago, turno_id, venta_id, propina)
-          VALUES ('propina', ?, 0, 0, 0, 0, ?, ?, ?, ?)`,
-          [fechaHora, metodoPago, turnoId, ventaId, propina]
-        );
-      }
+      // producto_id es NULL para registros de tipo 'propina' sin producto asociado.
+      // La migración v14 eliminó el NOT NULL de esa columna para soportar este caso.
+      await db.runAsync(
+        `INSERT INTO movimientos
+          (tipo, fecha_hora, producto_id, cantidad, precio_aplicado,
+          total, metodo_pago, turno_id, venta_id, propina)
+        VALUES ('propina', ?, NULL, 0, 0, 0, ?, ?, ?, ?)`,
+        [fechaHora, metodoPago, turnoId, ventaId, propina]
+      );
+    }
 
       // ── 4. Marcar el pedido como cerrado ───────────────────────────────────────
       await db.runAsync(
