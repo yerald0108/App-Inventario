@@ -281,11 +281,12 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
     fecha_hora: string;
     metodo_pago: 'efectivo' | 'transferencia';
     total: number;
-    producto_id: number;
-    nombre_producto: string;
+    producto_id: number | null;
+    nombre_producto: string | null;
     cantidad: number;
     precio_aplicado: number;
-    propina: number;           
+    propina: number;
+    tipo: string;
   }>(
     `SELECT
       m.venta_id,
@@ -296,10 +297,11 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
       p.nombre AS nombre_producto,
       m.cantidad,
       m.precio_aplicado,
-      m.propina                
+      m.propina,
+      m.tipo
     FROM movimientos m
-    JOIN productos p ON m.producto_id = p.id
-    WHERE m.turno_id = ? AND m.tipo = 'venta'
+    LEFT JOIN productos p ON m.producto_id = p.id
+    WHERE m.turno_id = ? AND m.tipo IN ('venta', 'propina')
     ORDER BY m.fecha_hora DESC`,
     [turnoId]
   );
@@ -314,6 +316,26 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
   }>();
 
   for (const mov of movimientos) {
+    if (mov.tipo === 'propina') {
+      // Fila de propina de pedido 100% externo:
+      // solo actualiza la propina en la entrada ya existente del mapa.
+      // Si el venta_id aún no existe (no debería pasar), lo creamos vacío.
+      if (!mapaVentas.has(mov.venta_id)) {
+        mapaVentas.set(mov.venta_id, {
+          venta_id: mov.venta_id,
+          fecha_hora: mov.fecha_hora,
+          metodo_pago: mov.metodo_pago,
+          total: 0,
+          propina: mov.propina ?? 0,
+          items: [],
+        });
+      } else {
+        const venta = mapaVentas.get(mov.venta_id)!;
+        venta.propina = mov.propina ?? 0;
+      }
+      continue; // No agregar como item de producto
+    }
+
     if (!mapaVentas.has(mov.venta_id)) {
       mapaVentas.set(mov.venta_id, {
         venta_id: mov.venta_id,
@@ -326,7 +348,7 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
     }
     const venta = mapaVentas.get(mov.venta_id)!;
     venta.items.push({
-      nombre_producto: mov.nombre_producto,
+      nombre_producto: mov.nombre_producto ?? '(producto eliminado)',
       cantidad: mov.cantidad,
       precio_aplicado: mov.precio_aplicado,
     });

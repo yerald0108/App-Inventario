@@ -23,6 +23,18 @@ export async function obtenerProductoPorId(id: number): Promise<Producto | null>
   );
 }
 
+/**
+ * Crea un producto nuevo en el inventario.
+ *
+ * IMPORTANTE — existencia inicial:
+ * - Desde PantallaInventario: pasa la existencia real del usuario.
+ *   No se registra movimiento de entrada (el stock nace directo).
+ * - Desde PantallaEntrada: pasa SIEMPRE 0 aquí y llama a
+ *   registrarEntrada() por separado para que quede en el historial.
+ *
+ * Nunca pases existencia > 0 Y llames registrarEntrada() después:
+ * el stock se duplicaría.
+ */
 export async function crearProducto(
   nombre: string,
   precio: number,

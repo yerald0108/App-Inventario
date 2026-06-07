@@ -74,7 +74,13 @@ export default function PantallaVenta({ navigation }: Props) {
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 8 }}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('UltimasVentas')}
+            onPress={async () => {
+              const { obtenerTurnoAbierto } = await import('../database/turnos');
+              const turno = await obtenerTurnoAbierto();
+              if (turno) {
+                navigation.navigate('UltimasVentas');
+              }
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="receipt-outline" size={22} color="#ffffff" />

@@ -8,18 +8,20 @@ export async function registrarEntrada(
   const fechaHora = new Date().toISOString();
   try {
     const db = getDatabase();
-    await db.runAsync(
-      `INSERT INTO movimientos
-        (tipo, fecha_hora, producto_id, cantidad, turno_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      ['entrada', fechaHora, productoId, cantidad, turnoId]
-    );
-    await db.runAsync(
-      'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
-      [cantidad, productoId]
-    );
+    await db.withTransactionAsync(async () => {
+      await db.runAsync(
+        `INSERT INTO movimientos
+          (tipo, fecha_hora, producto_id, cantidad, turno_id)
+         VALUES (?, ?, ?, ?, ?)`,
+        ['entrada', fechaHora, productoId, cantidad, turnoId]
+      );
+      await db.runAsync(
+        'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
+        [cantidad, productoId]
+      );
+    });
   } catch (error) {
-    console.error('registrarEntrada: error al registrar entrada', error);
+    console.error('registrarEntrada: error en transacción', error);
     throw error;
   }
 }

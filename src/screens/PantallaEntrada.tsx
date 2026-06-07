@@ -200,7 +200,9 @@ export default function PantallaEntrada() {
         return;
       }
 
-      // 1. Crear el producto y obtener su id directamente
+      // Creamos el producto con existencia=0 intencionalmente.
+      // El stock real se aplica en registrarEntrada() para que
+      // quede registrado en el historial de movimientos del turno.
       const nuevoId = await crearProducto(nombreTrimmed, precioNum, 0, 5);
 
       // 2. Registrar la entrada usando el id real, sin búsqueda por nombre

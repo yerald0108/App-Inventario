@@ -46,18 +46,24 @@ export default function PantallaUltimasVentas() {
   );
 
   async function cargarVentas() {
-    if (ventas.length === 0) setCargando(true);
-    const turno = await obtenerTurnoAbierto();
-    if (turno) {
+    setCargando(true);
+    try {
+      const turno = await obtenerTurnoAbierto();
+      if (!turno) {
+        setTurnoId(null);
+        setVentas([]);
+        return;
+      }
       setTurnoId(turno.id);
       const lista = await obtenerVentasTurnoActual(turno.id);
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setVentas(lista);
-    } else {
-      setTurnoId(null);
+    } catch (error) {
+      console.error('cargarVentas: error', error);
       setVentas([]);
+    } finally {
+      setCargando(false);
     }
-    setCargando(false);
   }
 
   function confirmarCancelacion(venta: VentaAgrupada) {
