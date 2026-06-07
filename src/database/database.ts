@@ -322,14 +322,12 @@ async function aplicarMigraciones() {
       console.log('Migración v9 completada.');
     }
 
-    // ── v10: índice único para garantizar propina consistente ─────────────────
+    // ── v10: (Deprecado) Índice único de propinas ─────────────────────────────
+    // Este índice se creó originalmente en v10 pero causaba problemas.
+    // Para no romper la secuencia de migraciones de los usuarios, simplemente
+    // se avanzará la versión sin hacer nada.
     if (version < 10) {
-      console.log('Ejecutando migración v10: índice de integridad en propinas...');
-      await db.execAsync(`
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_mov_venta_propina
-        ON movimientos(venta_id, propina)
-        WHERE tipo = 'venta' AND propina > 0;
-      `);
+      console.log('Ejecutando migración v10: (Deprecado)...');
       await db.runAsync(
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '10')"
       );
@@ -337,8 +335,10 @@ async function aplicarMigraciones() {
     }
 
     // ── v11: eliminar índice único incorrecto en propinas ─────────────────────
+    // Si el usuario instaló la app cuando el código de v10 aún creaba el índice,
+    // esta migración lo elimina. Si es una instalación nueva, el DROP no hará nada.
     if (version < 11) {
-      console.log('Ejecutando migración v11: eliminando índice incorrecto de propinas...');
+      console.log('Ejecutando migración v11: eliminando índice de propinas (si existe)...');
       await db.execAsync(`
         DROP INDEX IF EXISTS idx_mov_venta_propina;
       `);
@@ -368,12 +368,10 @@ async function aplicarMigraciones() {
       console.log('Migración v12 completada.');
     }
 
-    // ── v13: garantizar eliminación del índice único incorrecto ───────────────
+    // ── v13: (Deprecado) Redundancia de eliminación de índice ─────────────────
+    // Originalmente se intentó eliminar el índice por segunda vez. Ya no es necesario.
     if (version < 13) {
-      console.log('Ejecutando migración v13: eliminando índice incorrecto de propinas...');
-      await db.execAsync(`
-        DROP INDEX IF EXISTS idx_mov_venta_propina;
-      `);
+      console.log('Ejecutando migración v13: (Deprecado)...');
       await db.runAsync(
         "INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema_version', '13')"
       );

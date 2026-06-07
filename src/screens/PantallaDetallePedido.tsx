@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   TextInput, Modal, ScrollView, Animated, Pressable, Platform,
@@ -47,15 +47,13 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
   const { panHandlers } = usePanResponderSlide(slideAnim, hook.cerrarModal);
 
   // Sincronizar animación del slide con el modal activo
-  const prevModalActivo = useRef(hook.modalActivo);
-  if (prevModalActivo.current !== hook.modalActivo) {
-    prevModalActivo.current = hook.modalActivo;
+  useEffect(() => {
     if (hook.modalActivo !== 'ninguno') {
       Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50, friction: 8 }).start();
     } else {
       Animated.timing(slideAnim, { toValue: 600, duration: 250, useNativeDriver: true }).start();
     }
-  }
+  }, [hook.modalActivo, slideAnim]);
 
   if (hook.cargando) {
     return (
