@@ -19,7 +19,6 @@ import {
   cancelarVentaExterna,
   VentaExternaAgrupada,
 } from '../database/despachos';
-import { ID_PRODUCTO_EXTERNO } from '../types';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import { formatCUP } from '../utils';
 import ModalCobro from '../components/ModalCobro';
@@ -350,9 +349,9 @@ export default function PantallaVentaExterna({ route }: Props) {
         visible={modalCobroVisible}
         items={itemsCesta.map(i => ({
           producto: {
-            // ID_PRODUCTO_EXTERNO (-1) indica explícitamente que este item
-            // no tiene producto de inventario propio asociado
-            id: i.productoId ?? ID_PRODUCTO_EXTERNO,
+            // id: 0 indica que este item no tiene producto de inventario asociado.
+            // ModalCobro solo usa nombre/precio para el resumen; nunca consulta BD con este id.
+            id: i.productoId ?? 0,
             nombre: i.nombre,
             precio: i.precio,
             existencia: 999,

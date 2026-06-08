@@ -37,6 +37,7 @@ export default function PantallaHistorial({ navigation }: Props) {
 
   // Usamos un ref para el offset para evitar closures obsoletos en onEndReached
   const offsetRef = useRef(0);
+  const cargandoMasRef = useRef(false);
 
   // ── Cargar filtros disponibles ───────────────────────────
   useFocusEffect(
@@ -71,26 +72,31 @@ export default function PantallaHistorial({ navigation }: Props) {
 
   // ── Cargar página siguiente ─────────────────────────────────────────────
   async function cargarMas() {
-    if (cargandoMas || !hayMas) return;
+    if (cargandoMasRef.current || !hayMas) return;
+    cargandoMasRef.current = true;
     setCargandoMas(true);
 
-    const siguientePagina = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, offsetRef.current);
+    try {
+      const siguientePagina = await obtenerTurnosCerradosFiltrados(filtroMes, filtroAnio, PAGE_SIZE, offsetRef.current);
 
-    if (siguientePagina.length > 0) {
-      const ids = siguientePagina.map(t => t.id);
-      const mapaExternos = await obtenerTotalesExternosPorTurnos(ids);
+      if (siguientePagina.length > 0) {
+        const ids = siguientePagina.map(t => t.id);
+        const mapaExternos = await obtenerTotalesExternosPorTurnos(ids);
 
-      setTurnos(prev => [...prev, ...siguientePagina]);
-      setTotalesExternos(prev => {
-        const nuevo = new Map(prev);
-        mapaExternos.forEach((v, k) => nuevo.set(k, v));
-        return nuevo;
-      });
-      offsetRef.current += siguientePagina.length;
+        setTurnos(prev => [...prev, ...siguientePagina]);
+        setTotalesExternos(prev => {
+          const nuevo = new Map(prev);
+          mapaExternos.forEach((v, k) => nuevo.set(k, v));
+          return nuevo;
+        });
+        offsetRef.current += siguientePagina.length;
+      }
+
+      setHayMas(siguientePagina.length === PAGE_SIZE);
+    } finally {
+      cargandoMasRef.current = false;
+      setCargandoMas(false);
     }
-
-    setHayMas(siguientePagina.length === PAGE_SIZE);
-    setCargandoMas(false);
   }
 
   function handleEliminarTurno(turno: Turno) {

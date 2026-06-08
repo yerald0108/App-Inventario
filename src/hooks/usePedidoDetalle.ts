@@ -27,6 +27,12 @@ export function usePedidoDetalle(
   const [editandoNombre, setEditandoNombre] = useState(false);
   const [nombreTemp, setNombreTemp] = useState('');
 
+  // ── Hooks especializados ─────────────────────────────────────────────────
+  const productosHook = usePedidoProductos({
+    pedidoId,
+    onItemsChanged: cargarPedido,
+  });
+
   // ── Totales separados (propio vs despachos) ──────────────────────────────
   const totalesSeparados = useMemo(() => {
     if (!pedido) {
@@ -51,18 +57,11 @@ export function usePedidoDetalle(
       porDespacho.set(item.despacho_id, entrada);
     }
     return { propio, porDespacho };
-  }, [pedido]);
-
-  // ── Hooks especializados ─────────────────────────────────────────────────
-  const productosHook = usePedidoProductos({
-    pedidoId,
-    onItemsChanged: cargarPedido,
-  });
+  }, [pedido, productosHook.despachos]);
 
   const cobroHook = usePedidoCobro({
     pedidoId,
     pedido,
-    totalesSeparados,
     navigation,
     onCobrado: cerrarModal,
   });
@@ -122,7 +121,7 @@ export function usePedidoDetalle(
     pedido,
     cargando,
     procesando: cobroHook.procesando,
-    totalesSeparados,
+    totalesSeparados: cobroHook.totalesSeparados,
     // Modales
     modalActivo,
     abrirModalAgregar,

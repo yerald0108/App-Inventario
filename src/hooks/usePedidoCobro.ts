@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Alert } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,14 +8,11 @@ import { cerrarPedidoComoVenta } from '../database/pedidos';
 import { obtenerTurnoAbierto } from '../database/turnos';
 import { formatCUP, sumaSegura } from '../utils';
 import { useProductos } from '../context/ProductosContext';
+import { obtenerDespachos, Despacho } from '../database/despachos';
 
 interface UsePedidoCobroProps {
   pedidoId: number;
   pedido: PedidoConItems | null;
-  totalesSeparados: {
-    propio: number;
-    porDespacho: Map<number, { nombre: string; color: string; total: number }>;
-  };
   navigation: NativeStackNavigationProp<RootStackParamList, 'DetallePedido'>;
   onCobrado: () => void;
 }
@@ -23,13 +20,42 @@ interface UsePedidoCobroProps {
 export function usePedidoCobro({
   pedidoId,
   pedido,
-  totalesSeparados,
   navigation,
   onCobrado,
 }: UsePedidoCobroProps) {
   const { cargarProductos } = useProductos();
   const [procesando, setProcesando] = useState(false);
   const [procesandoRef] = useState({ current: false });
+  const [despachos, setDespachos] = useState<Despacho[]>([]);
+
+  useEffect(() => {
+    obtenerDespachos().then(setDespachos).catch(console.error);
+  }, []);
+
+  const totalesSeparados = useMemo(() => {
+    if (!pedido) {
+      return {
+        propio: 0,
+        porDespacho: new Map<number, { nombre: string; color: string; total: number }>(),
+      };
+    }
+    const propio = sumaSegura(
+      pedido.items.filter(i => i.origen === 'propio').map(i => i.subtotal)
+    );
+    const porDespacho = new Map<number, { nombre: string; color: string; total: number }>();
+    for (const item of pedido.items.filter(i => i.origen === 'despacho')) {
+      if (item.despacho_id === null) continue;
+      const despacho = despachos.find(d => d.id === item.despacho_id);
+      const entrada = porDespacho.get(item.despacho_id) ?? {
+        nombre: despacho?.nombre ?? `Despacho ${item.despacho_id}`,
+        color: despacho?.color ?? '#805ad5',
+        total: 0,
+      };
+      entrada.total = sumaSegura([entrada.total, item.subtotal]);
+      porDespacho.set(item.despacho_id, entrada);
+    }
+    return { propio, porDespacho };
+  }, [pedido, despachos]);
 
   async function handleCerrarCuenta(
     metodoPagoParam?: 'efectivo' | 'transferencia',
@@ -101,6 +127,7 @@ export function usePedidoCobro({
 
   return {
     procesando,
+    totalesSeparados,
     handleCerrarCuenta,
   };
 }
