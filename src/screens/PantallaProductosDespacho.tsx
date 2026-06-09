@@ -285,69 +285,199 @@ export default function PantallaProductosDespacho({ route }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f7fafc' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f7fafc' 
+  },
+  centrado: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
   banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#faf5ff', borderBottomWidth: 1,
-    borderBottomColor: '#e9d8fd', paddingHorizontal: 16, paddingVertical: 10,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8,
+    backgroundColor: '#faf5ff', 
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9d8fd', 
+    paddingHorizontal: 16, 
+    paddingVertical: 10,
   },
-  textoBanner: { fontSize: 13, color: '#6b46c1', fontWeight: '600' },
+  textoBanner: { 
+    fontSize: 13, 
+    color: '#6b46c1', 
+    fontWeight: '600' 
+  },
   tarjeta: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 16,
-    marginBottom: 10, flexDirection: 'row', alignItems: 'center',
-    elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 2,
-    borderWidth: 1, borderColor: '#edf2f7',
+    backgroundColor: '#ffffff', 
+    borderRadius: 12, 
+    padding: 16,
+    marginBottom: 10, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    elevation: 1, 
+    shadowColor: '#000', 
+    shadowOffset: {
+      width: 0, 
+      height: 1 
+    },
+    shadowOpacity: 0.05, 
+    shadowRadius: 2,
+    borderWidth: 1, 
+    borderColor: '#edf2f7',
   },
-  infoProducto: { flex: 1 },
-  nombreProducto: { fontSize: 17, fontWeight: 'bold', color: '#1a1a2e', marginBottom: 2 },
-  precioProducto: { fontSize: 14, color: '#805ad5', fontWeight: '600' },
-  botonesProducto: { flexDirection: 'row', gap: 8 },
+  infoProducto: { 
+    flex: 1 
+  },
+  nombreProducto: { 
+    fontSize: 17, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e', 
+    marginBottom: 2 
+  },
+  precioProducto: { 
+    fontSize: 14, 
+    color: '#805ad5', 
+    fontWeight: '600' 
+  },
+  botonesProducto: { 
+    flexDirection: 'row', 
+    gap: 8 
+  },
   botonEditar: {
-    width: 36, height: 36, borderRadius: 8,
-    backgroundColor: '#ebf8ff', alignItems: 'center', justifyContent: 'center',
+    width: 36, 
+    height: 36, 
+    borderRadius: 8,
+    backgroundColor: '#ebf8ff', 
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
   botonEliminar: {
-    width: 36, height: 36, borderRadius: 8,
-    backgroundColor: '#fff5f5', alignItems: 'center', justifyContent: 'center',
+    width: 36, 
+    height: 36, 
+    borderRadius: 8,
+    backgroundColor: '#fff5f5', 
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
   fab: {
-    position: 'absolute', bottom: 24, right: 24,
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: '#805ad5', alignItems: 'center', justifyContent: 'center',
-    elevation: 6, shadowColor: '#805ad5',
-    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 6,
+    position: 'absolute', 
+    bottom: 24, 
+    right: 24,
+    width: 64, 
+    height: 64, 
+    borderRadius: 32,
+    backgroundColor: '#805ad5', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    elevation: 6, 
+    shadowColor: '#805ad5',
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    }, 
+    shadowOpacity: 0.4, 
+    shadowRadius: 6,
   },
-  textoFab: { color: '#ffffff', fontSize: 32, fontWeight: 'bold', lineHeight: 36 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  textoFab: { 
+    color: '#ffffff', 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    lineHeight: 36 
+  },
+  overlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.4)', 
+    justifyContent: 'flex-end' 
+  },
   modal: {
-    backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    paddingTop: 12, maxHeight: '90%', elevation: 20,
+    backgroundColor: '#ffffff', 
+    borderTopLeftRadius: 32, 
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24, 
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingTop: 12, 
+    maxHeight: '90%', 
+    elevation: 20,
   },
   barraArrastre: {
-    width: 40, height: 5, backgroundColor: '#e2e8f0',
-    borderRadius: 3, alignSelf: 'center', marginBottom: 16,
+    width: 40, 
+    height: 5, 
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3, 
+    alignSelf: 'center', 
+    marginBottom: 16,
   },
-  tituloModal: { fontSize: 22, fontWeight: 'bold', color: '#1a1a2e', textAlign: 'center', marginBottom: 4 },
-  subtituloModal: { fontSize: 14, color: '#805ad5', textAlign: 'center', marginBottom: 12, fontWeight: '600' },
-  etiqueta: { fontSize: 15, fontWeight: '600', color: '#4a5568', marginBottom: 6, marginTop: 12 },
+  tituloModal: { 
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e', 
+    textAlign: 'center', 
+    marginBottom: 4 
+  },
+  subtituloModal: { 
+    fontSize: 14, 
+    color: '#805ad5', 
+    textAlign: 'center', 
+    marginBottom: 12, 
+    fontWeight: '600' 
+  },
+  etiqueta: { 
+    fontSize: 15, 
+    fontWeight: '600', 
+    color: '#4a5568', 
+    marginBottom: 6, 
+    marginTop: 12 
+  },
   input: {
-    borderWidth: 1.5, borderColor: '#cbd5e0', borderRadius: 10,
-    padding: 14, fontSize: 16, color: '#1a1a2e', backgroundColor: '#f7fafc',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e0', 
+    borderRadius: 10,
+    padding: 14, 
+    fontSize: 16, 
+    color: '#1a1a2e', 
+    backgroundColor: '#f7fafc',
   },
   contenedorInputSufijo: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1.5,
-    borderColor: '#cbd5e0', borderRadius: 10, backgroundColor: '#f7fafc', paddingRight: 14,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1.5,
+    borderColor: '#cbd5e0', 
+    borderRadius: 10, 
+    backgroundColor: '#f7fafc', 
+    paddingRight: 14,
   },
-  inputSufijo: { flex: 1, padding: 14, fontSize: 16, color: '#1a1a2e' },
-  sufijo: { fontSize: 14, color: '#a0aec0', fontWeight: 'bold' },
+  inputSufijo: { 
+    flex: 1, 
+    padding: 14, 
+    fontSize: 16, 
+    color: '#1a1a2e' 
+  },
+  sufijo: { 
+    fontSize: 14, 
+    color: '#a0aec0', 
+    fontWeight: 'bold' 
+  },
   botonGuardar: {
-    backgroundColor: '#805ad5', borderRadius: 12, padding: 16,
-    alignItems: 'center', marginTop: 24,
+    backgroundColor: '#805ad5', 
+    borderRadius: 12, 
+    padding: 16,
+    alignItems: 'center', 
+    marginTop: 24,
   },
-  textoBotonGuardar: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-  botonCancelar: { padding: 16, alignItems: 'center', marginBottom: 8 },
-  textoBotonCancelar: { color: '#718096', fontSize: 16 },
+  textoBotonGuardar: { 
+    color: '#ffffff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  botonCancelar: { 
+    padding: 16, 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  textoBotonCancelar: {
+     color: '#718096', 
+     fontSize: 16 
+    },
 });

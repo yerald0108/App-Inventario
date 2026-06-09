@@ -318,8 +318,15 @@ export default function PantallaDespachos({ navigation }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f7fafc' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f7fafc' 
+  },
+  centrado: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -330,7 +337,11 @@ const estilos = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  textoBanner: { fontSize: 13, color: '#6b46c1', fontWeight: '600' },
+  textoBanner: { 
+    fontSize: 13, 
+    color: '#6b46c1', 
+    fontWeight: '600' 
+  },
   tarjeta: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -339,13 +350,26 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { 
+      width: 0, 
+      height: 1 
+    },
     shadowOpacity: 0.07,
     shadowRadius: 3,
   },
-  franjaColor: { width: 5 },
-  contenidoTarjeta: { flex: 1, padding: 14 },
-  filaTarjeta: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  franjaColor: { 
+    width: 5 
+  },
+  contenidoTarjeta: { 
+    flex: 1, 
+    padding: 14 
+  },
+  filaTarjeta: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12, 
+    marginBottom: 12 
+  },
   avatar: {
     width: 44,
     height: 44,
@@ -353,11 +377,28 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  infoTarjeta: { flex: 1 },
-  nombreDespacho: { fontSize: 17, fontWeight: 'bold', color: '#1a1a2e', marginBottom: 2 },
-  descripcionDespacho: { fontSize: 13, color: '#718096' },
-  descripcionVacia: { fontSize: 13, color: '#cbd5e0', fontStyle: 'italic' },
-  acciones: { flexDirection: 'row', gap: 4 },
+  infoTarjeta: { 
+    flex: 1 
+  },
+  nombreDespacho: { 
+    fontSize: 17, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e', 
+    marginBottom: 2 
+  },
+  descripcionDespacho: { 
+    fontSize: 13, 
+    color: '#718096' 
+  },
+  descripcionVacia: { 
+    fontSize: 13, 
+    color: '#cbd5e0', 
+    fontStyle: 'italic' 
+  },
+  acciones: { 
+    flexDirection: 'row', 
+    gap: 4 
+  },
   botonAccion: {
     width: 34,
     height: 34,
@@ -375,7 +416,10 @@ const estilos = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 8,
   },
-  textoBotonVender: { fontSize: 14, fontWeight: '700' },
+  textoBotonVender: { 
+    fontSize: 14, 
+    fontWeight: '700' 
+  },
   fab: {
     position: 'absolute',
     bottom: 24,
@@ -388,11 +432,19 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     elevation: 6,
     shadowColor: '#805ad5',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
     shadowOpacity: 0.4,
     shadowRadius: 6,
   },
-  textoFab: { color: '#ffffff', fontSize: 32, fontWeight: 'bold', lineHeight: 36 },
+  textoFab: { 
+    color: '#ffffff', 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    lineHeight: 36 
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -409,38 +461,79 @@ const estilos = StyleSheet.create({
     elevation: 20,
   },
   barraArrastre: {
-    width: 40, height: 5, backgroundColor: '#e2e8f0',
-    borderRadius: 3, alignSelf: 'center', marginBottom: 16,
+    width: 40, 
+    height: 5, 
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3, 
+    alignSelf: 'center', 
+    marginBottom: 16,
   },
   tituloModal: {
-    fontSize: 22, fontWeight: 'bold', color: '#1a1a2e',
-    marginBottom: 20, textAlign: 'center',
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e',
+    marginBottom: 20, 
+    textAlign: 'center',
   },
   etiqueta: {
-    fontSize: 15, fontWeight: '600', color: '#4a5568',
-    marginBottom: 6, marginTop: 12,
+    fontSize: 15, 
+    fontWeight: '600', 
+    color: '#4a5568',
+    marginBottom: 6, 
+    marginTop: 12,
   },
   input: {
-    borderWidth: 1.5, borderColor: '#cbd5e0', borderRadius: 10,
-    padding: 14, fontSize: 16, color: '#1a1a2e', backgroundColor: '#f7fafc',
+    borderWidth: 1.5, 
+    borderColor: '#cbd5e0', 
+    borderRadius: 10,
+    padding: 14, 
+    fontSize: 16, 
+    color: '#1a1a2e', 
+    backgroundColor: '#f7fafc',
   },
   gridColores: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 4,
+    flexDirection: 'row', 
+    flexWrap: 'wrap',
+     gap: 10, 
+     marginTop: 4,
   },
   chipColor: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
+    width: 40, 
+    height: 40, 
+    borderRadius: 20,
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
   chipColorActivo: {
-    borderWidth: 3, borderColor: '#ffffff',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3, shadowRadius: 4, elevation: 4,
+    borderWidth: 3, 
+    borderColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    },
+    shadowOpacity: 0.3, 
+    shadowRadius: 4, 
+    elevation: 4,
   },
   botonGuardar: {
-    borderRadius: 12, padding: 16,
-    alignItems: 'center', marginTop: 24,
+    borderRadius: 12, 
+    padding: 16,
+    alignItems: 'center', 
+    marginTop: 24,
   },
-  textoBotonGuardar: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
-  botonCancelar: { padding: 16, alignItems: 'center', marginBottom: 8 },
-  textoBotonCancelar: { color: '#718096', fontSize: 16 },
+  textoBotonGuardar: { 
+    color: '#ffffff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  botonCancelar: { 
+    padding: 16, 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  textoBotonCancelar: { 
+    color: '#718096', 
+    fontSize: 16 
+  },
 });

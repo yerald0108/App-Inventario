@@ -402,8 +402,13 @@ export default function PantallaInicio({ navigation }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  scrollContent: { padding: 20 },
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f0f4f8' 
+  },
+  scrollContent: { 
+    padding: 20 
+  },
 
   // Cabecera
   cabecera: {
@@ -413,58 +418,147 @@ const estilos = StyleSheet.create({
     marginBottom: 24,
     marginTop: 10,
   },
-  titulo: { fontSize: 32, fontWeight: 'bold', color: '#1a1a2e' },
-  indicadorTurno: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 6, paddingHorizontal: 12,
-    borderRadius: 20, borderWidth: 1,
+  titulo: { 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e' 
   },
-  turnoAbierto: { backgroundColor: '#c6f6d5', borderColor: '#9ae6b4' },
-  turnoCerrado: { backgroundColor: '#fed7d7', borderColor: '#feb2b2' },
-  textoIndicador: { fontSize: 13, fontWeight: '700' },
+  indicadorTurno: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 6,
+    paddingVertical: 6, 
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  turnoAbierto: { 
+    backgroundColor: '#c6f6d5', 
+    borderColor: '#9ae6b4'
+   },
+  turnoCerrado: { 
+    backgroundColor: '#fed7d7', 
+    borderColor: '#feb2b2' 
+  },
+  textoIndicador: { 
+    fontSize: 13, 
+    fontWeight: '700' 
+  },
 
   // Tarjeta turno activo
   tarjetaTurno: {
-    backgroundColor: '#ffffff', borderRadius: 16, padding: 20,
-    marginBottom: 24, elevation: 4,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 4,
+    backgroundColor: '#ffffff', 
+    borderRadius: 16, 
+    padding: 20,
+    marginBottom: 24, 
+    elevation: 4,
+    shadowColor: '#000', 
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    },
+    shadowOpacity: 0.1, 
+    shadowRadius: 4,
   },
-  tarjetaTitulo: { fontSize: 14, color: '#718096', fontWeight: '600', marginBottom: 4 },
-  tarjetaInfo: { fontSize: 18, color: '#1a1a2e', fontWeight: 'bold', marginBottom: 16 },
+  tarjetaTitulo: { 
+    fontSize: 14, 
+    color: '#718096', 
+    fontWeight: '600', 
+    marginBottom: 4 
+  },
+  tarjetaInfo: { 
+    fontSize: 18, 
+    color: '#1a1a2e', 
+    fontWeight: 'bold', 
+    marginBottom: 16 
+  },
   filaTotales: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    borderTopWidth: 1, borderTopColor: '#edf2f7', paddingTop: 16,
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    borderTopWidth: 1, 
+    borderTopColor: '#edf2f7', 
+    paddingTop: 16,
   },
-  colTotal: { flex: 1 },
-  totalEtiqueta: { fontSize: 12, color: '#718096', marginBottom: 2 },
-  totalValor: { fontSize: 20, color: '#2d3748', fontWeight: 'bold' },
+  colTotal: { 
+    flex: 1 
+  },
+  totalEtiqueta: { 
+    fontSize: 12, 
+    color: '#718096', 
+    marginBottom: 2 
+  },
+  totalValor: { 
+    fontSize: 20, 
+    color: '#2d3748', 
+    fontWeight: 'bold'
+  },
 
   // Botón abrir turno
   botonAbrirTurno: {
-    backgroundColor: '#3182ce', borderRadius: 16, padding: 20, marginBottom: 24,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
-    elevation: 4, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
+    backgroundColor: '#3182ce', 
+    borderRadius: 16, 
+    padding: 20, 
+    marginBottom: 24,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 12,
+    elevation: 4, 
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    }, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 4,
   },
-  botonAbrirTurnoDeshabilitado: { backgroundColor: '#2c7cc1', elevation: 1 },
-  textoBotonAbrir: { color: '#ffffff', fontSize: 18, fontWeight: '900' },
+  botonAbrirTurnoDeshabilitado: { 
+    backgroundColor: '#2c7cc1', 
+    elevation: 1 
+  },
+  textoBotonAbrir: { 
+    color: '#ffffff', 
+    fontSize: 18, 
+    fontWeight: '900' 
+  },
 
   // Grid
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 },
+  grid: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'space-between', 
+    gap: 16 
+  },
 
   // Tarjeta genérica
   tarjetaAccion: {
-    width: '47%', aspectRatio: 1, borderRadius: 20, padding: 20,
-    justifyContent: 'center', alignItems: 'center',
-    elevation: 5, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5,
+    width: '47%',
+    aspectRatio: 1, 
+    borderRadius: 20, 
+    padding: 20,
+    justifyContent: 'center', 
+    alignItems: 'center',
+    elevation: 5, 
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: 3 
+    }, 
+    shadowOpacity: 0.2, 
+    shadowRadius: 5,
   },
   textoTarjeta: {
-    color: '#ffffff', fontSize: 16, fontWeight: 'bold', marginTop: 12, textAlign: 'center',
+    color: '#ffffff', 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    marginTop: 12, 
+    textAlign: 'center',
   },
   subtextoTarjeta: {
-    color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '600', marginTop: 4,
+    color: 'rgba(255,255,255,0.8)', 
+    fontSize: 12, 
+    fontWeight: '600', 
+    marginTop: 4,
   },
 
   // Tarjeta Pedidos (ancho completo)
@@ -481,15 +575,28 @@ const estilos = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  filaIconoPedido: { position: 'relative' },
-  badgePedidos: {
-    position: 'absolute', top: -6, right: -10,
-    backgroundColor: '#ffffff', borderRadius: 10,
-    minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 1.5, borderColor: '#e53e3e',
+  filaIconoPedido: { 
+    position: 'relative' 
   },
-  textoBadgePedidos: { fontSize: 11, fontWeight: '900', color: '#e53e3e' },
+  badgePedidos: {
+    position: 'absolute', 
+    top: -6, 
+    right: -10,
+    backgroundColor: '#ffffff', 
+    borderRadius: 10,
+    minWidth: 20, 
+    height: 20, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5, 
+    borderColor: '#e53e3e',
+  },
+  textoBadgePedidos: { 
+    fontSize: 11, 
+    fontWeight: '900', 
+    color: '#e53e3e' 
+  },
 });
 
 const estilosLocal = StyleSheet.create({

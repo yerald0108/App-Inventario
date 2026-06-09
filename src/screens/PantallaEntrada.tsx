@@ -508,7 +508,10 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     elevation: 3,
     shadowColor: '#d69e2e',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { 
+      width: 0, 
+      height: 2 
+    },
     shadowOpacity: 0.35,
     shadowRadius: 4,
   },
@@ -550,7 +553,10 @@ const estilos = StyleSheet.create({
     borderColor: '#edf2f7',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { 
+      width: 0, 
+      height: 1 
+    },
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
@@ -598,7 +604,10 @@ const estilos = StyleSheet.create({
     paddingTop: 12,
     maxHeight: '90%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
+    shadowOffset: { 
+      width: 0, 
+      height: -4 
+    },
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 20,

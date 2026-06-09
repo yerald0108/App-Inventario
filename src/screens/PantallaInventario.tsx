@@ -239,7 +239,10 @@ const estilos = StyleSheet.create({
     height: 50,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { 
+      width: 0, 
+      height: 1 
+    },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
@@ -263,7 +266,10 @@ const estilos = StyleSheet.create({
     justifyContent: 'center',
     elevation: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { 
+      width: 0, 
+      height: 3 
+    },
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },

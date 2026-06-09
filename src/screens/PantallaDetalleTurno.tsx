@@ -109,8 +109,21 @@ export default function PantallaDetalleTurno({ route }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { flex: 1 },
-  textoVacio: { fontSize: 16, color: '#718096', textAlign: 'center' },
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f0f4f8' 
+  },
+  centrado: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  scroll: { 
+    flex: 1 
+  },
+  textoVacio: { 
+    fontSize: 16, 
+    color: '#718096', 
+    textAlign: 'center' 
+  },
 });

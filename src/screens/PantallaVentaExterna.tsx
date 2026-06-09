@@ -411,87 +411,238 @@ export default function PantallaVentaExterna({ route }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f7fafc' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  bannerDespacho: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1,
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f7fafc' 
   },
-  textoBanner: { fontSize: 13, fontWeight: '600' },
+  centrado: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  bannerDespacho: {
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8,
+    paddingHorizontal: 16, 
+    paddingVertical: 10, 
+    borderBottomWidth: 1,
+  },
+  textoBanner: { 
+    fontSize: 13, 
+    fontWeight: '600' 
+  },
   tabs: {
-    flexDirection: 'row', backgroundColor: '#ffffff',
-    borderBottomWidth: 1, borderBottomColor: '#edf2f7',
+    flexDirection: 'row', 
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1, 
+    borderBottomColor: '#edf2f7',
   },
   tab: {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center', gap: 6, paddingVertical: 12,
-    borderBottomWidth: 3, borderBottomColor: 'transparent',
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    justifyContent: 'center', 
+    gap: 6, 
+    paddingVertical: 12,
+    borderBottomWidth: 3, 
+    borderBottomColor: 'transparent',
   },
   tabActiva: {},
-  textoTab: { fontSize: 14, color: '#718096', fontWeight: '600' },
+  textoTab: { 
+    fontSize: 14, 
+    color: '#718096', 
+    fontWeight: '600'
+  },
   badgeTab: {
-    width: 18, height: 18, borderRadius: 9,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 2,
+    width: 18, 
+    height: 18, 
+    borderRadius: 9,
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginLeft: 2,
   },
-  textoBadgeTab: { color: '#ffffff', fontSize: 11, fontWeight: 'bold' },
+  textoBadgeTab: { 
+    color: '#ffffff', 
+    fontSize: 11, 
+    fontWeight: 'bold' 
+  },
   contenedorBusqueda: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff',
-    margin: 12, paddingHorizontal: 12, borderRadius: 12, height: 46,
-    borderWidth: 1, borderColor: '#e2e8f0',
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#ffffff',
+    margin: 12, 
+    paddingHorizontal: 12, 
+    borderRadius: 12, 
+    height: 46,
+    borderWidth: 1, 
+    borderColor: '#e2e8f0',
   },
-  inputBusqueda: { flex: 1, fontSize: 15, color: '#2d3748' },
+  inputBusqueda: { 
+    flex: 1, 
+    fontSize: 15, 
+    color: '#2d3748' 
+  },
   tarjetaProducto: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 14,
-    marginHorizontal: 12, marginVertical: 4, flexDirection: 'row',
-    alignItems: 'center', elevation: 1, borderWidth: 2, borderColor: 'transparent',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2,
+    backgroundColor: '#ffffff', 
+    borderRadius: 12, 
+    padding: 14,
+    marginHorizontal: 12, 
+    marginVertical: 4, 
+    flexDirection: 'row',
+    alignItems: 'center', 
+    elevation: 1, 
+    borderWidth: 2, 
+    borderColor: 'transparent',
+    shadowColor: '#000', 
+    shadowOffset: { 
+      width: 0, 
+      height: 1 
+    }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 2,
   },
-  tarjetaActiva: { backgroundColor: '#faf5ff' },
-  infoProducto: { flex: 1, marginRight: 12 },
-  nombreProducto: { fontSize: 16, fontWeight: '600', color: '#1a1a2e', marginBottom: 2 },
-  precioProducto: { fontSize: 14, fontWeight: '700' },
-  controles: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tarjetaActiva: { 
+    backgroundColor: '#faf5ff' 
+  },
+  infoProducto: { 
+    flex: 1, 
+    marginRight: 12 
+  },
+  nombreProducto: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: '#1a1a2e', 
+    marginBottom: 2 
+  },
+  precioProducto: { 
+    fontSize: 14, 
+    fontWeight: '700' 
+  },
+  controles: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
+  },
   botonControl: {
-    width: 36, height: 36, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
+    width: 36, 
+    height: 36, 
+    borderRadius: 8,
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
   botonDeshabilitado: {},
-  textoControl: { color: '#ffffff', fontSize: 20, fontWeight: 'bold', lineHeight: 24 },
-  cantidad: { fontSize: 18, fontWeight: 'bold', color: '#a0aec0', textAlign: 'center', minWidth: 28 },
-  cantidadActiva: { color: '#1a1a2e' },
+  textoControl: { 
+    color: '#ffffff', 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    lineHeight: 24 
+  },
+  cantidad: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#a0aec0', 
+    textAlign: 'center', 
+    minWidth: 28 
+  },
+  cantidadActiva: { 
+    color: '#1a1a2e' 
+  },
   cestaFlotante: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14, paddingBottom: 28,
+    position: 'absolute', 
+    bottom: 0, 
+    left: 0, 
+    right: 0,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    paddingHorizontal: 20, 
+    paddingVertical: 14, 
+    paddingBottom: 28,
     elevation: 10,
   },
-  textoCestaProductos: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 2 },
-  textoCestaTotal: { color: '#ffffff', fontSize: 26, fontWeight: 'bold' },
-  botonCobrar: {
-    backgroundColor: '#ffffff', borderRadius: 14,
-    paddingHorizontal: 28, paddingVertical: 14,
+  textoCestaProductos: { 
+    color: 'rgba(255,255,255,0.8)', 
+    fontSize: 13, 
+    marginBottom: 2 
   },
-  textoBotonCobrar: { fontSize: 16, fontWeight: 'bold' },
+  textoCestaTotal: { 
+    color: '#ffffff', 
+    fontSize: 26, 
+    fontWeight: 'bold' 
+  },
+  botonCobrar: {
+    backgroundColor: '#ffffff', 
+    borderRadius: 14,
+    paddingHorizontal: 28, 
+    paddingVertical: 14,
+  },
+  textoBotonCobrar: { 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
 
   // Historial
   tarjetaVenta: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 14,
-    marginBottom: 10, elevation: 1,
-    borderWidth: 1, borderColor: '#edf2f7',
+    backgroundColor: '#ffffff', 
+    borderRadius: 12,
+     padding: 14,
+    marginBottom: 10, 
+    elevation: 1,
+    borderWidth: 1, 
+    borderColor: '#edf2f7',
   },
-  cabeceraVenta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  horaVenta: { fontSize: 18, fontWeight: 'bold', color: '#1a1a2e' },
+  cabeceraVenta: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8, 
+    marginBottom: 10 
+  },
+  horaVenta: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e' 
+  },
   etiquetaMetodo: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1,
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4,
+    paddingHorizontal: 8, 
+    paddingVertical: 3, 
+    borderRadius: 6, 
+    borderWidth: 1,
   },
-  textoMetodo: { fontSize: 12, fontWeight: '700' },
-  totalVenta: { fontSize: 15, fontWeight: 'bold' },
-  itemsVenta: { borderTopWidth: 1, borderTopColor: '#f0f4f8', paddingTop: 8, gap: 4, marginBottom: 10 },
-  textoItemVenta: { fontSize: 13, color: '#4a5568' },
+  textoMetodo: { 
+    fontSize: 12, 
+    fontWeight: '700' 
+  },
+  totalVenta: { 
+    fontSize: 15, 
+    fontWeight: 'bold' 
+  },
+  itemsVenta: { 
+    borderTopWidth: 1, 
+    borderTopColor: '#f0f4f8', 
+    paddingTop: 8, 
+    gap: 4, 
+    marginBottom: 10 
+  },
+  textoItemVenta: { 
+    fontSize: 13, 
+    color: '#4a5568' 
+  },
   botonAnular: {
-    borderWidth: 1.5, borderColor: '#e53e3e', borderRadius: 8,
-    padding: 10, alignItems: 'center', backgroundColor: '#fff5f5',
+    borderWidth: 1.5, 
+    borderColor: '#e53e3e', 
+    borderRadius: 8,
+    padding: 10, 
+    alignItems: 'center', 
+    backgroundColor: '#fff5f5',
   },
-  textoBotonAnular: { color: '#e53e3e', fontSize: 13, fontWeight: 'bold' },
+  textoBotonAnular: { 
+    color: '#e53e3e', 
+    fontSize: 13, 
+    fontWeight: 'bold' 
+  },
 });

@@ -241,80 +241,234 @@ export default function PantallaDetallePedido({ route, navigation }: Props) {
 
 // ── Estilos de la pantalla principal ─────────────────────────────────────────
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f0f4f8' 
+  },
+  centrado: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
 
   headerPedido: {
-    backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#edf2f7',
+    backgroundColor: '#ffffff', 
+    paddingHorizontal: 16, 
+    paddingVertical: 12,
+    borderBottomWidth: 1, 
+    borderBottomColor: '#edf2f7',
   },
-  filaEditarNombre: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  nombrePedidoHeader: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#1a1a2e' },
+  filaEditarNombre: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
+  },
+  nombrePedidoHeader: { 
+    flex: 1, 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e' 
+  },
   inputNombrePedido: {
-    flex: 1, fontSize: 18, fontWeight: 'bold', color: '#1a1a2e',
-    borderBottomWidth: 2, borderBottomColor: '#2b6cb0', padding: 4,
+    flex: 1, 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e',
+    borderBottomWidth: 2, 
+    borderBottomColor: '#2b6cb0', 
+    padding: 4,
   },
   botonGuardarNombre: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: '#f0fff4', alignItems: 'center', justifyContent: 'center',
+    width: 36, 
+    height: 36, 
+    borderRadius: 10,
+    backgroundColor: '#f0fff4', 
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
 
-  listaItems: { padding: 12, paddingBottom: 8 },
-  emptyItems: { alignItems: 'center', justifyContent: 'center', padding: 48, gap: 16 },
-  textoEmptyItems: { fontSize: 15, color: '#a0aec0', textAlign: 'center', lineHeight: 22 },
+  listaItems: { 
+    padding: 12, 
+    paddingBottom: 8 
+  },
+  emptyItems: { 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: 48, 
+    gap: 16 
+  },
+  textoEmptyItems: { 
+    fontSize: 15, 
+    color: '#a0aec0', 
+    textAlign: 'center', 
+    lineHeight: 22 
+  },
 
   tarjetaItem: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 14, marginBottom: 8,
-    flexDirection: 'row', alignItems: 'center',
-    elevation: 1, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, borderWidth: 1,
+    backgroundColor: '#ffffff', 
+    borderRadius: 12, 
+    padding: 14, 
+    marginBottom: 8,
+    flexDirection: 'row', 
+    alignItems: 'center',
+    elevation: 1, 
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: 1 
+    }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 2, 
+    borderWidth: 1,
   },
-  infoItem: { flex: 1, marginRight: 10 },
-  nombreItem: { fontSize: 15, fontWeight: '600', color: '#1a1a2e', marginBottom: 4 },
-  filaSubInfoItem: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  precioUnitItem: { fontSize: 12, color: '#718096' },
+  infoItem: { 
+    flex: 1, 
+    marginRight: 10 
+  },
+  nombreItem: { 
+    fontSize: 15, 
+    fontWeight: '600', 
+    color: '#1a1a2e', 
+    marginBottom: 4 
+  },
+  filaSubInfoItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8, 
+    flexWrap: 'wrap' 
+  },
+  precioUnitItem: { 
+    fontSize: 12, 
+    color: '#718096' 
+  },
   etiquetaDespacho: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4,
+    paddingHorizontal: 6, 
+    paddingVertical: 2, 
+    borderRadius: 6, 
+    borderWidth: 1,
   },
-  textoEtiquetaDespacho: { fontSize: 11, fontWeight: '700' },
+  textoEtiquetaDespacho: { 
+    fontSize: 11, 
+    fontWeight: '700' 
+  },
 
-  controlesItem: { flexDirection: 'row', alignItems: 'center', gap: 6, marginRight: 10 },
-  botonCantidad: {
-    width: 30, height: 30, borderRadius: 8, backgroundColor: '#2b6cb0',
-    alignItems: 'center', justifyContent: 'center',
+  controlesItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 6, 
+    marginRight: 10 
   },
-  botonCantidadRojo: { backgroundColor: '#e53e3e' },
-  cantidadItem: { fontSize: 16, fontWeight: 'bold', color: '#1a1a2e', minWidth: 24, textAlign: 'center' },
-  subtotalItem: { fontSize: 14, fontWeight: '800', color: '#2b6cb0', minWidth: 80, textAlign: 'right' },
+  botonCantidad: {
+    width: 30, 
+    height: 30, 
+    borderRadius: 8, 
+    backgroundColor: '#2b6cb0',
+    alignItems: 'center', 
+    justifyContent: 'center',
+  },
+  botonCantidadRojo: { 
+    backgroundColor: '#e53e3e' 
+  },
+  cantidadItem: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e', 
+    minWidth: 24, 
+    textAlign: 'center' 
+  },
+  subtotalItem: { 
+    fontSize: 14, 
+    fontWeight: '800', 
+    color: '#2b6cb0',
+    minWidth: 80, 
+    textAlign: 'right' 
+  },
 
   barraInferior: {
-    backgroundColor: '#1a1a2e', paddingHorizontal: 16,
-    paddingVertical: 14, paddingBottom: 28, gap: 10,
+    backgroundColor: '#1a1a2e', 
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingBottom: 28, 
+    gap: 10,
   },
-  desgloseBar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  desgloseBar: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    gap: 6 
+  },
   chipDesglose: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#2b6cb0', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4,
+    backgroundColor: '#2b6cb0', 
+    borderRadius: 10, 
+    paddingHorizontal: 10, 
+    paddingVertical: 4,
   },
-  textoChipDesglose: { color: '#ffffff', fontSize: 12, fontWeight: '700' },
+  textoChipDesglose: { 
+    color: '#ffffff', 
+    fontSize: 12, 
+    fontWeight: '700' 
+  },
   seccionTotal: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', paddingBottom: 10,
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    borderBottomWidth: 1, 
+    borderBottomColor: 'rgba(255,255,255,0.1)', 
+    paddingBottom: 10,
   },
-  etiquetaTotalBar: { fontSize: 13, color: '#a0aec0', fontWeight: '600' },
-  valorTotalBar: { fontSize: 28, fontWeight: '900', color: '#ffffff' },
-  botonesBar: { flexDirection: 'row', gap: 10 },
+  etiquetaTotalBar: { 
+    fontSize: 13, 
+    color: '#a0aec0', 
+    fontWeight: '600' 
+  },
+  valorTotalBar: { 
+    fontSize: 28, 
+    fontWeight: '900', 
+    color: '#ffffff' 
+  },
+  botonesBar: { 
+    flexDirection: 'row', 
+    gap: 10 
+  },
   botonAgregar: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)', borderRadius: 14, paddingVertical: 14,
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)', 
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)', 
+    borderRadius: 14, 
+    paddingVertical: 14,
   },
-  textoBotonAgregar: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
+  textoBotonAgregar: { 
+    fontSize: 15, 
+    fontWeight: '700', 
+    color: '#ffffff' 
+  },
   botonCerrarCuenta: {
-    flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#38a169', borderRadius: 14, paddingVertical: 14,
+    flex: 2, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 8,
+    backgroundColor: '#38a169', 
+    borderRadius: 14, 
+    paddingVertical: 14,
   },
-  textoBotonCerrarCuenta: { fontSize: 15, fontWeight: '800', color: '#ffffff' },
-  botonDeshabilitado: { backgroundColor: '#4a5568', opacity: 0.5 },
+  textoBotonCerrarCuenta: { 
+    fontSize: 15, 
+    fontWeight: '800', 
+    color: '#ffffff'
+  },
+  botonDeshabilitado: { 
+    backgroundColor: '#4a5568', 
+    opacity: 0.5 
+  },
 });

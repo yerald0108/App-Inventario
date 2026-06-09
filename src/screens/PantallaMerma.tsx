@@ -422,130 +422,324 @@ export default function PantallaMerma() {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f7fafc' },
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f7fafc' 
+  },
   banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#fffaf0', borderBottomWidth: 1,
-    borderBottomColor: '#fbd38d', paddingHorizontal: 16, paddingVertical: 10,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8,
+    backgroundColor: '#fffaf0', 
+    borderBottomWidth: 1,
+    borderBottomColor: '#fbd38d', 
+    paddingHorizontal: 16, 
+    paddingVertical: 10,
   },
-  textoBanner: { fontSize: 13, color: '#c05621', fontWeight: '600' },
+  textoBanner: { 
+    fontSize: 13, 
+    color: '#c05621', 
+    fontWeight: '600' 
+  },
   contenedorBusqueda: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff',
-    margin: 16, paddingHorizontal: 12, borderRadius: 12, height: 50,
-    borderWidth: 1, borderColor: '#e2e8f0',
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#ffffff',
+    margin: 16, 
+    paddingHorizontal: 12, 
+    borderRadius: 12, 
+    height: 50,
+    borderWidth: 1, 
+    borderColor: '#e2e8f0',
   },
-  inputBusqueda: { flex: 1, fontSize: 16, color: '#2d3748' },
+  inputBusqueda: { 
+    flex: 1, 
+    fontSize: 16, 
+    color: '#2d3748' 
+  },
   tarjeta: {
-    backgroundColor: '#ffffff', borderRadius: 12, padding: 14,
-    marginHorizontal: 16, marginVertical: 5, flexDirection: 'row',
-    alignItems: 'center', elevation: 1, borderWidth: 2, borderColor: 'transparent',
+    backgroundColor: '#ffffff', 
+    borderRadius: 12, 
+    padding: 14,
+    marginHorizontal: 16, 
+    marginVertical: 5, 
+    flexDirection: 'row',
+    alignItems: 'center', 
+    elevation: 1, 
+    borderWidth: 2, 
+    borderColor: 'transparent',
   },
-  tarjetaActiva: { borderColor: '#c05621', backgroundColor: '#fffaf0' },
-  tarjetaAgotada: { opacity: 0.5 },
-  infoProducto: { flex: 1, marginRight: 12 },
-  nombreProducto: { fontSize: 16, fontWeight: '600', color: '#1a1a2e', marginBottom: 3 },
-  stockProducto: { fontSize: 13, color: '#718096' },
-  controles: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tarjetaActiva: { 
+    borderColor: '#c05621', 
+    backgroundColor: '#fffaf0' 
+  },
+  tarjetaAgotada: { 
+    opacity: 0.5 
+  },
+  infoProducto: { 
+    flex: 1, 
+    marginRight: 12 
+  },
+  nombreProducto: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: '#1a1a2e', 
+    marginBottom: 3 
+  },
+  stockProducto: { 
+    fontSize: 13, 
+    color: '#718096' 
+  },
+  controles: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 6 
+  },
   botonControl: {
-    width: 40, height: 40, borderRadius: 10,
-    backgroundColor: '#c05621', alignItems: 'center', justifyContent: 'center',
+    width: 40, 
+    height: 40, 
+    borderRadius: 10,
+    backgroundColor: '#c05621', 
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
-  botonDeshabilitado: { backgroundColor: '#cbd5e0' },
-  botonLimite: { backgroundColor: '#e53e3e' },
-  textoControl: { color: '#ffffff', fontSize: 22, fontWeight: 'bold', lineHeight: 26 },
+  botonDeshabilitado: { 
+    backgroundColor: '#cbd5e0' 
+  },
+  botonLimite: { 
+    backgroundColor: '#e53e3e' 
+  },
+  textoControl: { 
+    color: '#ffffff', 
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    lineHeight: 26 
+  },
   cantidad: {
-    fontSize: 18, fontWeight: 'bold', color: '#a0aec0',
-    textAlign: 'center', minWidth: 32,
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#a0aec0',
+    textAlign: 'center', 
+    minWidth: 32,
   },
-  cantidadActiva: { color: '#1a1a2e' },
+  cantidadActiva: { 
+    color: '#1a1a2e' 
+  },
   separador: {
-    flexDirection: 'row', alignItems: 'center',
-    marginHorizontal: 16, marginVertical: 8, gap: 8,
+    flexDirection: 'row', 
+    alignItems: 'center',
+    marginHorizontal: 16, 
+    marginVertical: 8, 
+    gap: 8,
   },
-  lineaSeparador: { flex: 1, height: 1, backgroundColor: '#e2e8f0' },
+  lineaSeparador: { 
+    flex: 1, 
+    height: 1, 
+    backgroundColor: '#e2e8f0' 
+  },
   textoSeparador: {
-    fontSize: 11, color: '#a0aec0', fontWeight: '600',
-    textTransform: 'uppercase', letterSpacing: 0.5,
+    fontSize: 11, 
+    color: '#a0aec0', 
+    fontWeight: '600',
+    textTransform: 'uppercase', 
+    letterSpacing: 0.5,
   },
   barraFlotante: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#7b341e', flexDirection: 'row',
-    alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingVertical: 14, paddingBottom: 28,
+    position: 'absolute', 
+    bottom: 0, 
+    left: 0, 
+    right: 0,
+    backgroundColor: '#7b341e', 
+    flexDirection: 'row',
+    alignItems: 'center', 
+    justifyContent: 'space-between',
+    paddingHorizontal: 20, 
+    paddingVertical: 14, 
+    paddingBottom: 28,
     elevation: 10,
   },
-  textoBarraProductos: { color: '#fed7aa', fontSize: 13, marginBottom: 2 },
-  textoBarraUnidades: { color: '#ffffff', fontSize: 18, fontWeight: 'bold' },
+  textoBarraProductos: { 
+    color: '#fed7aa', 
+    fontSize: 13, 
+    marginBottom: 2 
+  },
+  textoBarraUnidades: { 
+    color: '#ffffff', 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
   botonRegistrar: {
-    backgroundColor: '#c05621', borderRadius: 14,
-    paddingHorizontal: 24, paddingVertical: 14,
+    backgroundColor: '#c05621', 
+    borderRadius: 14,
+    paddingHorizontal: 24, 
+    paddingVertical: 14,
   },
-  textoBotonRegistrar: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
+  textoBotonRegistrar: { 
+    color: '#ffffff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
   badgeHeader: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#c05621', borderRadius: 14,
-    paddingHorizontal: 10, paddingVertical: 4, marginRight: 8,
+    flexDirection: 'row', 
+    alignItems: 'center',
+    backgroundColor: '#c05621', 
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 4, 
+    marginRight: 8,
   },
-  textoBadgeHeader: { color: '#ffffff', fontSize: 15, fontWeight: 'bold' },
-  textoUnidadesBadge: { color: '#fed7aa', fontSize: 12, fontWeight: '600' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  textoBadgeHeader: { 
+    color: '#ffffff', 
+    fontSize: 15, 
+    fontWeight: 'bold' 
+  },
+  textoUnidadesBadge: { 
+    color: '#fed7aa', 
+    fontSize: 12, 
+    fontWeight: '600' 
+  },
+  overlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.45)', 
+    justifyContent: 'flex-end' 
+  },
   modal: {
-    backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    paddingTop: 12, maxHeight: '92%', elevation: 20,
+    backgroundColor: '#ffffff', 
+    borderTopLeftRadius: 32, 
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24, 
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingTop: 12, 
+    maxHeight: '92%', 
+    elevation: 20,
   },
   barraArrastre: {
-    width: 40, height: 5, backgroundColor: '#e2e8f0',
-    borderRadius: 3, alignSelf: 'center', marginBottom: 16,
+    width: 40, 
+    height: 5, 
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3, 
+    alignSelf: 'center', 
+    marginBottom: 16,
   },
   tituloModal: {
-    fontSize: 22, fontWeight: 'bold', color: '#1a1a2e',
-    textAlign: 'center', marginBottom: 4,
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e',
+    textAlign: 'center', 
+    marginBottom: 4,
   },
   subtituloModal: {
-    fontSize: 14, color: '#c05621', textAlign: 'center',
-    fontWeight: '600', marginBottom: 16,
+    fontSize: 14, 
+    color: '#c05621', 
+    textAlign: 'center',
+    fontWeight: '600', 
+    marginBottom: 16,
   },
   resumenProductos: {
-    backgroundColor: '#fffaf0', borderRadius: 12, padding: 12,
-    borderWidth: 1, borderColor: '#fbd38d', marginBottom: 20,
+    backgroundColor: '#fffaf0', 
+    borderRadius: 12, 
+    padding: 12,
+    borderWidth: 1, 
+    borderColor: '#fbd38d', 
+    marginBottom: 20,
   },
   filaResumen: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', paddingVertical: 4,
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    alignItems: 'center', 
+    paddingVertical: 4,
   },
-  nombreResumen: { flex: 1, fontSize: 14, color: '#744210' },
-  cantidadResumen: { fontSize: 14, fontWeight: 'bold', color: '#c05621' },
+  nombreResumen: { 
+    flex: 1, 
+    fontSize: 14, 
+    color: '#744210' 
+  },
+  cantidadResumen: { 
+    fontSize: 14, 
+    fontWeight: 'bold', 
+    color: '#c05621' 
+  },
   etiquetaMotivo: {
-    fontSize: 15, fontWeight: '600', color: '#4a5568', marginBottom: 12,
+    fontSize: 15, 
+    fontWeight: '600', 
+    color: '#4a5568', 
+    marginBottom: 12,
   },
   gridMotivos: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20,
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    gap: 10, 
+    marginBottom: 20,
   },
   botonMotivo: {
-    width: '47%', paddingVertical: 14, paddingHorizontal: 12,
-    borderRadius: 14, borderWidth: 2, borderColor: '#fed7aa',
-    backgroundColor: '#fffaf0', alignItems: 'center', gap: 6,
+    width: '47%', 
+    paddingVertical: 14, 
+    paddingHorizontal: 12,
+    borderRadius: 14, 
+    borderWidth: 2, 
+    borderColor: '#fed7aa',
+    backgroundColor: '#fffaf0', 
+    alignItems: 'center', 
+    gap: 6,
   },
-  botonMotivoActivo: { backgroundColor: '#c05621', borderColor: '#c05621' },
-  textoBotonMotivo: { fontSize: 14, fontWeight: '700', color: '#c05621' },
-  textoBotonMotivoActivo: { color: '#ffffff' },
-  contenedorDetalle: { marginBottom: 20 },
+  botonMotivoActivo: { 
+    backgroundColor: '#c05621',
+    borderColor: '#c05621' 
+  },
+  textoBotonMotivo: { 
+    fontSize: 14, 
+    fontWeight: '700', 
+    color: '#c05621' 
+  },
+  textoBotonMotivoActivo: { 
+    color: '#ffffff' 
+  },
+  contenedorDetalle: {
+     marginBottom: 20 
+  },
   etiquetaDetalle: {
-    fontSize: 14, fontWeight: '600', color: '#4a5568', marginBottom: 8,
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#4a5568', 
+    marginBottom: 8,
   },
   inputDetalle: {
-    borderWidth: 1.5, borderColor: '#cbd5e0', borderRadius: 12,
-    padding: 14, fontSize: 15, color: '#1a1a2e', backgroundColor: '#f7fafc',
+    borderWidth: 1.5,
+    borderColor: '#cbd5e0', 
+    borderRadius: 12,
+    padding: 14, 
+    fontSize: 15, 
+    color: '#1a1a2e', 
+    backgroundColor: '#f7fafc',
     textAlignVertical: 'top',
   },
   botonConfirmar: {
-    backgroundColor: '#c05621', borderRadius: 14,
-    padding: 18, alignItems: 'center', marginTop: 8,
+    backgroundColor: '#c05621', 
+    borderRadius: 14,
+    padding: 18, 
+    alignItems: 'center', 
+    marginTop: 8,
   },
-  botonDeshabilitadoConfirmar: { backgroundColor: '#a0aec0' },
-  filaBotonConfirmar: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  textoBotonConfirmar: { color: '#ffffff', fontSize: 17, fontWeight: 'bold' },
-  botonCancelar: { padding: 16, alignItems: 'center', marginBottom: 8 },
-  textoBotonCancelar: { color: '#718096', fontSize: 16 },
+  botonDeshabilitadoConfirmar: { 
+    backgroundColor: '#a0aec0' 
+  },
+  filaBotonConfirmar: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10 
+  },
+  textoBotonConfirmar: { 
+    color: '#ffffff', 
+    fontSize: 17, 
+    fontWeight: 'bold' 
+  },
+  botonCancelar: { 
+    padding: 16, 
+    alignItems: 'center', 
+    marginBottom: 8 
+  },
+  textoBotonCancelar: { 
+    color: '#718096', 
+    fontSize: 16 
+  },
 });

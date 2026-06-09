@@ -126,14 +126,33 @@ export default function PantallaCierreTurno({ navigation }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll: { flex: 1 },
-  botonCerrar: {
-    backgroundColor: '#e53e3e', borderRadius: 16,
-    padding: 20, margin: 16, marginTop: 20,
-    alignItems: 'center', elevation: 3,
+  contenedor: { 
+    flex: 1,
+    backgroundColor: '#f0f4f8' 
+    },
+  centrado: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
   },
-  botonDeshabilitado: { backgroundColor: '#a0aec0' },
-  textoBotonCerrar: { color: '#ffffff', fontSize: 18, fontWeight: 'bold' },
+  scroll: { 
+    flex: 1 
+  },
+  botonCerrar: {
+    backgroundColor: '#e53e3e', 
+    borderRadius: 16,
+    padding: 20, 
+    margin: 16, 
+    marginTop: 20,
+    alignItems: 'center', 
+    elevation: 3,
+  },
+  botonDeshabilitado: { 
+    backgroundColor: '#a0aec0' 
+  },
+  textoBotonCerrar: { 
+    color: '#ffffff', 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
 });

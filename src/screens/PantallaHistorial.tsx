@@ -381,52 +381,141 @@ export default function PantallaHistorial({ navigation }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f7fafc' },
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f7fafc' 
+  },
   encabezado: {
-    backgroundColor: '#1a1a2e', padding: 12, alignItems: 'center',
+    backgroundColor: '#1a1a2e', 
+    padding: 12, 
+    alignItems: 'center',
   },
-  textoEncabezado: { fontSize: 14, color: '#a0aec0', fontWeight: '600' },
-  contenedorFiltros: { paddingBottom: 4 },
-  scrollChips: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  textoEncabezado: { 
+    fontSize: 14, 
+    color: '#a0aec0', 
+    fontWeight: '600'
+  },
+  contenedorFiltros: { 
+    paddingBottom: 4 
+  },
+  scrollChips: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 8, 
+    gap: 8 
+  },
   chip: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#e2e8f0',
+    paddingHorizontal: 14, 
+    paddingVertical: 7, 
+    borderRadius: 20,
+    backgroundColor: '#ffffff', 
+    borderWidth: 1.5, 
+    borderColor: '#e2e8f0',
   },
-  chipActivo: { backgroundColor: '#1a1a2e', borderColor: '#1a1a2e' },
-  textoChip: { fontSize: 14, color: '#4a5568', fontWeight: '600' },
-  textoChipActivo: { color: '#ffffff' },
+  chipActivo: { 
+    backgroundColor: '#1a1a2e', 
+    borderColor: '#1a1a2e' 
+  },
+  textoChip: { 
+    fontSize: 14, 
+    color: '#4a5568', 
+    fontWeight: '600'
+  },
+  textoChipActivo: { 
+    color: '#ffffff' 
+  },
   tarjeta: {
-    backgroundColor: '#ffffff', marginHorizontal: 16, marginTop: 12,
-    padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#edf2f7',
-    elevation: 2, shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2,
+    backgroundColor: '#ffffff', 
+    marginHorizontal: 16, 
+    marginTop: 12,
+    padding: 16, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    borderColor: '#edf2f7',
+    elevation: 2, 
+    shadowColor: '#000',
+    shadowOffset: { 
+      width: 0, 
+      height: 1 
+    }, 
+    shadowOpacity: 0.05, 
+    shadowRadius: 2,
   },
   filaSuperior: {
-    flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12,
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+     marginBottom: 12,
   },
-  fecha: { fontSize: 15, fontWeight: '700', color: '#2d3748' },
-  filaDuracion: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  textoDuracion: { fontSize: 12, color: '#a0aec0', fontWeight: '500' },
-  total: { fontSize: 16, fontWeight: '900', color: '#1a1a2e' },
+  fecha: { 
+    fontSize: 15, 
+    fontWeight: '700', 
+    color: '#2d3748' 
+  },
+  filaDuracion: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4, 
+    marginTop: 2 
+  },
+  textoDuracion: { 
+    fontSize: 12, 
+    color: '#a0aec0', 
+    fontWeight: '500' 
+  },
+  total: { 
+    fontSize: 16, 
+    fontWeight: '900', 
+    color: '#1a1a2e' 
+  },
   filaInferior: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f7fafc',
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    paddingTop: 12, 
+    borderTopWidth: 1, 
+    borderTopColor: '#f7fafc',
   },
-  metodosPago: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  textoDetalle: { fontSize: 13, color: '#718096', fontWeight: '500' },
-  separador: { marginHorizontal: 4, color: '#cbd5e0' },
-  contenedorEstado: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  estadoCuadre: { fontSize: 13, fontWeight: '700' },
+  metodosPago: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4 
+  },
+  textoDetalle: { 
+    fontSize: 13, 
+    color: '#718096', 
+    fontWeight: '500' 
+  },
+  separador: { 
+    marginHorizontal: 4, 
+    color: '#cbd5e0' 
+  },
+  contenedorEstado: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4 
+  },
+  estadoCuadre: { 
+    fontSize: 13, 
+    fontWeight: '700' 
+  },
   footerCarga: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, paddingVertical: 20,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    gap: 10, 
+    paddingVertical: 20,
   },
-  textoFooterCarga: { fontSize: 14, color: '#718096' },
+  textoFooterCarga: { 
+    fontSize: 14, 
+    color: '#718096' 
+  },
 });
 
 const estilosLocal = StyleSheet.create({
   desgloseTotal: {
-    fontSize: 11, color: '#a0aec0', marginTop: 2, fontStyle: 'italic',
+    fontSize: 11, 
+    color: '#a0aec0', 
+    marginTop: 2, 
+    fontStyle: 'italic',
   },
 });
 

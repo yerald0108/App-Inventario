@@ -364,24 +364,45 @@ export default function PantallaPedidos({ navigation }: Props) {
 }
 
 const estilos = StyleSheet.create({
-  contenedor: { flex: 1, backgroundColor: '#f0f4f8' },
-  centrado: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
+  contenedor: { 
+    flex: 1, 
+    backgroundColor: '#f0f4f8' 
+  },
+  centrado: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
   cabecera: {
     backgroundColor: '#1a1a2e',
     paddingHorizontal: 20,
     paddingVertical: 14,
     gap: 4,
   },
-  filaEstado: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dotVerde: {
-    width: 8, height: 8, borderRadius: 4, backgroundColor: '#68d391',
+  filaEstado: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
   },
-  textoCabecera: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
-  subtextoCabecera: { fontSize: 13, color: '#a0aec0' },
-
-  lista: { padding: 16, paddingBottom: 120 },
-
+  dotVerde: {
+    width: 8, 
+    height: 8, 
+    borderRadius: 4, 
+    backgroundColor: '#68d391',
+  },
+  textoCabecera: { 
+    fontSize: 15, 
+    fontWeight: '700', 
+    color: '#ffffff' 
+  },
+  subtextoCabecera: { 
+    fontSize: 13, 
+    color: '#a0aec0' 
+  },
+  lista: { 
+    padding: 16, 
+    paddingBottom: 120 
+  },
   tarjeta: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -394,65 +415,154 @@ const estilos = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
   },
-  franjaLateral: { width: 5 },
-  cuerpoTarjeta: { flex: 1, padding: 14, gap: 12 },
-  filaSuperior: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  franjaLateral: { 
+    width: 5 
+  },
+  cuerpoTarjeta: { 
+    flex: 1, 
+    padding: 14, 
+    gap: 12 
+  },
+  filaSuperior: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10 
+  },
   iconoMesa: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: '#ebf8ff', alignItems: 'center', justifyContent: 'center',
+    width: 36, 
+    height: 36, 
+    borderRadius: 10,
+    backgroundColor: '#ebf8ff', 
+    alignItems: 'center', 
+    justifyContent: 'center',
   },
-  nombrePedido: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#1a1a2e' },
+  nombrePedido: { 
+    flex: 1, 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e' 
+  },
   badgeTiempo: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4,
+    paddingHorizontal: 8, 
+    paddingVertical: 3, 
+    borderRadius: 8, 
+    borderWidth: 1,
   },
-  textoTiempo: { fontSize: 12, fontWeight: '700' },
+  textoTiempo: { 
+    fontSize: 12, 
+    fontWeight: '700' 
+  },
   filaInferior: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between',
   },
-  etiquetaTotal: { fontSize: 12, color: '#718096', marginBottom: 2 },
-  valorTotal: { fontSize: 18, fontWeight: '900', color: '#2b6cb0' },
-  botonesAccion: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  etiquetaTotal: { 
+    fontSize: 12, 
+    color: '#718096', 
+    marginBottom: 2 
+  },
+  valorTotal: { 
+    fontSize: 18, 
+    fontWeight: '900', 
+    color: '#2b6cb0' 
+  },
+  botonesAccion: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
+  },
   botonCancelarPedido: {
-    width: 36, height: 36, borderRadius: 8,
-    backgroundColor: '#fff5f5', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: '#fed7d7',
+    width: 36, 
+    height: 36, 
+    borderRadius: 8,
+    backgroundColor: '#fff5f5', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    borderWidth: 1, 
+    borderColor: '#fed7d7',
   },
   botonVerPedido: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#ebf8ff', borderWidth: 1, borderColor: '#bee3f8',
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4,
+    backgroundColor: '#ebf8ff', 
+    borderWidth: 1, 
+    borderColor: '#bee3f8',
+    borderRadius: 10, 
+    paddingHorizontal: 12, 
+    paddingVertical: 8,
   },
-  textoBotonVerPedido: { fontSize: 13, fontWeight: '700', color: '#2b6cb0' },
-
+  textoBotonVerPedido: { 
+    fontSize: 13, 
+    fontWeight: '700', 
+    color: '#2b6cb0' 
+  },
   fab: {
-    position: 'absolute', bottom: 24, right: 16, left: 16,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#2b6cb0', borderRadius: 18, paddingVertical: 18,
+    position: 'absolute', 
+    bottom: 24, 
+    right: 16, 
+    left: 16,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 10,
+    backgroundColor: '#2b6cb0', 
+    borderRadius: 18, 
+    paddingVertical: 18,
     elevation: 8,
     shadowColor: '#2b6cb0',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8,
+    shadowOffset: { 
+      width: 0, 
+      height: 4 
+    },
+    shadowOpacity: 0.4, 
+    shadowRadius: 8,
   },
-  textoFab: { color: '#ffffff', fontSize: 17, fontWeight: 'bold' },
+  textoFab: { 
+    color: '#ffffff', 
+    fontSize: 17, 
+    fontWeight: 'bold' 
+  },
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  overlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.45)', 
+    justifyContent: 'flex-end' 
+  },
   modal: {
-    backgroundColor: '#ffffff', borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    paddingHorizontal: 24, paddingBottom: Platform.OS === 'ios' ? 40 : 28,
-    paddingTop: 12, elevation: 20,
+    backgroundColor: '#ffffff', 
+    borderTopLeftRadius: 32, 
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24, 
+    paddingBottom: Platform.OS === 'ios' ? 40 : 28,
+    paddingTop: 12, 
+    elevation: 20,
   },
   barraArrastre: {
-    width: 40, height: 5, backgroundColor: '#e2e8f0',
-    borderRadius: 3, alignSelf: 'center', marginBottom: 20,
+    width: 40, 
+    height: 5, 
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3, 
+    alignSelf: 'center', 
+    marginBottom: 20,
   },
   tituloModal: {
-    fontSize: 24, fontWeight: 'bold', color: '#1a1a2e', textAlign: 'center', marginBottom: 6,
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#1a1a2e', 
+    textAlign: 'center', 
+    marginBottom: 6,
   },
   subtituloModal: {
-    fontSize: 14, color: '#718096', textAlign: 'center', marginBottom: 24,
+    fontSize: 14, 
+    color: '#718096', 
+    textAlign: 'center', 
+    marginBottom: 24,
   },
-
   // Grid de mesas
   gridMesas: {
     flexDirection: 'row',
@@ -480,7 +590,8 @@ const estilos = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   textoBotonMesa: {
-    fontSize: 14, fontWeight: '700', color: '#2b6cb0',
+    fontSize: 14, fontWeight: '700', 
+    color: '#2b6cb0',
   },
   textoBotonMesaSeleccionada: {
     color: '#ffffff',
@@ -497,15 +608,34 @@ const estilos = StyleSheet.create({
     paddingVertical: 2,
   },
   textoBadgeOcupada: {
-    fontSize: 10, fontWeight: '700', color: '#e53e3e',
+    fontSize: 10, 
+    fontWeight: '700', 
+    color: '#e53e3e',
   },
-
   botonConfirmar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#2b6cb0', borderRadius: 14, padding: 18, marginBottom: 12,
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 10,
+    backgroundColor: '#2b6cb0', 
+    borderRadius: 14, 
+    padding: 18, 
+    marginBottom: 12,
   },
-  botonDeshabilitado: { backgroundColor: '#a0aec0' },
-  textoBotonConfirmar: { color: '#ffffff', fontSize: 17, fontWeight: 'bold' },
-  botonCancelarModal: { alignItems: 'center', padding: 12 },
-  textoBotonCancelarModal: { fontSize: 15, color: '#718096' },
+  botonDeshabilitado: { 
+    backgroundColor: '#a0aec0' 
+  },
+  textoBotonConfirmar: { 
+    color: '#ffffff', 
+    fontSize: 17, 
+    fontWeight: 'bold' 
+  },
+  botonCancelarModal: { 
+    alignItems: 'center', 
+    padding: 12 
+  },
+  textoBotonCancelarModal: { 
+    fontSize: 15, 
+    color: '#718096' 
+  },
 });
