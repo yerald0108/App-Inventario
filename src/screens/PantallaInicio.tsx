@@ -12,6 +12,10 @@ import {
   obtenerTurnoAbierto,
   crearTurno,
   obtenerResumenTurno,
+  obtenerDiaActivo,
+  obtenerDiasTurno,
+  cerrarDiaActual,
+  DiaTurno,
 } from '../database/turnos';
 import { obtenerPedidosAbiertos } from '../database/pedidos';
 import { Turno } from '../types';
@@ -35,6 +39,14 @@ export default function PantallaInicio({ navigation }: Props) {
   const [cantidadDespachos, setCantidadDespachos] = useState(0);
   const abriendoTurnoRef = useRef(false);
 
+  // Estados multi-día
+  const [diaActivo, setDiaActivo] = useState<DiaTurno | null>(null);
+  const [diasPlanificados, setDiasPlanificados] = useState(1);
+  const [modalDiasVisible, setModalDiasVisible] = useState(false);
+  const [diasSeleccionados, setDiasSeleccionados] = useState(1);
+  const [cerrandoDia, setCerrandoDia] = useState(false);
+  const cerrandoDiaRef = useRef(false);
+
   useFocusEffect(
     useCallback(() => {
       async function cargarTurno() {
@@ -42,22 +54,22 @@ export default function PantallaInicio({ navigation }: Props) {
           const turno = await obtenerTurnoAbierto();
           setTurnoActual(turno);
           if (turno) {
+            const dia = await obtenerDiaActivo(turno.id);
+            setDiaActivo(dia);
+            setDiasPlanificados(turno.dias_planificados ?? 1);
+
             const [resumen, pedidos, despachos] = await Promise.all([
-              obtenerResumenTurno(turno.id),
+              obtenerResumenTurno(turno.id, dia?.id ?? null),
               obtenerPedidosAbiertos(turno.id),
               obtenerResumenExternoPorDespacho(turno.id),
             ]);
             setTotalesActuales({
-              // Sumamos las propinas al efectivo porque son dinero físico
-              // que también entra a la caja (independiente de si vienen de
-              // ventas normales o de pedidos 100% externos).
               efectivo: resumen.totalEfectivo + resumen.totalPropinas,
               transferencia: resumen.totalTransferencia,
             });
             setPedidosAbiertos(pedidos.length);
             setTotalPropinas(resumen.totalPropinas);
 
-            // Calcular total de despachos externos
             const totalExt = despachos.reduce(
               (acc: number, d: any) => acc + d.total_efectivo + d.total_transferencia,
               0
@@ -65,10 +77,12 @@ export default function PantallaInicio({ navigation }: Props) {
             setTotalDespachos(totalExt);
             setCantidadDespachos(despachos.length);
           } else {
+            setDiaActivo(null);
+            setDiasPlanificados(1);
             setPedidosAbiertos(0);
             setTotalDespachos(0);
             setCantidadDespachos(0);
-            setTotalPropinas(0); 
+            setTotalPropinas(0);
           }
         } catch (error) {
           console.error('Error al cargar turno:', error);
@@ -80,24 +94,8 @@ export default function PantallaInicio({ navigation }: Props) {
 
   // Muestra la advertencia de inventario y luego ejecuta la apertura si confirman
   function handleAbrirTurno() {
-    Alert.alert(
-      '¿Listo para iniciar el turno?',
-      'Antes de comenzar, asegúrate de:\n\n' +
-      '📦  Revisar que el inventario refleje el stock real.\n' +
-      '💰  Tener el precio de tus productos actualizado.\n' +
-      'El inventario al momento de iniciar se guardará como referencia del turno.',
-      [
-        {
-          text: 'Revisar inventario',
-          onPress: () => navigation.navigate('Inventario'),
-        },
-        {
-          text: 'Iniciar turno',
-          style: 'default',
-          onPress: ejecutarAperturaTurno,
-        },
-      ]
-    );
+    setDiasSeleccionados(1);
+    setModalDiasVisible(true);
   }
 
   // Lógica real de apertura, separada de la advertencia
@@ -105,11 +103,15 @@ export default function PantallaInicio({ navigation }: Props) {
     if (abriendoTurnoRef.current) return;
     abriendoTurnoRef.current = true;
     setAbriendoTurno(true);
+    setModalDiasVisible(false);
     try {
-      await crearTurno();
+      await crearTurno(diasSeleccionados);
       const turno = await obtenerTurnoAbierto();
       setTurnoActual(turno);
       if (turno) {
+        const dia = await obtenerDiaActivo(turno.id);
+        setDiaActivo(dia);
+        setDiasPlanificados(diasSeleccionados);
         setTotalesActuales({ efectivo: 0, transferencia: 0 });
         setPedidosAbiertos(0);
       }
@@ -120,6 +122,51 @@ export default function PantallaInicio({ navigation }: Props) {
       abriendoTurnoRef.current = false;
       setAbriendoTurno(false);
     }
+  }
+
+  async function handleCerrarDia() {
+    if (!turnoActual || !diaActivo || cerrandoDiaRef.current) return;
+
+    const numeroDia = diaActivo.numero_dia;
+    const totalDias = diasPlanificados;
+
+    Alert.alert(
+      `Cerrar Día ${numeroDia}`,
+      `¿Confirmas el cierre del Día ${numeroDia} de ${totalDias}?\n\nEl Día ${numeroDia + 1} comenzará con el inventario actual.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Cerrar día',
+          style: 'destructive',
+          onPress: async () => {
+            cerrandoDiaRef.current = true;
+            setCerrandoDia(true);
+            try {
+              await cerrarDiaActual(
+                turnoActual.id,
+                diaActivo.id,
+                numeroDia,
+                totalDias
+              );
+              // Recargar para mostrar el nuevo día activo
+              const dia = await obtenerDiaActivo(turnoActual.id);
+              setDiaActivo(dia);
+              setTotalesActuales({ efectivo: 0, transferencia: 0 });
+              Alert.alert(
+                `✅ Día ${numeroDia} cerrado`,
+                `El Día ${numeroDia + 1} ha comenzado.`
+              );
+            } catch (error) {
+              Alert.alert('Error', 'No se pudo cerrar el día.');
+              console.error(error);
+            } finally {
+              cerrandoDiaRef.current = false;
+              setCerrandoDia(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   function handleAccionSinTurno(nombreAccion: string) {
@@ -176,6 +223,14 @@ export default function PantallaInicio({ navigation }: Props) {
             <Text style={estilos.tarjetaInfo}>
               Iniciado: {formatearFecha(turnoActual.fecha_inicio)}
             </Text>
+            {diasPlanificados > 1 && diaActivo && (
+              <View style={estilosLocal.badgeDia}>
+                <Ionicons name="calendar" size={14} color="#2b6cb0" />
+                <Text style={estilosLocal.textoBadgeDia}>
+                  Día {diaActivo.numero_dia} de {diasPlanificados}
+                </Text>
+              </View>
+            )}
             <View style={estilos.filaTotales}>
             <View style={estilos.colTotal}>
               <Text style={estilos.totalEtiqueta}>💵 Efectivo</Text>
@@ -238,6 +293,26 @@ export default function PantallaInicio({ navigation }: Props) {
                 <Text style={estilos.textoBotonAbrir}>INICIAR NUEVO TURNO</Text>
               </>
             )}
+          </TouchableOpacity>
+        )}
+
+        {/* ── Botón cerrar día (solo si hay más de 1 día y no es el último) ── */}
+        {turnoActual && diaActivo && diasPlanificados > 1 && diaActivo.numero_dia < diasPlanificados && (
+          <TouchableOpacity
+            style={[
+              estilos.botonCerrarDia,
+              cerrandoDia && estilos.botonAbrirTurnoDeshabilitado,
+            ]}
+            onPress={handleCerrarDia}
+            disabled={cerrandoDia}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="moon" size={22} color="#ffffff" />
+            <Text style={estilos.textoBotonAbrir}>
+              {cerrandoDia
+                ? 'CERRANDO DÍA...'
+                : `CERRAR DÍA ${diaActivo.numero_dia} DE ${diasPlanificados}`}
+            </Text>
           </TouchableOpacity>
         )}
 
@@ -397,6 +472,67 @@ export default function PantallaInicio({ navigation }: Props) {
           )}
         </View>
       </ScrollView>
+
+      {/* ── Modal: elegir cantidad de días del turno ── */}
+      {modalDiasVisible && (
+        <View style={estilosModal.overlay}>
+          <View style={estilosModal.modal}>
+            <Text style={estilosModal.titulo}>¿Cuántos días durará este turno?</Text>
+            <Text style={estilosModal.subtitulo}>
+              Cada día tendrá su propio registro de ventas
+            </Text>
+
+            <View style={estilosModal.gridDias}>
+              {[1, 2, 3, 4, 5, 6, 7].map((dia) => (
+                <TouchableOpacity
+                  key={dia}
+                  style={[
+                    estilosModal.botonDia,
+                    diasSeleccionados === dia && estilosModal.botonDiaActivo,
+                  ]}
+                  onPress={() => setDiasSeleccionados(dia)}
+                >
+                  <Text style={[
+                    estilosModal.textoDia,
+                    diasSeleccionados === dia && estilosModal.textoDiaActivo,
+                  ]}>
+                    {dia}
+                  </Text>
+                  <Text style={[
+                    estilosModal.textoLabelDia,
+                    diasSeleccionados === dia && estilosModal.textoDiaActivo,
+                  ]}>
+                    {dia === 1 ? 'día' : 'días'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                estilosModal.botonConfirmar,
+                abriendoTurno && { opacity: 0.7 },
+              ]}
+              onPress={ejecutarAperturaTurno}
+              disabled={abriendoTurno}
+            >
+              <Ionicons name="play" size={20} color="#ffffff" />
+              <Text style={estilosModal.textoBotonConfirmar}>
+                {abriendoTurno
+                  ? 'INICIANDO...'
+                  : `INICIAR TURNO DE ${diasSeleccionados} ${diasSeleccionados === 1 ? 'DÍA' : 'DÍAS'}`}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={estilosModal.botonCancelar}
+              onPress={() => setModalDiasVisible(false)}
+            >
+              <Text style={estilosModal.textoBotonCancelar}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -522,6 +658,23 @@ const estilos = StyleSheet.create({
     fontWeight: '900' 
   },
 
+  // Botón cerrar día
+  botonCerrarDia: {
+    backgroundColor: '#2b6cb0',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+
   // Grid
   grid: { 
     flexDirection: 'row', 
@@ -625,21 +778,131 @@ const estilosLocal = StyleSheet.create({
     fontStyle: 'italic',
   },
   notaPropinas: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  backgroundColor: '#fffff0',
-  borderWidth: 1,
-  borderColor: '#f6e05e',
-  borderRadius: 10,
-  paddingHorizontal: 12,
-  paddingVertical: 8,
-  marginTop: 8,
-},
-textoNotaPropinas: {
-  flex: 1,
-  fontSize: 13,
-  color: '#b7791f',
-  fontWeight: '600',
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fffff0',
+    borderWidth: 1,
+    borderColor: '#f6e05e',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 8,
+  },
+  textoNotaPropinas: {
+    flex: 1,
+    fontSize: 13,
+    color: '#b7791f',
+    fontWeight: '600',
+  },
+  badgeDia: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#ebf8ff',
+    borderWidth: 1,
+    borderColor: '#bee3f8',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  textoBadgeDia: {
+    fontSize: 13,
+    color: '#2b6cb0',
+    fontWeight: '700',
+  },
+});
+
+const estilosModal = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  titulo: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  subtitulo: {
+    fontSize: 13,
+    color: '#718096',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  gridDias: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    justifyContent: 'center',
+    marginBottom: 24,
+  },
+  botonDia: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    backgroundColor: '#f7fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botonDiaActivo: {
+    backgroundColor: '#1a1a2e',
+    borderColor: '#1a1a2e',
+  },
+  textoDia: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2d3748',
+  },
+  textoLabelDia: {
+    fontSize: 11,
+    color: '#718096',
+    fontWeight: '600',
+  },
+  textoDiaActivo: {
+    color: '#ffffff',
+  },
+  botonConfirmar: {
+    backgroundColor: '#3182ce',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  textoBotonConfirmar: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  botonCancelar: {
+    padding: 12,
+    alignItems: 'center',
+  },
+  textoBotonCancelar: {
+    color: '#718096',
+    fontSize: 15,
+  },
 });

@@ -7,7 +7,8 @@ import { ItemCesta } from '../types';
  */
 export async function registrarSalidaFamiliar(
   items: ItemCesta[],
-  turnoId: number
+  turnoId: number,
+  diaTurnoId: number | null = null
 ): Promise<void> {
   const fechaHora = new Date().toISOString();
   const grupoId = `FAM-${Date.now()}`;
@@ -17,9 +18,11 @@ export async function registrarSalidaFamiliar(
       for (const item of items) {
         await db.runAsync(
           `INSERT INTO movimientos 
-            (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total, turno_id, venta_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          ['salida_familiar', fechaHora, item.producto.id, item.cantidad, 0, 0, turnoId, grupoId]
+            (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total, 
+             turno_id, venta_id, dia_turno_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ['salida_familiar', fechaHora, item.producto.id, item.cantidad, 
+           0, 0, turnoId, grupoId, diaTurnoId]
         );
         await db.runAsync(
           'UPDATE productos SET existencia = existencia - ? WHERE id = ?',

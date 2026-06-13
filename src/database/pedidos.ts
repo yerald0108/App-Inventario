@@ -2,7 +2,7 @@ import { getDatabase } from '../database/database';
 import { Producto } from '../types';
 import { ProductoDespacho } from './despachos';
 import { sumaSegura } from '../utils';
-
+import { obtenerDiaActivo } from './turnos';
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export type EstadoPedido = 'abierto' | 'cerrado' | 'cancelado';
@@ -276,7 +276,8 @@ export async function cerrarPedidoComoVenta(
   pedidoId: number,
   metodoPago: 'efectivo' | 'transferencia',
   turnoId: number,
-  propina: number = 0
+  propina: number = 0,
+  diaTurnoId: number | null = null
 ): Promise<void> {
   try {
     const db = getDatabase();
@@ -333,8 +334,8 @@ export async function cerrarPedidoComoVenta(
         await db.runAsync(
           `INSERT INTO movimientos
             (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total,
-            metodo_pago, turno_id, venta_id, propina)
-          VALUES ('venta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            metodo_pago, turno_id, venta_id, propina, dia_turno_id)
+          VALUES ('venta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             fechaHora,
             item.producto_id,
@@ -346,6 +347,7 @@ export async function cerrarPedidoComoVenta(
             turnoId,
             ventaId,
             propina,
+            diaTurnoId,
           ]
         );
 
@@ -402,9 +404,9 @@ export async function cerrarPedidoComoVenta(
       await db.runAsync(
         `INSERT INTO movimientos
           (tipo, fecha_hora, producto_id, cantidad, precio_aplicado,
-          total, metodo_pago, turno_id, venta_id, propina)
-        VALUES ('propina', ?, NULL, 0, 0, 0, ?, ?, ?, ?)`,
-        [fechaHora, metodoPago, turnoId, ventaId, propina]
+          total, metodo_pago, turno_id, venta_id, propina, dia_turno_id)
+        VALUES ('propina', ?, NULL, 0, 0, 0, ?, ?, ?, ?, ?)`,
+        [fechaHora, metodoPago, turnoId, ventaId, propina, diaTurnoId]
       );
     }
 

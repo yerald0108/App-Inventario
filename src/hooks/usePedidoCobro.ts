@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { PedidoConItems } from '../database/pedidos';
 import { cerrarPedidoComoVenta } from '../database/pedidos';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import { formatCUP, sumaSegura } from '../utils';
 import { useProductos } from '../context/ProductosContext';
 import { obtenerDespachos, Despacho } from '../database/despachos';
@@ -81,7 +81,9 @@ export function usePedidoCobro({
       const cambioFinal = cambioParam ?? 0;
       const propinaFinal = propinaParam ?? 0;
 
-      await cerrarPedidoComoVenta(pedidoId, metodoFinal, turno.id, propinaFinal);
+      const diaActivo = await obtenerDiaActivo(turno.id);
+      await cerrarPedidoComoVenta(pedidoId, metodoFinal, turno.id, propinaFinal, diaActivo?.id ?? null);
+      
       await cargarProductos();
       onCobrado();
 

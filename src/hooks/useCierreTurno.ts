@@ -3,7 +3,16 @@ import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { obtenerTurnoAbierto, obtenerResumenTurno, cerrarTurno, obtenerPedidosAbiertosTurno, obtenerInventarioInicialTurno } from '../database/turnos';
+import { 
+  obtenerTurnoAbierto, 
+  obtenerResumenTurno, 
+  cerrarTurno, 
+  obtenerPedidosAbiertosTurno, 
+  obtenerInventarioInicialTurno,
+  obtenerResumenTodosLosDias,
+  obtenerDiaActivo,
+  DiaTurno,
+} from '../database/turnos';
 import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils';
@@ -46,6 +55,19 @@ export function useCierreTurno(
   const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
   const [inventarioInicial, setInventarioInicial] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [totalPropinas, setTotalPropinas] = useState(0);
+  // Estados multi-día
+  const [resumenDias, setResumenDias] = useState<{
+    diaTurnoId: number;
+    numeroDia: number;
+    fecha_inicio: string;
+    fecha_cierre: string | null;
+    totalEfectivo: number;
+    totalTransferencia: number;
+    cantidadVentas: number;
+    totalPropinas: number;
+  }[]>([]);
+  const [diasPlanificados, setDiasPlanificados] = useState(1);
+  const [diaActivo, setDiaActivo] = useState<DiaTurno | null>(null);
   const procesandoRef = useRef(false);
   const { expandidos: mermasExpandidas, toggle: toggleMerma } = useExpandable();
 
@@ -78,14 +100,20 @@ export function useCierreTurno(
         return;
       }
       setTurnoId(turno.id);
+      setDiasPlanificados(turno.dias_planificados ?? 1);
 
-      const [resumen, despachos, pedidosOpen, listaMermas, inventIni] = await Promise.all([
-        obtenerResumenTurno(turno.id),
-        obtenerResumenExternoPorDespacho(turno.id),
-        obtenerPedidosAbiertosTurno(turno.id),
-        obtenerMermasTurno(turno.id),
-        obtenerInventarioInicialTurno(turno.id),
-      ]);
+      const dia = await obtenerDiaActivo(turno.id);
+      setDiaActivo(dia);
+
+      const [resumen, despachos, pedidosOpen, listaMermas, inventIni, resumenMultiDia] = 
+        await Promise.all([
+          obtenerResumenTurno(turno.id, null), // null = todos los días para el cierre
+          obtenerResumenExternoPorDespacho(turno.id),
+          obtenerPedidosAbiertosTurno(turno.id),
+          obtenerMermasTurno(turno.id),
+          obtenerInventarioInicialTurno(turno.id),
+          obtenerResumenTodosLosDias(turno.id),
+        ]);
 
       setPedidosAbiertos(pedidosOpen);
       setTotalEfectivo(resumen.totalEfectivo);
@@ -99,6 +127,7 @@ export function useCierreTurno(
       setMermas(listaMermas);
       setInventarioInicial(inventIni);
       setTotalPropinas(resumen.totalPropinas);
+      setResumenDias(resumenMultiDia.dias);
     } catch (error) {
       Alert.alert('Error', 'No se pudo cargar el resumen del turno.');
       console.error(error);
@@ -222,6 +251,10 @@ export function useCierreTurno(
     inventarioInicial,
     mermasExpandidas,
     toggleMerma,
+    // Multi-día
+    resumenDias,
+    diasPlanificados,
+    diaActivo,
     // Acciones
     cargarResumen,
     handleRefresh,

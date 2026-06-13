@@ -11,6 +11,7 @@ import SeccionMermas from '../components/cierre/SeccionMermas';
 import SeccionInventario from '../components/cierre/SeccionInventario';
 import SeccionAdvertenciaPedidos from '../components/cierre/SeccionAdvertenciaPedidos';
 import SeccionInventarioInicial from '../components/cierre/SeccionInventarioInicial';
+import SeccionResumenDias from '../components/cierre/SeccionResumenDias';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
@@ -43,6 +44,9 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     calcularDiferencia,
     handleCerrarTurno,
     inventarioInicial,
+    resumenDias,
+    diasPlanificados,
+    diaActivo,
   } = useCierreTurno(navigation);
 
   if (cargando || sinTurno) {
@@ -71,6 +75,12 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           />
         }
       >
+
+        <SeccionResumenDias
+          dias={resumenDias}
+          diasPlanificados={diasPlanificados}
+        />
+
         <SeccionResumenVentas
           cantidadVentas={cantidadVentas}
           cantidadAnulaciones={cantidadAnulaciones}

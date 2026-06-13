@@ -11,7 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
 import { registrarSalidaFamiliar } from '../database/salidas_familiares';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import { useCestaStore, NAMESPACE_SALIDA_FAMILIAR} from '../store/useCestaStore';
 import { useProductos } from '../context/ProductosContext';
 import ProductoVenta from '../components/ProductoVenta';
@@ -126,7 +126,8 @@ export default function PantallaSalidaFamiliar() {
         return;
       }
       
-      await registrarSalidaFamiliar(items, turno.id);
+      const diaActivo = await obtenerDiaActivo(turno.id);
+      await registrarSalidaFamiliar(items, turno.id, diaActivo?.id ?? null);
       await cargarProductos(); 
 
       // Limpiar cesta y recargar inventario

@@ -10,7 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Producto, ItemCesta } from '../types';
 import { registrarVenta } from '../database/ventas';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import { useProductos } from '../context/ProductosContext';
 import { useCestaStore, NAMESPACE_VENTA } from '../store/useCestaStore';
 import ProductoVenta from '../components/ProductoVenta';
@@ -127,7 +127,8 @@ export default function PantallaVenta({ navigation }: Props) {
         return;
       }
 
-      await registrarVenta(items, metodoPago, turno.id, propina);
+      const diaActivo = await obtenerDiaActivo(turno.id);
+      await registrarVenta(items, metodoPago, turno.id, propina, diaActivo?.id ?? null);
       await cargarProductos(busqueda); 
       setUltimoMetodoPago(metodoPago);
       setModalCobroVisible(false);

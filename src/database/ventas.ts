@@ -12,7 +12,8 @@ export async function registrarVenta(
   items: { producto: Producto; cantidad: number }[],
   metodoPago: 'efectivo' | 'transferencia',
   turnoId: number,
-  propina: number = 0
+  propina: number = 0,
+  diaTurnoId: number | null = null
 ): Promise<void> {
   const ventaId = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();
@@ -50,8 +51,9 @@ export async function registrarVenta(
 
       await db.runAsync(
         `INSERT INTO movimientos
-          (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total, metodo_pago, turno_id, venta_id, propina)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, precio_costo, total, 
+           metodo_pago, turno_id, venta_id, propina, dia_turno_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           'venta',
           fechaHora,
@@ -64,6 +66,7 @@ export async function registrarVenta(
           turnoId,
           ventaId,
           propina,
+          diaTurnoId,
         ]
       );
 

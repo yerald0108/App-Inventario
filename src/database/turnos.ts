@@ -2,6 +2,15 @@ import { getDatabase } from '../database/database';
 import { sumaSegura, calcularTotalItemsBD } from '../utils';
 import { Turno } from '../types';
 
+export interface DiaTurno {
+  id: number;
+  turno_id: number;
+  numero_dia: number;
+  fecha_inicio: string;
+  fecha_cierre: string | null;
+  cerrado: number;
+}
+
 // Obtener el turno actualmente abierto
 export async function obtenerTurnoAbierto(): Promise<Turno | null> {
   const db = getDatabase();
@@ -11,7 +20,7 @@ export async function obtenerTurnoAbierto(): Promise<Turno | null> {
 }
 
 // Crear un nuevo turno
-export async function crearTurno(): Promise<number> {
+export async function crearTurno(diasPlanificados: number = 1): Promise<number> {
   const db = getDatabase();
   const turnoExistente = await obtenerTurnoAbierto();
   if (turnoExistente) {
@@ -20,10 +29,17 @@ export async function crearTurno(): Promise<number> {
 
   const fechaInicio = new Date().toISOString();
   const resultado = await db.runAsync(
-    'INSERT INTO turnos (fecha_inicio, cerrado) VALUES (?, 0)',
-    [fechaInicio]
+    'INSERT INTO turnos (fecha_inicio, cerrado, dias_planificados) VALUES (?, 0, ?)',
+    [fechaInicio, diasPlanificados]
   );
   const nuevoTurnoId = resultado.lastInsertRowId;
+
+  // Crear el primer día del turno
+  await db.runAsync(
+    `INSERT INTO dias_turno (turno_id, numero_dia, fecha_inicio, cerrado)
+     VALUES (?, 1, ?, 0)`,
+    [nuevoTurnoId, fechaInicio]
+  );
 
   // Guardar snapshot del inventario en este momento
   const productosActuales = await db.getAllAsync<{
@@ -45,23 +61,129 @@ export async function crearTurno(): Promise<number> {
   return nuevoTurnoId;
 }
 
+// Obtener el día activo (abierto) de un turno
+export async function obtenerDiaActivo(turnoId: number): Promise<DiaTurno | null> {
+  const db = getDatabase();
+  return await db.getFirstAsync<DiaTurno>(
+    `SELECT * FROM dias_turno 
+     WHERE turno_id = ? AND cerrado = 0 
+     ORDER BY numero_dia DESC LIMIT 1`,
+    [turnoId]
+  );
+}
+
+// Obtener todos los días de un turno
+export async function obtenerDiasTurno(turnoId: number): Promise<DiaTurno[]> {
+  const db = getDatabase();
+  return await db.getAllAsync<DiaTurno>(
+    `SELECT * FROM dias_turno WHERE turno_id = ? ORDER BY numero_dia ASC`,
+    [turnoId]
+  );
+}
+
+// Cerrar el día actual y crear el siguiente si corresponde
+export async function cerrarDiaActual(
+  turnoId: number,
+  diaId: number,
+  numeroDia: number,
+  diasPlanificados: number
+): Promise<'dia_cerrado' | 'turno_listo_para_cerrar'> {
+  const db = getDatabase();
+  const fechaCierre = new Date().toISOString();
+
+  await db.runAsync(
+    `UPDATE dias_turno SET cerrado = 1, fecha_cierre = ? WHERE id = ?`,
+    [fechaCierre, diaId]
+  );
+
+  // Si quedan días por trabajar, crear el siguiente
+  if (numeroDia < diasPlanificados) {
+    const siguienteNumero = numeroDia + 1;
+    await db.runAsync(
+      `INSERT INTO dias_turno (turno_id, numero_dia, fecha_inicio, cerrado)
+       VALUES (?, ?, ?, 0)`,
+      [turnoId, siguienteNumero, new Date().toISOString()]
+    );
+    return 'dia_cerrado';
+  }
+
+  // Era el último día — el turno está listo para cerrar
+  return 'turno_listo_para_cerrar';
+}
+
+// Obtener resumen de un día específico
+export async function obtenerResumenDia(diaTurnoId: number, turnoId: number) {
+  const db = getDatabase();
+
+  const efectivo = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(total), 0) as total 
+     FROM movimientos 
+     WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta' AND metodo_pago = 'efectivo'`,
+    [turnoId, diaTurnoId]
+  );
+
+  const transferencia = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(total), 0) as total 
+     FROM movimientos 
+     WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta' AND metodo_pago = 'transferencia'`,
+    [turnoId, diaTurnoId]
+  );
+
+  const conteoVentas = await db.getFirstAsync<{ cantidad: number }>(
+    `SELECT COUNT(DISTINCT venta_id) as cantidad
+     FROM movimientos
+     WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta'`,
+    [turnoId, diaTurnoId]
+  );
+
+  const totalPropinas = await db.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(propina_unica), 0) as total
+     FROM (
+       SELECT MAX(propina) as propina_unica
+       FROM movimientos
+       WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta' AND propina > 0
+       GROUP BY venta_id
+
+       UNION ALL
+
+       SELECT propina as propina_unica
+       FROM movimientos
+       WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'propina' AND propina > 0
+     )`,
+    [turnoId, diaTurnoId, turnoId, diaTurnoId]
+  );
+
+  return {
+    totalEfectivo: efectivo?.total ?? 0,
+    totalTransferencia: transferencia?.total ?? 0,
+    cantidadVentas: conteoVentas?.cantidad ?? 0,
+    totalPropinas: totalPropinas?.total ?? 0,
+  };
+}
+
 // Obtener resumen completo de un turno para el cierre
-export async function obtenerResumenTurno(turnoId: number) {
+export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | null = null) {
   const db = getDatabase();
   // Total en efectivo (solo ventas no canceladas)
   const efectivo = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(total), 0) as total 
      FROM movimientos 
-     WHERE turno_id = ? AND tipo = 'venta' AND metodo_pago = 'efectivo'`,
-    [turnoId]
+     WHERE turno_id = ? 
+       AND tipo = 'venta' 
+       AND metodo_pago = 'efectivo'
+       AND (? IS NULL OR dia_turno_id = ?)`,
+    [turnoId, diaTurnoId, diaTurnoId]
   );
 
   // Total en transferencia (solo ventas no canceladas)
   const transferencia = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(total), 0) as total 
      FROM movimientos 
-     WHERE turno_id = ? AND tipo = 'venta' AND metodo_pago = 'transferencia'`,
-    [turnoId]
+     WHERE turno_id = ? 
+       AND tipo = 'venta' 
+       AND metodo_pago = 'transferencia'
+       AND (? IS NULL OR dia_turno_id = ?)`,
+    [turnoId, diaTurnoId, diaTurnoId]
   );
 
   // Lista de entradas del turno
@@ -123,25 +245,24 @@ export async function obtenerResumenTurno(turnoId: number) {
   const totalPropinas = await db.getFirstAsync<{ total: number }>(
     `SELECT COALESCE(SUM(propina_unica), 0) as total
     FROM (
-      -- Propinas de ventas normales.
-      -- La propina se repite en cada fila del mismo venta_id (una por producto).
-      -- MAX() toma el valor único sin importar cuántos items tenga la venta.
-      -- INVARIANTE: todas las filas del mismo venta_id tienen el mismo valor de propina.
       SELECT MAX(propina) as propina_unica
       FROM movimientos
-      WHERE turno_id = ? AND tipo = 'venta' AND propina > 0
+      WHERE turno_id = ? 
+        AND tipo = 'venta' 
+        AND propina > 0
+        AND (? IS NULL OR dia_turno_id = ?)
       GROUP BY venta_id
 
       UNION ALL
 
-      -- Propinas de pedidos 100% externos (tipo 'propina', un registro por caso).
-      -- Estos no tienen venta_id compartido con otros movimientos de tipo 'venta',
-      -- por lo que no necesitan deduplicación.
       SELECT propina as propina_unica
       FROM movimientos
-      WHERE turno_id = ? AND tipo = 'propina' AND propina > 0
+      WHERE turno_id = ? 
+        AND tipo = 'propina' 
+        AND propina > 0
+        AND (? IS NULL OR dia_turno_id = ?)
     )`,
-    [turnoId, turnoId]
+    [turnoId, diaTurnoId, diaTurnoId, turnoId, diaTurnoId, diaTurnoId]
   );
 
   return {
@@ -361,6 +482,98 @@ export async function obtenerVentasDetalleTurno(turnoId: number) {
   }
 
   return Array.from(mapaVentas.values());
+}
+
+// Obtener resumen completo de todos los días de un turno (para cierre)
+export async function obtenerResumenTodosLosDias(turnoId: number): Promise<{
+  dias: {
+    diaTurnoId: number;
+    numeroDia: number;
+    fecha_inicio: string;
+    fecha_cierre: string | null;
+    totalEfectivo: number;
+    totalTransferencia: number;
+    cantidadVentas: number;
+    totalPropinas: number;
+  }[];
+  totalGeneral: {
+    totalEfectivo: number;
+    totalTransferencia: number;
+    cantidadVentas: number;
+    totalPropinas: number;
+  };
+}> {
+  const db = getDatabase();
+
+  // Traer todos los días del turno
+  const dias = await db.getAllAsync<DiaTurno>(
+    `SELECT * FROM dias_turno WHERE turno_id = ? ORDER BY numero_dia ASC`,
+    [turnoId]
+  );
+
+  const resumenDias = [];
+
+  for (const dia of dias) {
+    const efectivo = await db.getFirstAsync<{ total: number }>(
+      `SELECT COALESCE(SUM(total), 0) as total 
+       FROM movimientos 
+       WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta' AND metodo_pago = 'efectivo'`,
+      [turnoId, dia.id]
+    );
+
+    const transferencia = await db.getFirstAsync<{ total: number }>(
+      `SELECT COALESCE(SUM(total), 0) as total 
+       FROM movimientos 
+       WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta' AND metodo_pago = 'transferencia'`,
+      [turnoId, dia.id]
+    );
+
+    const conteoVentas = await db.getFirstAsync<{ cantidad: number }>(
+      `SELECT COUNT(DISTINCT venta_id) as cantidad
+       FROM movimientos
+       WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta'`,
+      [turnoId, dia.id]
+    );
+
+    const propinas = await db.getFirstAsync<{ total: number }>(
+      `SELECT COALESCE(SUM(propina_unica), 0) as total
+       FROM (
+         SELECT MAX(propina) as propina_unica
+         FROM movimientos
+         WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'venta' AND propina > 0
+         GROUP BY venta_id
+         UNION ALL
+         SELECT propina as propina_unica
+         FROM movimientos
+         WHERE turno_id = ? AND dia_turno_id = ? AND tipo = 'propina' AND propina > 0
+       )`,
+      [turnoId, dia.id, turnoId, dia.id]
+    );
+
+    resumenDias.push({
+      diaTurnoId: dia.id,
+      numeroDia: dia.numero_dia,
+      fecha_inicio: dia.fecha_inicio,
+      fecha_cierre: dia.fecha_cierre,
+      totalEfectivo: efectivo?.total ?? 0,
+      totalTransferencia: transferencia?.total ?? 0,
+      cantidadVentas: conteoVentas?.cantidad ?? 0,
+      totalPropinas: propinas?.total ?? 0,
+    });
+  }
+
+  // Calcular totales generales sumando todos los días
+  const totalGeneral = resumenDias.reduce(
+    (acc, dia) => ({
+      totalEfectivo: acc.totalEfectivo + dia.totalEfectivo,
+      totalTransferencia: acc.totalTransferencia + dia.totalTransferencia,
+      cantidadVentas: acc.cantidadVentas + dia.cantidadVentas,
+      totalPropinas: acc.totalPropinas + dia.totalPropinas,
+    }),
+    { totalEfectivo: 0, totalTransferencia: 0, cantidadVentas: 0, totalPropinas: 0 }
+  );
+
+  return { dias: resumenDias, totalGeneral };
 }
 
 // Obtener pedidos abiertos de un turno (para advertir antes del cierre)

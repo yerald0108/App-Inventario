@@ -12,7 +12,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
 import { Producto } from '../types';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import {
   registrarMerma, MotivoMerma,
   MOTIVOS_MERMA, ItemMerma
@@ -147,11 +147,13 @@ export default function PantallaMerma() {
         cantidad: i.cantidad,
       }));
 
+      const diaActivo = await obtenerDiaActivo(turno.id);
       await registrarMerma(
         itemsMerma,
         motivoSeleccionado,
         motivoSeleccionado === 'otro' ? motivoDetalle.trim() : null,
-        turno.id
+        turno.id,
+        diaActivo?.id ?? null
       );
 
       await cargarProductos();

@@ -36,7 +36,8 @@ export async function registrarMerma(
   items: ItemMerma[],
   motivo: MotivoMerma,
   motivoDetalle: string | null,
-  turnoId: number
+  turnoId: number,
+  diaTurnoId: number | null = null
 ): Promise<void> {
   const grupoId = `MERMA-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();

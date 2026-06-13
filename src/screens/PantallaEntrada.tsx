@@ -12,7 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Producto } from '../types';
 import { crearProducto } from '../database/productos';
 import { registrarEntrada } from '../database/entradas';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import { Ionicons } from '@expo/vector-icons';
 import { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
@@ -139,7 +139,8 @@ export default function PantallaEntrada() {
         return;
       }
 
-      await registrarEntrada(productoSeleccionado.id, cantidadNum, turno.id);
+      const diaActivo = await obtenerDiaActivo(turno.id);
+      await registrarEntrada(productoSeleccionado.id, cantidadNum, turno.id, diaActivo?.id ?? null);
 
       const idActualizado = productoSeleccionado.id;
       await cargarProductos();
@@ -206,7 +207,9 @@ export default function PantallaEntrada() {
       const nuevoId = await crearProducto(nombreTrimmed, precioNum, 0, 5);
 
       // 2. Registrar la entrada usando el id real, sin búsqueda por nombre
-      await registrarEntrada(nuevoId, cantidadNum, turno.id);
+      const diaActivo = await obtenerDiaActivo(turno.id);
+      await registrarEntrada(nuevoId, cantidadNum, turno.id, diaActivo?.id ?? null);
+      
       setUltimoProductoActualizado(nuevoId);
       setTimeout(() => setUltimoProductoActualizado(null), 2000);
 

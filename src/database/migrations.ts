@@ -318,6 +318,47 @@ const MIGRATIONS: Migration[] = [
     },
   },
 
+  // ── v15: tabla dias_turno ─────────────────────────────────────────────────
+  {
+    version: 15,
+    description: 'tabla dias_turno para turnos multi-día',
+    up: async (db) => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS dias_turno (
+          id           INTEGER PRIMARY KEY AUTOINCREMENT,
+          turno_id     INTEGER NOT NULL,
+          numero_dia   INTEGER NOT NULL DEFAULT 1,
+          fecha_inicio TEXT    NOT NULL,
+          fecha_cierre TEXT,
+          cerrado      INTEGER NOT NULL DEFAULT 0,
+          FOREIGN KEY (turno_id) REFERENCES turnos(id)
+        );
+      `);
+    },
+  },
+
+  // ── v16: columna dia_turno_id en movimientos ──────────────────────────────
+  {
+    version: 16,
+    description: 'columna dia_turno_id en movimientos',
+    up: async (db) => {
+      await db.execAsync(
+        `ALTER TABLE movimientos ADD COLUMN dia_turno_id INTEGER;`
+      );
+    },
+  },
+
+  // ── v17: columna dias_planificados en turnos ──────────────────────────────
+  {
+    version: 17,
+    description: 'columna dias_planificados en turnos',
+    up: async (db) => {
+      await db.execAsync(
+        `ALTER TABLE turnos ADD COLUMN dias_planificados INTEGER NOT NULL DEFAULT 1;`
+      );
+    },
+  },
+
 ];
 
 // ─── Motor de migraciones ─────────────────────────────────────────────────────

@@ -33,7 +33,8 @@ export interface Turno {
   total_esperado_efectivo: number | null;
   total_esperado_transferencia: number | null;
   efectivo_real: number | null;
-  cerrado: number; // 0 = abierto, 1 = cerrado
+  cerrado: number;
+  dias_planificados: number;
 }
 
 // Venta agrupada por venta_id para mostrar en "Últimas Ventas"

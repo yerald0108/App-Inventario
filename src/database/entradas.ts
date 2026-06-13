@@ -3,7 +3,8 @@ import { getDatabase } from '../database/database';
 export async function registrarEntrada(
   productoId: number,
   cantidad: number,
-  turnoId: number
+  turnoId: number,
+  diaTurnoId: number | null = null
 ): Promise<void> {
   const fechaHora = new Date().toISOString();
   try {
@@ -11,9 +12,9 @@ export async function registrarEntrada(
     await db.withTransactionAsync(async () => {
       await db.runAsync(
         `INSERT INTO movimientos
-          (tipo, fecha_hora, producto_id, cantidad, turno_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        ['entrada', fechaHora, productoId, cantidad, turnoId]
+          (tipo, fecha_hora, producto_id, cantidad, turno_id, dia_turno_id)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        ['entrada', fechaHora, productoId, cantidad, turnoId, diaTurnoId]
       );
       await db.runAsync(
         'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
