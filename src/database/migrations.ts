@@ -359,6 +359,17 @@ const MIGRATIONS: Migration[] = [
     },
   },
 
+  // ── v18: columna dia_turno_id en ventas_externas ──────────────────────────
+  {
+    version: 18,
+    description: 'columna dia_turno_id en ventas_externas',
+    up: async (db) => {
+      await db.execAsync(
+        `ALTER TABLE ventas_externas ADD COLUMN dia_turno_id INTEGER;`
+      );
+    },
+  },
+
 ];
 
 // ─── Motor de migraciones ─────────────────────────────────────────────────────

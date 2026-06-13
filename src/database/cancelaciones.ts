@@ -3,7 +3,11 @@ import { VentaAgrupada } from '../types';
 import { sumaSegura, calcularTotalItemsBD } from '../utils';
 
 // Obtener todas las ventas del turno actual agrupadas por venta_id
-export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAgrupada[]> {
+// DESPUÉS
+export async function obtenerVentasTurnoActual(
+  turnoId: number,
+  diaTurnoId: number | null = null
+): Promise<VentaAgrupada[]> {
   // Traer todos los movimientos de venta del turno actual (no cancelados)
   const movimientos = await getDatabase().getAllAsync<{
     venta_id: string;
@@ -14,7 +18,7 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
     nombre_producto: string;
     cantidad: number;
     precio_aplicado: number;
-    propina: number;          
+    propina: number;
   }>(
     `SELECT 
       m.venta_id,
@@ -28,9 +32,11 @@ export async function obtenerVentasTurnoActual(turnoId: number): Promise<VentaAg
       m.propina                
     FROM movimientos m
     JOIN productos p ON m.producto_id = p.id
-    WHERE m.turno_id = ? AND m.tipo = 'venta'
+    WHERE m.turno_id = ? 
+      AND m.tipo = 'venta'
+      AND (? IS NULL OR m.dia_turno_id = ?)
     ORDER BY m.fecha_hora DESC`,
-    [turnoId]
+    [turnoId, diaTurnoId, diaTurnoId]
   );
 
   // Agrupar por venta_id

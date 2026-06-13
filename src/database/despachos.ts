@@ -143,7 +143,8 @@ export async function registrarVentaExterna(
   items: { productoId: number | null; nombre: string; precio: number; cantidad: number }[],
   metodoPago: 'efectivo' | 'transferencia',
   despachoId: number,
-  turnoId: number
+  turnoId: number,
+  diaTurnoId: number | null = null
 ): Promise<void> {
   const ventaId = `EXT-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();
@@ -152,8 +153,8 @@ export async function registrarVentaExterna(
   const db = getDatabase();
   await db.withTransactionAsync(async () => {
     const result = await db.runAsync(
-      'INSERT INTO ventas_externas (despacho_id, turno_id, fecha_hora, metodo_pago, total, venta_id) VALUES (?, ?, ?, ?, ?, ?)',
-      [despachoId, turnoId, fechaHora, metodoPago, total, ventaId]
+      'INSERT INTO ventas_externas (despacho_id, turno_id, fecha_hora, metodo_pago, total, venta_id, dia_turno_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [despachoId, turnoId, fechaHora, metodoPago, total, ventaId, diaTurnoId]
     );
     const ventaExternaId = result.lastInsertRowId;
 

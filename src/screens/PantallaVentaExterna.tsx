@@ -19,7 +19,7 @@ import {
   cancelarVentaExterna,
   VentaExternaAgrupada,
 } from '../database/despachos';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import { formatCUP } from '../utils';
 import ModalCobro from '../components/ModalCobro';
 import EstadoVacio from '../components/EstadoVacio';
@@ -371,6 +371,7 @@ export default function PantallaVentaExterna({ route }: Props) {
               Alert.alert('Error', 'No hay un turno abierto.');
               return;
             }
+            const diaActivo = await obtenerDiaActivo(turno.id);
             await registrarVentaExterna(
               itemsCesta.map(i => ({
                 productoId: i.productoId,
@@ -380,7 +381,8 @@ export default function PantallaVentaExterna({ route }: Props) {
               })),
               metodo,
               despachoId,
-              turno.id
+              turno.id,
+              diaActivo?.id ?? null
             );
             setModalCobroVisible(false);
             resetCesta(NAMESPACE_VENTA_EXTERNA);

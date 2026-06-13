@@ -195,9 +195,11 @@ export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | 
     `SELECT p.nombre, m.cantidad, m.fecha_hora
      FROM movimientos m
      JOIN productos p ON m.producto_id = p.id
-     WHERE m.turno_id = ? AND m.tipo = 'entrada'
+     WHERE m.turno_id = ? 
+       AND m.tipo = 'entrada'
+       AND (? IS NULL OR m.dia_turno_id = ?)
      ORDER BY m.fecha_hora ASC`,
-    [turnoId]
+    [turnoId, diaTurnoId, diaTurnoId]
   );
 
   // Lista de salidas familiares (Bug 9)
@@ -209,9 +211,11 @@ export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | 
     `SELECT p.nombre, m.cantidad, m.fecha_hora
      FROM movimientos m
      JOIN productos p ON m.producto_id = p.id
-     WHERE m.turno_id = ? AND m.tipo = 'salida_familiar'
+     WHERE m.turno_id = ? 
+       AND m.tipo = 'salida_familiar'
+       AND (? IS NULL OR m.dia_turno_id = ?)
      ORDER BY m.fecha_hora ASC`,
-    [turnoId]
+    [turnoId, diaTurnoId, diaTurnoId]
   );
 
   // Inventario actual de todos los productos
@@ -227,16 +231,20 @@ export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | 
   const conteoVentas = await db.getFirstAsync<{ cantidad: number }>(
     `SELECT COUNT(DISTINCT venta_id) as cantidad
      FROM movimientos
-     WHERE turno_id = ? AND tipo = 'venta'`,
-    [turnoId]
+     WHERE turno_id = ? 
+       AND tipo = 'venta'
+       AND (? IS NULL OR dia_turno_id = ?)`,
+    [turnoId, diaTurnoId, diaTurnoId]
   );
 
   // Contar anulaciones únicas
   const conteoAnulaciones = await db.getFirstAsync<{ cantidad: number }>(
     `SELECT COUNT(DISTINCT venta_id) as cantidad
      FROM movimientos
-     WHERE turno_id = ? AND tipo = 'cancelacion'`,
-    [turnoId]
+     WHERE turno_id = ? 
+       AND tipo = 'cancelacion'
+       AND (? IS NULL OR dia_turno_id = ?)`,
+    [turnoId, diaTurnoId, diaTurnoId]
   );
 
   // Conteo de propinas del turno

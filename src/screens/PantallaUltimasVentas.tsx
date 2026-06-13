@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '../../App';
 import { VentaAgrupada } from '../types';
 import { obtenerVentasTurnoActual, cancelarVenta, cambiarMetodoPagoVenta } from '../database/cancelaciones';
-import { obtenerTurnoAbierto } from '../database/turnos';
+import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import Skeleton, { SkeletonVenta } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import { formatCUP } from '../utils';
@@ -55,7 +55,8 @@ export default function PantallaUltimasVentas() {
         return;
       }
       setTurnoId(turno.id);
-      const lista = await obtenerVentasTurnoActual(turno.id);
+      const diaActivo = await obtenerDiaActivo(turno.id);
+      const lista = await obtenerVentasTurnoActual(turno.id, diaActivo?.id ?? null);
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setVentas(lista);
     } catch (error) {
