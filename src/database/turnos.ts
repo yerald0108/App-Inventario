@@ -192,13 +192,14 @@ export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | 
     cantidad: number;
     fecha_hora: string;
   }>(
-    `SELECT p.nombre, m.cantidad, m.fecha_hora
+    `SELECT p.nombre, SUM(m.cantidad) as cantidad, MAX(m.fecha_hora) as fecha_hora
      FROM movimientos m
      JOIN productos p ON m.producto_id = p.id
      WHERE m.turno_id = ? 
        AND m.tipo = 'entrada'
        AND (? IS NULL OR m.dia_turno_id = ?)
-     ORDER BY m.fecha_hora ASC`,
+     GROUP BY m.producto_id, p.nombre
+     ORDER BY p.nombre ASC`,
     [turnoId, diaTurnoId, diaTurnoId]
   );
 
@@ -208,13 +209,14 @@ export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | 
     cantidad: number;
     fecha_hora: string;
   }>(
-    `SELECT p.nombre, m.cantidad, m.fecha_hora
+    `SELECT p.nombre, SUM(m.cantidad) as cantidad, MAX(m.fecha_hora) as fecha_hora
      FROM movimientos m
      JOIN productos p ON m.producto_id = p.id
      WHERE m.turno_id = ? 
        AND m.tipo = 'salida_familiar'
        AND (? IS NULL OR m.dia_turno_id = ?)
-     ORDER BY m.fecha_hora ASC`,
+     GROUP BY m.producto_id, p.nombre
+     ORDER BY p.nombre ASC`,
     [turnoId, diaTurnoId, diaTurnoId]
   );
 
