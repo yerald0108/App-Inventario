@@ -203,20 +203,20 @@ export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | 
     [turnoId, diaTurnoId, diaTurnoId]
   );
 
-  // Lista de salidas familiares (Bug 9)
+  // Lista de salidas familiares — agrupadas por grupo (venta_id) para conservar persona
   const salidasFamiliares = await db.getAllAsync<{
     nombre: string;
     cantidad: number;
     fecha_hora: string;
+    persona: string | null;
   }>(
-    `SELECT p.nombre, SUM(m.cantidad) as cantidad, MAX(m.fecha_hora) as fecha_hora
+    `SELECT p.nombre, m.cantidad, m.fecha_hora, m.persona
      FROM movimientos m
      JOIN productos p ON m.producto_id = p.id
      WHERE m.turno_id = ? 
        AND m.tipo = 'salida_familiar'
        AND (? IS NULL OR m.dia_turno_id = ?)
-     GROUP BY m.producto_id, p.nombre
-     ORDER BY p.nombre ASC`,
+     ORDER BY m.fecha_hora DESC`,
     [turnoId, diaTurnoId, diaTurnoId]
   );
 

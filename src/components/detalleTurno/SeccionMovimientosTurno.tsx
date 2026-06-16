@@ -6,6 +6,7 @@ interface ItemMovimiento {
   nombre: string;
   cantidad: number;
   fecha_hora: string;
+  persona: string | null;
 }
 
 interface Props {
@@ -47,7 +48,14 @@ export default function SeccionMovimientosTurno({
           </View>
           {salidasFamiliares.map((salida, index) => (
             <View key={index} style={estilosSeccion.filaItem}>
-              <Text style={estilosSeccion.nombreItem}>{salida.nombre}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={estilosSeccion.nombreItem}>{salida.nombre}</Text>
+                {salida.persona ? (
+                  <Text style={{ fontSize: 12, color: '#ed64a6', fontWeight: '600', marginTop: 2 }}>
+                    👤 {salida.persona}
+                  </Text>
+                ) : null}
+              </View>
               <Text style={{ fontSize: 15, fontWeight: '600', color: '#ed64a6' }}>
                 -{salida.cantidad} unid.
               </Text>

@@ -4,11 +4,13 @@ import { ItemCesta } from '../types';
 /**
  * Registra una salida de productos para consumo familiar.
  * Descuenta del inventario y registra el movimiento sin precio ni total.
+ * El campo `persona` indica quién consumió (ej: "el hijo", "la mujer").
  */
 export async function registrarSalidaFamiliar(
   items: ItemCesta[],
   turnoId: number,
-  diaTurnoId: number | null = null
+  diaTurnoId: number | null = null,
+  persona: string | null = null
 ): Promise<void> {
   const fechaHora = new Date().toISOString();
   const grupoId = `FAM-${Date.now()}`;
@@ -19,10 +21,10 @@ export async function registrarSalidaFamiliar(
         await db.runAsync(
           `INSERT INTO movimientos 
             (tipo, fecha_hora, producto_id, cantidad, precio_aplicado, total, 
-             turno_id, venta_id, dia_turno_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             turno_id, venta_id, dia_turno_id, persona)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           ['salida_familiar', fechaHora, item.producto.id, item.cantidad, 
-           0, 0, turnoId, grupoId, diaTurnoId]
+           0, 0, turnoId, grupoId, diaTurnoId, persona ?? null]
         );
         await db.runAsync(
           'UPDATE productos SET existencia = existencia - ? WHERE id = ?',

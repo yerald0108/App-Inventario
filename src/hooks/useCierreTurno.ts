@@ -42,8 +42,7 @@ export function useCierreTurno(
   const [totalEfectivo, setTotalEfectivo] = useState(0);
   const [totalTransferencia, setTotalTransferencia] = useState(0);
   const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
-  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
-  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
+  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [cantidadVentas, setCantidadVentas] = useState(0);
   const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
   const [resumenDespachos, setResumenDespachos] = useState<ResumenDespacho[]>([]);

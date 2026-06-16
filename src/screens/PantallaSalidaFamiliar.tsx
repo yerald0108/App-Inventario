@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
-  Text, TextInput
+  Text, TextInput, Modal, KeyboardAvoidingView,
+  Platform, Pressable, TouchableOpacity
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,6 +55,8 @@ export default function PantallaSalidaFamiliar() {
     return () => clearTimeout(timer);
   }, [busqueda, cargarProductos]);
 
+  const [persona, setPersona] = useState('');
+  const [modalPersonaVisible, setModalPersonaVisible] = useState(false);
   const [procesando, setProcesando] = useState(false);
   const procesandoRef = useRef(false);
 
@@ -89,19 +92,26 @@ export default function PantallaSalidaFamiliar() {
   function handleConfirmarSalida() {
     const items = obtenerItemsCesta(NAMESPACE_SALIDA_FAMILIAR);
     if (items.length === 0) return;
+    setPersona('');
+    setModalPersonaVisible(true);
+  }
 
+  function handleProcederConPersona() {
+    setModalPersonaVisible(false);
+    const items = obtenerItemsCesta(NAMESPACE_SALIDA_FAMILIAR);
     const totalUnidades = items.reduce((acc, item) => acc + item.cantidad, 0);
     const resumen = items.map(i => `• ${i.cantidad}x ${i.producto.nombre}`).join('\n');
+    const textoPersona = persona.trim() ? `\nPara: ${persona.trim()}` : '';
 
     Alert.alert(
       'Confirmar Salida Familiar',
-      `¿Registrar el consumo de estos productos?\n\n${resumen}\n\nTotal: ${totalUnidades} unidades.`,
+      `¿Registrar el consumo de estos productos?\n\n${resumen}${textoPersona}\n\nTotal: ${totalUnidades} unidades.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Registrar Salida', 
           style: 'destructive', 
-          onPress: ejecutarSalida 
+          onPress: ejecutarSalida,
         },
       ]
     );
@@ -127,7 +137,7 @@ export default function PantallaSalidaFamiliar() {
       }
       
       const diaActivo = await obtenerDiaActivo(turno.id);
-      await registrarSalidaFamiliar(items, turno.id, diaActivo?.id ?? null);
+      await registrarSalidaFamiliar(items, turno.id, diaActivo?.id ?? null, persona.trim() || null);
       await cargarProductos(); 
 
       // Limpiar cesta y recargar inventario
@@ -240,6 +250,56 @@ export default function PantallaSalidaFamiliar() {
         showTotal={false}
         procesando={procesando}
       />
+
+      {/* Modal para ingresar el nombre de la persona */}
+      <Modal
+        visible={modalPersonaVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalPersonaVisible(false)}
+      >
+        <KeyboardAvoidingView
+          style={estilosPersona.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setModalPersonaVisible(false)}
+          />
+          <View style={estilosPersona.modal}>
+            <Text style={estilosPersona.titulo}>¿Para quién es?</Text>
+            <Text style={estilosPersona.subtitulo}>
+              Opcional — puedes dejarlo en blanco
+            </Text>
+            <TextInput
+              style={estilosPersona.input}
+              value={persona}
+              onChangeText={setPersona}
+              placeholder="Ej: El hijo, La mujer, El jefe..."
+              placeholderTextColor="#a0aec0"
+              autoFocus
+              autoCapitalize="sentences"
+              returnKeyType="done"
+              onSubmitEditing={handleProcederConPersona}
+            />
+            <TouchableOpacity
+              style={estilosPersona.botonConfirmar}
+              onPress={handleProcederConPersona}
+            >
+              <Text style={estilosPersona.textoBotonConfirmar}>CONTINUAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={estilosPersona.botonSaltar}
+              onPress={() => {
+                setPersona('');
+                handleProcederConPersona();
+              }}
+            >
+              <Text style={estilosPersona.textoBotonSaltar}>Saltar (sin nombre)</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -328,5 +388,69 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+  },
+});
+
+const estilosPersona = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  titulo: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a2e',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  subtitulo: {
+    fontSize: 13,
+    color: '#718096',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#cbd5e0',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: '#1a1a2e',
+    backgroundColor: '#f7fafc',
+    marginBottom: 16,
+  },
+  botonConfirmar: {
+    backgroundColor: '#ed64a6',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  textoBotonConfirmar: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  botonSaltar: {
+    padding: 10,
+    alignItems: 'center',
+  },
+  textoBotonSaltar: {
+    color: '#718096',
+    fontSize: 14,
   },
 });

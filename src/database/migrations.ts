@@ -370,6 +370,17 @@ const MIGRATIONS: Migration[] = [
     },
   },
 
+  // ── v19: columna persona en movimientos (salidas familiares) ──────────────
+  {
+    version: 19,
+    description: 'columna persona en movimientos para salidas familiares',
+    up: async (db) => {
+      await db.execAsync(
+        `ALTER TABLE movimientos ADD COLUMN persona TEXT;`
+      );
+    },
+  },
+
 ];
 
 // ─── Motor de migraciones ─────────────────────────────────────────────────────

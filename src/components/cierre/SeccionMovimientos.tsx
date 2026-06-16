@@ -6,6 +6,7 @@ interface ItemMovimiento {
   nombre: string;
   cantidad: number;
   fecha_hora: string;
+  persona: string | null;
 }
 
 interface Props {
@@ -49,7 +50,12 @@ export default function SeccionMovimientos({ entradas, salidasFamiliares }: Prop
           </View>
           {salidasFamiliares.map((salida, index) => (
             <View key={index} style={estilosSeccion.filaItem}>
-              <Text style={estilosSeccion.nombreItem}>{salida.nombre}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={estilosSeccion.nombreItem}>{salida.nombre}</Text>
+                {salida.persona ? (
+                  <Text style={estilos.textoPersona}>👤 {salida.persona}</Text>
+                ) : null}
+              </View>
               <Text style={[estilos.cantidadEntrada, { color: '#ed64a6' }]}>
                 -{salida.cantidad} unid.
               </Text>
@@ -63,6 +69,21 @@ export default function SeccionMovimientos({ entradas, salidasFamiliares }: Prop
 }
 
 const estilos = StyleSheet.create({
-  cantidadEntrada: { fontSize: 15, fontWeight: '600', color: '#38a169' },
-  horaItem: { fontSize: 13, color: '#a0aec0', width: 48, textAlign: 'right' },
+  cantidadEntrada: { 
+    fontSize: 15, 
+    fontWeight: '600', 
+    color: '#38a169' 
+  },
+  horaItem: { 
+    fontSize: 13, 
+    color: '#a0aec0', 
+    width: 48, 
+    textAlign: 'right' 
+  },
+  textoPersona: { 
+    fontSize: 12, 
+    color: '#ed64a6', 
+    fontWeight: '600', 
+    marginTop: 2 
+  },
 });

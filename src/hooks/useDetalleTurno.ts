@@ -26,6 +26,7 @@ export interface ItemMovimiento {
   nombre: string;
   cantidad: number;
   fecha_hora: string;
+  persona?: string | null;
 }
 
 export function useDetalleTurno(turnoId: number) {
