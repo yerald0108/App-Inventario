@@ -98,7 +98,7 @@ export default function PantallaCierreTurno({ navigation }: Props) {
 
         <SeccionCuadreCaja
           efectivoReal={efectivoReal}
-          totalEfectivo={totalEfectivo}
+          totalEfectivo={totalEfectivo + totalPropinas}
           resultadoCuadre={resultadoCuadre}
           onCambioEfectivo={handleCambioEfectivo}
           onBlurEfectivo={handleBlurEfectivo}

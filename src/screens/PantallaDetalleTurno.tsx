@@ -60,7 +60,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
         />
 
         <SeccionCuadreCajaTurno
-          totalEfectivo={hook.totalEfectivo}
+          totalEfectivo={hook.totalEfectivo + hook.totalPropinas}
           efectivoReal={hook.efectivoReal}
           cuadreTexto={hook.cuadreTexto}
           cuadreColor={hook.cuadreColor}

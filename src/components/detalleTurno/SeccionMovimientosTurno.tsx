@@ -1,13 +1,7 @@
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { estilosSeccion } from '../shared/estilosSeccion';
-
-interface ItemMovimiento {
-  nombre: string;
-  cantidad: number;
-  fecha_hora: string;
-  persona: string | null;
-}
+import { ItemMovimiento } from '../../hooks/useDetalleTurno';
 
 interface Props {
   entradas: ItemMovimiento[];

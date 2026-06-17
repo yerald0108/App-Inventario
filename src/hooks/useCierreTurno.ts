@@ -41,8 +41,7 @@ export function useCierreTurno(
   const [turnoId, setTurnoId] = useState<number | null>(null);
   const [totalEfectivo, setTotalEfectivo] = useState(0);
   const [totalTransferencia, setTotalTransferencia] = useState(0);
-  const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string }[]>([]);
-  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
+const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [cantidadVentas, setCantidadVentas] = useState(0);
   const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
   const [resumenDespachos, setResumenDespachos] = useState<ResumenDespacho[]>([]);
@@ -106,7 +105,7 @@ export function useCierreTurno(
 
       const [resumen, despachos, pedidosOpen, listaMermas, inventIni, resumenMultiDia] = 
         await Promise.all([
-          obtenerResumenTurno(turno.id, null), // null = todos los días para el cierre
+          obtenerResumenTurno(turno.id, null),
           obtenerResumenExternoPorDespacho(turno.id),
           obtenerPedidosAbiertosTurno(turno.id),
           obtenerMermasTurno(turno.id),
@@ -117,7 +116,14 @@ export function useCierreTurno(
       setPedidosAbiertos(pedidosOpen);
       setTotalEfectivo(resumen.totalEfectivo);
       setTotalTransferencia(resumen.totalTransferencia);
-      setEntradas(resumen.entradas);
+      
+      setEntradas(
+        resumen.entradas.map(e => ({
+          ...e,
+          persona: (e as any).persona ?? null,
+        }))
+      );
+      
       setSalidasFamiliares(resumen.salidasFamiliares);
       setInventario(resumen.inventario);
       setCantidadVentas(resumen.cantidadVentas);
@@ -159,7 +165,9 @@ export function useCierreTurno(
   function calcularDiferencia(): ResultadoCuadre | null {
     const real = parseFloat(efectivoReal);
     if (isNaN(real)) return null;
-    const diferencia = totalEfectivo - real;
+    // El vuelto no devuelto (propina) se queda físicamente en la caja
+    const efectivoEsperado = totalEfectivo + totalPropinas;
+    const diferencia = efectivoEsperado - real;
     if (diferencia === 0) return { diferencia: 0, mensaje: 'Caja cuadrada', color: '#38a169', icono: 'checkmark-circle' };
     if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${formatCUP(diferencia)} CUP`, color: '#e53e3e', icono: 'warning' };
     return { diferencia, mensaje: `Sobrante: ${formatCUP(Math.abs(diferencia))} CUP`, color: '#d69e2e', icono: 'information-circle' };
@@ -215,7 +223,8 @@ export function useCierreTurno(
     setProcesando(true);
     try {
       const real = parseFloat(efectivoReal);
-      await cerrarTurno(turnoId, totalEfectivo, totalTransferencia, real);
+      const efectivoEsperado = totalEfectivo + totalPropinas;
+      await cerrarTurno(turnoId, efectivoEsperado, totalTransferencia, real);
       Alert.alert('✅ Turno cerrado', 'El turno fue cerrado exitosamente.', [
         { text: 'OK', onPress: () => navigation.navigate('Inicio') },
       ]);
