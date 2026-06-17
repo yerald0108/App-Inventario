@@ -686,3 +686,18 @@ export async function eliminarTurno(turnoId: number): Promise<void> {
     );
   });
 }
+
+/**
+ * Actualiza la cantidad de días planificados de un turno abierto.
+ * Solo permite aumentar los días (nunca reducir por debajo del día actual).
+ */
+export async function actualizarDiasPlanificados(
+  turnoId: number,
+  nuevosDias: number
+): Promise<void> {
+  const db = getDatabase();
+  await db.runAsync(
+    'UPDATE turnos SET dias_planificados = ? WHERE id = ? AND cerrado = 0',
+    [nuevosDias, turnoId]
+  );
+}

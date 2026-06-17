@@ -15,6 +15,7 @@ import {
   obtenerDiaActivo,
   obtenerDiasTurno,
   cerrarDiaActual,
+  actualizarDiasPlanificados,
   DiaTurno,
 } from '../database/turnos';
 import { obtenerPedidosAbiertos } from '../database/pedidos';
@@ -44,6 +45,10 @@ export default function PantallaInicio({ navigation }: Props) {
   const [diasPlanificados, setDiasPlanificados] = useState(1);
   const [modalDiasVisible, setModalDiasVisible] = useState(false);
   const [diasSeleccionados, setDiasSeleccionados] = useState(1);
+  const [modalEditarDiasVisible, setModalEditarDiasVisible] = useState(false);
+  const [diasEditados, setDiasEditados] = useState(1);
+  const [editandoDias, setEditandoDias] = useState(false);
+  const editandoDiasRef = useRef(false);
   const [cerrandoDia, setCerrandoDia] = useState(false);
   const cerrandoDiaRef = useRef(false);
 
@@ -169,6 +174,28 @@ export default function PantallaInicio({ navigation }: Props) {
     );
   }
 
+  function abrirEditarDias() {
+    setDiasEditados(diasPlanificados);
+    setModalEditarDiasVisible(true);
+  }
+
+  async function confirmarEditarDias() {
+    if (!turnoActual || editandoDiasRef.current) return;
+    if (diaActivo && diasEditados < diaActivo.numero_dia) return; // no puede quedar por debajo del día actual
+    editandoDiasRef.current = true;
+    setEditandoDias(true);
+    try {
+      await actualizarDiasPlanificados(turnoActual.id, diasEditados);
+      setDiasPlanificados(diasEditados);
+      setModalEditarDiasVisible(false);
+    } catch (error) {
+      console.error('Error al actualizar días:', error);
+    } finally {
+      editandoDiasRef.current = false;
+      setEditandoDias(false);
+    }
+  }
+
   function handleAccionSinTurno(nombreAccion: string) {
     Alert.alert(
       'Turno cerrado',
@@ -223,12 +250,23 @@ export default function PantallaInicio({ navigation }: Props) {
             <Text style={estilos.tarjetaInfo}>
               Iniciado: {formatearFecha(turnoActual.fecha_inicio)}
             </Text>
-            {diasPlanificados > 1 && diaActivo && (
-              <View style={estilosLocal.badgeDia}>
-                <Ionicons name="calendar" size={14} color="#2b6cb0" />
-                <Text style={estilosLocal.textoBadgeDia}>
-                  Día {diaActivo.numero_dia} de {diasPlanificados}
-                </Text>
+            {diaActivo && (
+              <View style={estilosLocal.filaBadgeDia}>
+                <View style={estilosLocal.badgeDia}>
+                  <Ionicons name="calendar" size={14} color="#2b6cb0" />
+                  <Text style={estilosLocal.textoBadgeDia}>
+                    {diasPlanificados > 1
+                      ? `Día ${diaActivo.numero_dia} de ${diasPlanificados}`
+                      : 'Turno de 1 día'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={estilosLocal.botonEditarDias}
+                  onPress={abrirEditarDias}
+                >
+                  <Ionicons name="pencil-outline" size={13} color="#2b6cb0" />
+                  <Text style={estilosLocal.textoBotonEditarDias}>Editar días</Text>
+                </TouchableOpacity>
               </View>
             )}
             <View style={estilos.filaTotales}>
@@ -533,6 +571,74 @@ export default function PantallaInicio({ navigation }: Props) {
           </View>
         </View>
       )}
+
+      {/* ── Modal: editar cantidad de días del turno activo ── */}
+      {modalEditarDiasVisible && (
+        <View style={estilosModal.overlay}>
+          <View style={estilosModal.modal}>
+            <Text style={estilosModal.titulo}>Extender el turno</Text>
+            <Text style={estilosModal.subtitulo}>
+              {diaActivo
+                ? `Estás en el Día ${diaActivo.numero_dia}. Elige cuántos días durará en total.`
+                : 'Elige la nueva duración total del turno.'}
+            </Text>
+
+            <View style={estilosModal.gridDias}>
+              {[1, 2, 3, 4, 5, 6, 7].map((dia) => {
+                const esActualOPasado = diaActivo ? dia < diaActivo.numero_dia : false;
+                return (
+                  <TouchableOpacity
+                    key={dia}
+                    style={[
+                      estilosModal.botonDia,
+                      diasEditados === dia && estilosModal.botonDiaActivo,
+                      esActualOPasado && { opacity: 0.3 },
+                    ]}
+                    onPress={() => !esActualOPasado && setDiasEditados(dia)}
+                    disabled={esActualOPasado}
+                  >
+                    <Text style={[
+                      estilosModal.textoDia,
+                      diasEditados === dia && estilosModal.textoDiaActivo,
+                    ]}>
+                      {dia}
+                    </Text>
+                    <Text style={[
+                      estilosModal.textoLabelDia,
+                      diasEditados === dia && estilosModal.textoDiaActivo,
+                    ]}>
+                      {dia === 1 ? 'día' : 'días'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                estilosModal.botonConfirmar,
+                editandoDias && { opacity: 0.7 },
+              ]}
+              onPress={confirmarEditarDias}
+              disabled={editandoDias}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+              <Text style={estilosModal.textoBotonConfirmar}>
+                {editandoDias
+                  ? 'GUARDANDO...'
+                  : `CONFIRMAR: ${diasEditados} ${diasEditados === 1 ? 'DÍA' : 'DÍAS'}`}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={estilosModal.botonCancelar}
+              onPress={() => setModalEditarDiasVisible(false)}
+            >
+              <Text style={estilosModal.textoBotonCancelar}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -810,6 +916,29 @@ const estilosLocal = StyleSheet.create({
   },
   textoBadgeDia: {
     fontSize: 13,
+    color: '#2b6cb0',
+    fontWeight: '700',
+  },
+  filaBadgeDia: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  botonEditarDias: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ebf8ff',
+    borderWidth: 1,
+    borderColor: '#bee3f8',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  textoBotonEditarDias: {
+    fontSize: 12,
     color: '#2b6cb0',
     fontWeight: '700',
   },

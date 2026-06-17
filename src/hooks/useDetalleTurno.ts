@@ -107,7 +107,7 @@ export function useDetalleTurno(turnoId: number) {
 
   // Cálculo del cuadre — lo necesitan dos secciones distintas
   const efectivoReal = turno?.efectivo_real ?? 0;
-  const diferencia = (totalEfectivo + totalPropinas) - efectivoReal;
+  const diferencia = totalEfectivo - efectivoReal;
 
   let cuadreTexto = 'Caja cuadrada';
   let cuadreColor = '#38a169';

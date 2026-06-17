@@ -165,8 +165,9 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
   function calcularDiferencia(): ResultadoCuadre | null {
     const real = parseFloat(efectivoReal);
     if (isNaN(real)) return null;
-    // El vuelto no devuelto (propina) se queda físicamente en la caja
-    const efectivoEsperado = totalEfectivo + totalPropinas;
+    // La propina es vuelto no devuelto: ya está dentro del efectivo recibido,
+    // no se suma por separado al efectivo esperado.
+    const efectivoEsperado = totalEfectivo;
     const diferencia = efectivoEsperado - real;
     if (diferencia === 0) return { diferencia: 0, mensaje: 'Caja cuadrada', color: '#38a169', icono: 'checkmark-circle' };
     if (diferencia > 0) return { diferencia, mensaje: `Faltante: ${formatCUP(diferencia)} CUP`, color: '#e53e3e', icono: 'warning' };
@@ -223,7 +224,7 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
     setProcesando(true);
     try {
       const real = parseFloat(efectivoReal);
-      const efectivoEsperado = totalEfectivo + totalPropinas;
+      const efectivoEsperado = totalEfectivo;
       await cerrarTurno(turnoId, efectivoEsperado, totalTransferencia, real);
       Alert.alert('✅ Turno cerrado', 'El turno fue cerrado exitosamente.', [
         { text: 'OK', onPress: () => navigation.navigate('Inicio') },
