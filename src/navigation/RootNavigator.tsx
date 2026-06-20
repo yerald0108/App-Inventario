@@ -17,6 +17,9 @@ import PantallaProductosDespacho from '../screens/PantallaProductosDespacho';
 import PantallaPedidos from '../screens/PantallaPedidos';
 import PantallaDetallePedido from '../screens/PantallaDetallePedido';
 import PantallaMerma from '../screens/PantallaMerma';
+import PantallaHistorialEntradas from '../screens/PantallaHistorialEntradas';
+import PantallaHistorialSalidasFamiliares from '../screens/PantallaHistorialSalidasFamiliares';
+import PantallaHistorialMermas from '../screens/PantallaHistorialMermas';
 
 export type RootStackParamList = {
   Inicio: undefined;
@@ -34,6 +37,9 @@ export type RootStackParamList = {
   ProductosDespacho: { despachoId: number; despachoNombre: string };
   Pedidos: undefined;
   DetallePedido: { pedidoId: number; pedidoNombre: string };
+  HistorialEntradas: undefined;
+  HistorialSalidasFamiliares: undefined;
+  HistorialMermas: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -137,6 +143,21 @@ export default function RootNavigator() {
           name="DetallePedido"
           component={PantallaDetallePedido}
           options={({ route }) => ({ title: route.params.pedidoNombre })}
+        />
+        <Stack.Screen
+          name="HistorialEntradas"
+          component={PantallaHistorialEntradas}
+          options={{ title: 'Entradas del turno' }}
+        />
+        <Stack.Screen
+          name="HistorialSalidasFamiliares"
+          component={PantallaHistorialSalidasFamiliares}
+          options={{ title: 'Salidas familiares del turno' }}
+        />
+        <Stack.Screen
+          name="HistorialMermas"
+          component={PantallaHistorialMermas}
+          options={{ title: 'Mermas del turno' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

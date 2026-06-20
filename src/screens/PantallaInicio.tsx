@@ -21,6 +21,7 @@ import {
 import { obtenerPedidosAbiertos } from '../database/pedidos';
 import { Turno } from '../types';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
+import ModalSelectorAccion from '../components/ModalSelectorAccion';
 
 
 type Props = {
@@ -51,6 +52,10 @@ export default function PantallaInicio({ navigation }: Props) {
   const editandoDiasRef = useRef(false);
   const [cerrandoDia, setCerrandoDia] = useState(false);
   const cerrandoDiaRef = useRef(false);
+
+  // ── Modal selector de acción ──────────────────────────────────────────────
+  const [modalSelectorVisible, setModalSelectorVisible] = useState(false);
+  const [tipoSelector, setTipoSelector] = useState<'entrada' | 'salidaFamiliar' | 'merma' | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -127,6 +132,16 @@ export default function PantallaInicio({ navigation }: Props) {
       abriendoTurnoRef.current = false;
       setAbriendoTurno(false);
     }
+  }
+
+  function abrirSelector(tipo: 'entrada' | 'salidaFamiliar' | 'merma') {
+    if (!turnoActual) {
+      const nombres = { entrada: 'registrar entradas', salidaFamiliar: 'registrar salidas familiares', merma: 'registrar mermas' };
+      handleAccionSinTurno(nombres[tipo]);
+      return;
+    }
+    setTipoSelector(tipo);
+    setModalSelectorVisible(true);
   }
 
   async function handleCerrarDia() {
@@ -412,11 +427,7 @@ export default function PantallaInicio({ navigation }: Props) {
               estilos.tarjetaAccion,
               { backgroundColor: turnoActual ? '#d69e2e' : '#a0aec0' },
             ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('Entrada')
-                : handleAccionSinTurno('registrar entradas de mercancía')
-            }
+            onPress={() => abrirSelector('entrada')}
           >
             <Ionicons name="download" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Entrada</Text>
@@ -450,11 +461,7 @@ export default function PantallaInicio({ navigation }: Props) {
               estilos.tarjetaAccion,
               { backgroundColor: turnoActual ? '#ed64a6' : '#a0aec0' },
             ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('SalidaFamiliar')
-                : handleAccionSinTurno('registrar salidas familiares')
-            }
+            onPress={() => abrirSelector('salidaFamiliar')}
           >
             <Ionicons name="people" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Salida Familiar</Text>
@@ -466,11 +473,7 @@ export default function PantallaInicio({ navigation }: Props) {
               estilos.tarjetaAccion,
               { backgroundColor: turnoActual ? '#c05621' : '#a0aec0' },
             ]}
-            onPress={() =>
-              turnoActual
-                ? navigation.navigate('Merma')
-                : handleAccionSinTurno('registrar mermas')
-            }
+            onPress={() => abrirSelector('merma')}
           >
             <Ionicons name="trash-outline" size={32} color="#ffffff" />
             <Text style={estilos.textoTarjeta}>Merma</Text>
@@ -641,6 +644,77 @@ export default function PantallaInicio({ navigation }: Props) {
             </TouchableOpacity>
           </View>
         </View>
+      )}
+
+      {/* ── Modal selector de acción ── */}
+      {tipoSelector === 'entrada' && (
+        <ModalSelectorAccion
+          visible={modalSelectorVisible}
+          titulo="Entradas de mercancía"
+          onCerrar={() => setModalSelectorVisible(false)}
+          opciones={[
+            {
+              icono: 'list-outline',
+              titulo: 'Entradas del turno',
+              descripcion: 'Ver y editar las entradas ya registradas hoy',
+              color: '#2b6cb0',
+              onPress: () => navigation.navigate('HistorialEntradas'),
+            },
+            {
+              icono: 'download-outline',
+              titulo: 'Nueva entrada',
+              descripcion: 'Registrar una entrada de mercancía',
+              color: '#38a169',
+              onPress: () => navigation.navigate('Entrada'),
+            },
+          ]}
+        />
+      )}
+      {tipoSelector === 'salidaFamiliar' && (
+        <ModalSelectorAccion
+          visible={modalSelectorVisible}
+          titulo="Salida familiar"
+          onCerrar={() => setModalSelectorVisible(false)}
+          opciones={[
+            {
+              icono: 'list-outline',
+              titulo: 'Salidas del turno',
+              descripcion: 'Ver y editar las salidas familiares registradas hoy',
+              color: '#ed64a6',
+              onPress: () => navigation.navigate('HistorialSalidasFamiliares'),
+            },
+            {
+              icono: 'people-outline',
+              titulo: 'Nueva salida familiar',
+              descripcion: 'Registrar consumo familiar de productos',
+              color: '#d53f8c',
+              onPress: () => navigation.navigate('SalidaFamiliar'),
+            },
+          ]}
+        />
+      )}
+      {tipoSelector === 'merma' && (
+        <ModalSelectorAccion
+          visible={modalSelectorVisible}
+          titulo="Merma de productos"
+          onCerrar={() => setModalSelectorVisible(false)}
+          opciones={[
+            {
+              icono: 'list-outline',
+              titulo: 'Mermas del turno',
+              descripcion: 'Ver y editar las mermas registradas hoy',
+              color: '#c05621',
+              onPress: () => navigation.navigate('HistorialMermas'),
+            },
+            {
+              icono: 'trash-outline',
+              titulo: 'Nueva merma',
+              descripcion: 'Registrar productos dañados, vencidos o robados',
+              color: '#e53e3e',
+              onPress: () => navigation.navigate('Merma'),
+            },
+          ]}
+        />
       )}
     </SafeAreaView>
   );
