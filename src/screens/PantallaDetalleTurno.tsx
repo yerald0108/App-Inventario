@@ -13,6 +13,7 @@ import SeccionMovimientosTurno from '../components/detalleTurno/SeccionMovimient
 import SeccionMermasTurno from '../components/detalleTurno/SeccionMermasTurno';
 import SeccionInventarioTurno from '../components/detalleTurno/SeccionInventarioTurno';
 import SeccionInventarioInicialTurno from '../components/detalleTurno/SeccionInventarioInicialTurno';
+import SeccionCambiosPrecio from '../components/cierre/SeccionCambiosPrecio';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;
@@ -58,6 +59,8 @@ export default function PantallaDetalleTurno({ route }: Props) {
           totalTransferencia={hook.totalTransferencia}
           totalPropinas={hook.totalPropinas}
         />
+
+        <SeccionCambiosPrecio cambios={hook.cambiosPrecio} />
 
         <SeccionCuadreCajaTurno
           totalEfectivo={hook.totalEfectivo}

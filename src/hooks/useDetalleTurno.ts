@@ -5,6 +5,7 @@ import { Turno, VentaAgrupada } from '../types';
 import { obtenerResumenExternoDetalleTurno } from '../database/despachos';
 import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
 import { useExpandable } from './useExpandable';
+import { obtenerCambiosPrecioTurno, CambioPrecio } from '../database/historialPrecios';
 
 
 export interface ResumenDespachoDetalle {
@@ -45,6 +46,7 @@ export function useDetalleTurno(turnoId: number) {
   const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
   const [inventarioInicial, setInventarioInicial] = useState<ItemInventario[]>([]);
   const [totalPropinas, setTotalPropinas] = useState(0);
+  const [cambiosPrecio, setCambiosPrecio] = useState<CambioPrecio[]>([]);
 
   // Estado de expansión de ventas y mermas (centralizado en useExpandable)
   const { expandidos: ventasExpandidas, toggle: toggleVenta } = useExpandable();
@@ -70,18 +72,20 @@ export function useDetalleTurno(turnoId: number) {
       setCantidadAnulaciones(detalle.cantidadAnulaciones);
       setTotalPropinas(detalle.totalPropinas ?? 0);
 
-      const [listaVentas, listaAnulaciones, listaDespachos, listaMermas, inventIni] = await Promise.all([
+      const [listaVentas, listaAnulaciones, listaDespachos, listaMermas, inventIni, listaCambiosPrecio] = await Promise.all([
         obtenerVentasTurnoActual(turnoId),
         obtenerAnulacionesTurno(turnoId),
         obtenerResumenExternoDetalleTurno(turnoId),
         obtenerMermasTurno(turnoId),
         obtenerInventarioInicialTurno(turnoId),
+        obtenerCambiosPrecioTurno(turnoId),
       ]);
       setVentas(listaVentas);
       setAnulaciones(listaAnulaciones);
       setResumenDespachos(listaDespachos as ResumenDespachoDetalle[]);
       setMermas(listaMermas);
       setInventarioInicial(inventIni);
+      setCambiosPrecio(listaCambiosPrecio);
     } catch (error) {
       console.error('Error al cargar detalle del turno:', error);
     } finally {
@@ -133,6 +137,7 @@ export function useDetalleTurno(turnoId: number) {
     inventario, resumenDespachos, mermas,
     totalPropinas,
     inventarioInicial,
+    cambiosPrecio,
     // Expansión
     ventasExpandidas, toggleVenta,
     mermasExpandidas, toggleMerma,
