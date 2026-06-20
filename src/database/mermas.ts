@@ -24,6 +24,7 @@ export interface MermaAgrupada {
   motivo: MotivoMerma;
   motivo_detalle: string | null;
   items: {
+    id: number;            
     producto_id: number;
     nombre_producto: string;
     cantidad: number;
@@ -95,6 +96,7 @@ export async function obtenerMermasTurno(turnoId: number): Promise<MermaAgrupada
     fecha_hora: string;
     motivo: MotivoMerma;
     motivo_detalle: string | null;
+    id: number;               
     producto_id: number;
     nombre_producto: string;
     cantidad: number;
@@ -104,6 +106,7 @@ export async function obtenerMermasTurno(turnoId: number): Promise<MermaAgrupada
       m.fecha_hora,
       m.motivo,
       m.motivo_detalle,
+      m.id,
       m.producto_id,
       p.nombre AS nombre_producto,
       m.cantidad
@@ -114,7 +117,6 @@ export async function obtenerMermasTurno(turnoId: number): Promise<MermaAgrupada
     [turnoId]
   );
 
-  // Agrupar por grupo_id
   const mapa = new Map<string, MermaAgrupada>();
 
   for (const fila of filas) {
@@ -129,6 +131,7 @@ export async function obtenerMermasTurno(turnoId: number): Promise<MermaAgrupada
     }
     const grupo = mapa.get(fila.grupo_id)!;
     grupo.items.push({
+      id: fila.id,               // ← NUEVO
       producto_id: fila.producto_id,
       nombre_producto: fila.nombre_producto,
       cantidad: fila.cantidad,
@@ -145,4 +148,60 @@ export function etiquetaMotivo(motivo: MotivoMerma, detalle: string | null): str
   const base = encontrado?.etiqueta ?? motivo;
   if (motivo === 'otro' && detalle) return `Otro: ${detalle}`;
   return base;
+}
+
+export async function actualizarCantidadMerma(
+  id: number,
+  nuevaCantidad: number
+): Promise<void> {
+  const db = getDatabase();
+  await db.withTransactionAsync(async () => {
+    const actual = await db.getFirstAsync<{ producto_id: number; cantidad: number }>(
+      'SELECT producto_id, cantidad FROM mermas WHERE id = ?',
+      [id]
+    );
+    if (!actual) throw new Error('Registro de merma no encontrado.');
+
+    if (nuevaCantidad <= 0) {
+      await db.runAsync('DELETE FROM mermas WHERE id = ?', [id]);
+      await db.runAsync(
+        'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
+        [actual.cantidad, actual.producto_id]
+      );
+      return;
+    }
+
+    const delta = nuevaCantidad - actual.cantidad;
+    if (delta > 0) {
+      const stock = await db.getFirstAsync<{ existencia: number }>(
+        'SELECT existencia FROM productos WHERE id = ?',
+        [actual.producto_id]
+      );
+      if ((stock?.existencia ?? 0) < delta) {
+        throw new Error('Stock insuficiente para aumentar esta merma.');
+      }
+    }
+
+    await db.runAsync(
+      'UPDATE productos SET existencia = existencia - ? WHERE id = ?',
+      [delta, actual.producto_id]
+    );
+    await db.runAsync('UPDATE mermas SET cantidad = ? WHERE id = ?', [nuevaCantidad, id]);
+  });
+}
+
+export async function eliminarMerma(id: number): Promise<void> {
+  const db = getDatabase();
+  await db.withTransactionAsync(async () => {
+    const actual = await db.getFirstAsync<{ producto_id: number; cantidad: number }>(
+      'SELECT producto_id, cantidad FROM mermas WHERE id = ?',
+      [id]
+    );
+    if (!actual) return;
+    await db.runAsync('DELETE FROM mermas WHERE id = ?', [id]);
+    await db.runAsync(
+      'UPDATE productos SET existencia = existencia + ? WHERE id = ?',
+      [actual.cantidad, actual.producto_id]
+    );
+  });
 }

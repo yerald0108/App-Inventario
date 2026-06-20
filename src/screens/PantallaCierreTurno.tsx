@@ -12,6 +12,8 @@ import SeccionInventario from '../components/cierre/SeccionInventario';
 import SeccionAdvertenciaPedidos from '../components/cierre/SeccionAdvertenciaPedidos';
 import SeccionInventarioInicial from '../components/cierre/SeccionInventarioInicial';
 import SeccionResumenDias from '../components/cierre/SeccionResumenDias';
+import ModalEditarMovimiento from '../components/cierre/ModalEditarMovimiento';
+import SeccionCambiosPrecio from '../components/cierre/SeccionCambiosPrecio';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
@@ -47,6 +49,13 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     resumenDias,
     diasPlanificados,
     diaActivo,
+    itemEditando,
+    abrirEditarSalida,
+    abrirEditarMerma,
+    cerrarEdicion,
+    guardarEdicionItem,
+    eliminarItemEditando,
+    cambiosPrecio,
   } = useCierreTurno(navigation);
 
   if (cargando || sinTurno) {
@@ -91,6 +100,8 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           onRefrescar={cargarResumen}
         />
 
+        <SeccionCambiosPrecio cambios={cambiosPrecio} />
+
         <SeccionDespachosExternos
           despachos={resumenDespachos}
           totalGeneral={totalGeneral}
@@ -107,12 +118,14 @@ export default function PantallaCierreTurno({ navigation }: Props) {
         <SeccionMovimientos
           entradas={entradas}
           salidasFamiliares={salidasFamiliares}
+          onEditarSalida={abrirEditarSalida}
         />
 
         <SeccionMermas
           mermas={mermas}
           mermasExpandidas={mermasExpandidas}
           onToggle={toggleMerma}
+          onEditarItem={abrirEditarMerma}
         />
 
         <SeccionInventarioInicial inventario={inventarioInicial} />
@@ -131,6 +144,17 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      <ModalEditarMovimiento
+        visible={itemEditando !== null}
+        titulo={itemEditando?.tipo === 'salida' ? 'Editar salida familiar' : 'Editar merma'}
+        nombreProducto={itemEditando?.nombre ?? ''}
+        cantidadActual={itemEditando?.cantidad ?? 0}
+        mostrarPersona={itemEditando?.tipo === 'salida'}
+        personaActual={itemEditando?.tipo === 'salida' ? itemEditando.persona : null}
+        onGuardar={guardarEdicionItem}
+        onEliminar={eliminarItemEditando}
+        onCancelar={cerrarEdicion}
+      />
     </SafeAreaView>
   );
 }

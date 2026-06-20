@@ -13,10 +13,19 @@ import {
   obtenerDiaActivo,
   DiaTurno,
 } from '../database/turnos';
-import { obtenerMermasTurno, MermaAgrupada } from '../database/mermas';
+import { 
+  obtenerSalidasFamiliaresTurno, 
+  actualizarSalidaFamiliar, 
+  eliminarSalidaFamiliar 
+} from '../database/salidas_familiares';
+import { 
+  obtenerMermasTurno, MermaAgrupada, 
+  actualizarCantidadMerma, eliminarMerma 
+} from '../database/mermas';
 import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils';
 import { useExpandable } from './useExpandable';
+import { obtenerCambiosPrecioTurno, CambioPrecio } from '../database/historialPrecios';
 
 export type ResumenDespacho = {
   despacho_id: number;
@@ -34,6 +43,10 @@ export type ResultadoCuadre = {
   icono: any;
 };
 
+type ItemEnEdicion =
+  | { tipo: 'salida'; id: number; nombre: string; cantidad: number; persona: string | null }
+  | { tipo: 'merma'; id: number; nombre: string; cantidad: number };
+
 export function useCierreTurno(
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>
 ) {
@@ -41,7 +54,9 @@ export function useCierreTurno(
   const [turnoId, setTurnoId] = useState<number | null>(null);
   const [totalEfectivo, setTotalEfectivo] = useState(0);
   const [totalTransferencia, setTotalTransferencia] = useState(0);
-const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);  const [salidasFamiliares, setSalidasFamiliares] = useState<{ nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
+  const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);
+  const [salidasFamiliares, setSalidasFamiliares] = useState<{ id: number; nombre: string; cantidad: number; fecha_hora: string; persona: string | null }[]>([]);
+  const [inventario, setInventario] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [cantidadVentas, setCantidadVentas] = useState(0);
   const [cantidadAnulaciones, setCantidadAnulaciones] = useState(0);
   const [resumenDespachos, setResumenDespachos] = useState<ResumenDespacho[]>([]);
@@ -53,6 +68,7 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
   const [mermas, setMermas] = useState<MermaAgrupada[]>([]);
   const [inventarioInicial, setInventarioInicial] = useState<{ nombre: string; existencia: number; alerta_minima: number }[]>([]);
   const [totalPropinas, setTotalPropinas] = useState(0);
+  const [cambiosPrecio, setCambiosPrecio] = useState<CambioPrecio[]>([]);
   // Estados multi-día
   const [resumenDias, setResumenDias] = useState<{
     diaTurnoId: number;
@@ -68,6 +84,7 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
   const [diaActivo, setDiaActivo] = useState<DiaTurno | null>(null);
   const procesandoRef = useRef(false);
   const { expandidos: mermasExpandidas, toggle: toggleMerma } = useExpandable();
+  const [itemEditando, setItemEditando] = useState<ItemEnEdicion | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -103,7 +120,7 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
       const dia = await obtenerDiaActivo(turno.id);
       setDiaActivo(dia);
 
-      const [resumen, despachos, pedidosOpen, listaMermas, inventIni, resumenMultiDia] = 
+      const [resumen, despachos, pedidosOpen, listaMermas, inventIni, resumenMultiDia, listaCambiosPrecio] = 
         await Promise.all([
           obtenerResumenTurno(turno.id, null),
           obtenerResumenExternoPorDespacho(turno.id),
@@ -111,11 +128,13 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
           obtenerMermasTurno(turno.id),
           obtenerInventarioInicialTurno(turno.id),
           obtenerResumenTodosLosDias(turno.id),
+          obtenerCambiosPrecioTurno(turno.id),
         ]);
 
       setPedidosAbiertos(pedidosOpen);
       setTotalEfectivo(resumen.totalEfectivo);
       setTotalTransferencia(resumen.totalTransferencia);
+      setCambiosPrecio(listaCambiosPrecio);
       
       setEntradas(
         resumen.entradas.map(e => ({
@@ -238,6 +257,40 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
     }
   }
 
+  function abrirEditarSalida(item: { id: number; nombre: string; cantidad: number; persona: string | null }) {
+    setItemEditando({ tipo: 'salida', id: item.id, nombre: item.nombre, cantidad: item.cantidad, persona: item.persona });
+  }
+
+  function abrirEditarMerma(item: { id: number; nombre_producto: string; cantidad: number }) {
+    setItemEditando({ tipo: 'merma', id: item.id, nombre: item.nombre_producto, cantidad: item.cantidad });
+  }
+
+  function cerrarEdicion() {
+    setItemEditando(null);
+  }
+
+  async function guardarEdicionItem(cantidad: number, persona: string | null) {
+    if (!itemEditando) return;
+    if (itemEditando.tipo === 'salida') {
+      await actualizarSalidaFamiliar(itemEditando.id, cantidad, persona);
+    } else {
+      await actualizarCantidadMerma(itemEditando.id, cantidad);
+    }
+    setItemEditando(null);
+    await cargarResumen();
+  }
+
+  async function eliminarItemEditando() {
+    if (!itemEditando) return;
+    if (itemEditando.tipo === 'salida') {
+      await eliminarSalidaFamiliar(itemEditando.id);
+    } else {
+      await eliminarMerma(itemEditando.id);
+    }
+    setItemEditando(null);
+    await cargarResumen();
+  }
+
   return {
     // Estado
     cargando,
@@ -271,5 +324,13 @@ const [entradas, setEntradas] = useState<{ nombre: string; cantidad: number; fec
     handleBlurEfectivo,
     calcularDiferencia,
     handleCerrarTurno,
+    // Edición de items
+    itemEditando,
+    abrirEditarSalida,
+    abrirEditarMerma,
+    cerrarEdicion,
+    guardarEdicionItem,
+    eliminarItemEditando,
+    cambiosPrecio
   };
 }

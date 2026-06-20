@@ -7,9 +7,10 @@ interface Props {
   mermas: MermaAgrupada[];
   mermasExpandidas: Set<string>;
   onToggle: (grupoId: string) => void;
+  onEditarItem?: (item: { id: number; nombre_producto: string; cantidad: number }) => void;
 }
 
-export default function SeccionMermas({ mermas, mermasExpandidas, onToggle }: Props) {
+export default function SeccionMermas({ mermas, mermasExpandidas, onToggle, onEditarItem }: Props) {
   if (mermas.length === 0) return null;
 
   const totalUnidades = mermas.reduce(
@@ -26,13 +27,12 @@ export default function SeccionMermas({ mermas, mermasExpandidas, onToggle }: Pr
       {mermas.map((grupo) => {
         const expandido = mermasExpandidas.has(grupo.grupo_id);
         return (
-          <TouchableOpacity
-            key={grupo.grupo_id}
-            style={estilos.grupoMerma}
-            onPress={() => onToggle(grupo.grupo_id)}
-            activeOpacity={0.7}
-          >
-            <View style={estilos.cabeceraGrupo}>
+          <View key={grupo.grupo_id} style={estilos.grupoMerma}>
+            <TouchableOpacity
+              style={estilos.cabeceraGrupo}
+              onPress={() => onToggle(grupo.grupo_id)}
+              activeOpacity={0.7}
+            >
               <View style={estilos.badgeMotivo}>
                 <Text style={estilos.textoMotivo}>
                   {etiquetaMotivo(grupo.motivo, grupo.motivo_detalle)}
@@ -50,10 +50,15 @@ export default function SeccionMermas({ mermas, mermasExpandidas, onToggle }: Pr
                   color="#a0aec0"
                 />
               </View>
-            </View>
+            </TouchableOpacity>
 
             {grupo.items.map((item, idx) => (
-              <View key={idx} style={estilos.filaItem}>
+              <TouchableOpacity
+                key={idx}
+                style={estilos.filaItem}
+                onPress={() => onEditarItem?.(item)}
+                disabled={!onEditarItem}
+              >
                 <View style={{ flex: 1 }}>
                   <Text style={estilos.nombreItem}>{item.nombre_producto}</Text>
                   <Text style={estilos.motivoItem}>
@@ -61,7 +66,10 @@ export default function SeccionMermas({ mermas, mermasExpandidas, onToggle }: Pr
                   </Text>
                 </View>
                 <Text style={estilos.cantidadItem}>-{item.cantidad} unid.</Text>
-              </View>
+                {onEditarItem && (
+                  <Ionicons name="pencil-outline" size={16} color="#a0aec0" style={{ marginLeft: 6 }} />
+                )}
+              </TouchableOpacity>
             ))}
 
             {expandido && (
@@ -93,7 +101,7 @@ export default function SeccionMermas({ mermas, mermasExpandidas, onToggle }: Pr
                 </View>
               </View>
             )}
-          </TouchableOpacity>
+          </View>
         );
       })}
 

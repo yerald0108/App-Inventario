@@ -69,7 +69,7 @@ export default function PantallaInicio({ navigation }: Props) {
               obtenerResumenExternoPorDespacho(turno.id),
             ]);
             setTotalesActuales({
-              efectivo: resumen.totalEfectivo + resumen.totalPropinas,
+              efectivo: resumen.totalEfectivo,
               transferencia: resumen.totalTransferencia,
             });
             setPedidosAbiertos(pedidos.length);
@@ -288,7 +288,10 @@ export default function PantallaInicio({ navigation }: Props) {
             <View style={estilosLocal.notaPropinas}>
               <Ionicons name="star" size={14} color="#b7791f" />
               <Text style={estilosLocal.textoNotaPropinas}>
-                Incluye {totalPropinas.toFixed(2)} CUP en propinas
+                +{totalPropinas.toFixed(2)} CUP en propinas{' '}
+                <Text style={estilosLocal.textoNotaPropinasAclaracion}>
+                  (no es de tu caja)
+                </Text>
               </Text>
             </View>
           )}
@@ -941,6 +944,12 @@ const estilosLocal = StyleSheet.create({
     fontSize: 12,
     color: '#2b6cb0',
     fontWeight: '700',
+  },
+  textoNotaPropinasAclaracion: {
+    fontSize: 12,
+    color: '#d69e2e',
+    fontWeight: '400',
+    fontStyle: 'italic',
   },
 });
 

@@ -381,6 +381,27 @@ const MIGRATIONS: Migration[] = [
     },
   },
 
+  // ── v20: historial de cambios de precio ────────────────────────────────────
+  {
+    version: 20,
+    description: 'tabla historial_precios para auditoría de cambios de precio',
+    up: async (db) => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS historial_precios (
+          id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          producto_id     INTEGER NOT NULL,
+          nombre_producto TEXT    NOT NULL,
+          precio_anterior REAL    NOT NULL,
+          precio_nuevo    REAL    NOT NULL,
+          fecha_hora      TEXT    NOT NULL,
+          turno_id        INTEGER,
+          FOREIGN KEY (producto_id) REFERENCES productos(id),
+          FOREIGN KEY (turno_id)    REFERENCES turnos(id)
+        );
+      `);
+    },
+  },
+
 ];
 
 // ─── Motor de migraciones ─────────────────────────────────────────────────────

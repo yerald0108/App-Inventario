@@ -1,5 +1,6 @@
 import { getDatabase } from '../database/database';
 import { Producto } from '../types';
+import { obtenerTurnoAbierto } from './turnos';
 
 export async function obtenerProductos(query: string = '', limit: number = 20, offset: number = 0): Promise<Producto[]> {
   const db = getDatabase();
@@ -61,13 +62,32 @@ export async function actualizarProducto(
   precio_costo: number = 0
 ): Promise<void> {
   const db = getDatabase();
-  await db.runAsync(
-    `UPDATE productos
-     SET nombre = ?, precio = ?, existencia = ?,
-         alerta_minima = ?, precio_costo = ?
-     WHERE id = ?`,
-    [nombre, precio, existencia, alerta_minima, precio_costo, id]
+
+  const actual = await db.getFirstAsync<{ precio: number }>(
+    'SELECT precio FROM productos WHERE id = ?',
+    [id]
   );
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `UPDATE productos
+       SET nombre = ?, precio = ?, existencia = ?,
+           alerta_minima = ?, precio_costo = ?
+       WHERE id = ?`,
+      [nombre, precio, existencia, alerta_minima, precio_costo, id]
+    );
+
+    // Si el precio cambió, dejamos constancia en el historial
+    if (actual && actual.precio !== precio) {
+      const turno = await obtenerTurnoAbierto();
+      await db.runAsync(
+        `INSERT INTO historial_precios
+          (producto_id, nombre_producto, precio_anterior, precio_nuevo, fecha_hora, turno_id)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, nombre, actual.precio, precio, new Date().toISOString(), turno?.id ?? null]
+      );
+    }
+  });
 }
 
 export async function eliminarProducto(id: number): Promise<void> {

@@ -205,12 +205,13 @@ export async function obtenerResumenTurno(turnoId: number, diaTurnoId: number | 
 
   // Lista de salidas familiares — agrupadas por grupo (venta_id) para conservar persona
   const salidasFamiliares = await db.getAllAsync<{
+    id: number;                 // ← NUEVO
     nombre: string;
     cantidad: number;
     fecha_hora: string;
     persona: string | null;
   }>(
-    `SELECT p.nombre, m.cantidad, m.fecha_hora, m.persona
+    `SELECT m.id, p.nombre, m.cantidad, m.fecha_hora, m.persona
      FROM movimientos m
      JOIN productos p ON m.producto_id = p.id
      WHERE m.turno_id = ? 

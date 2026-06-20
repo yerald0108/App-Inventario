@@ -1,8 +1,15 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { estilosSeccion } from '../shared/estilosSeccion';
 
-interface ItemMovimiento {
+interface ItemEntrada {
+  nombre: string;
+  cantidad: number;
+  fecha_hora: string;
+}
+
+interface ItemSalidaFamiliar {
+  id: number;
   nombre: string;
   cantidad: number;
   fecha_hora: string;
@@ -10,8 +17,9 @@ interface ItemMovimiento {
 }
 
 interface Props {
-  entradas: ItemMovimiento[];
-  salidasFamiliares: ItemMovimiento[];
+  entradas: ItemEntrada[];
+  salidasFamiliares: ItemSalidaFamiliar[];
+  onEditarSalida?: (item: ItemSalidaFamiliar) => void;
 }
 
 function formatearFecha(iso: string): string {
@@ -21,7 +29,7 @@ function formatearFecha(iso: string): string {
   });
 }
 
-export default function SeccionMovimientos({ entradas, salidasFamiliares }: Props) {
+export default function SeccionMovimientos({ entradas, salidasFamiliares, onEditarSalida }: Props) {
   if (entradas.length === 0 && salidasFamiliares.length === 0) return null;
 
   return (
@@ -49,7 +57,12 @@ export default function SeccionMovimientos({ entradas, salidasFamiliares }: Prop
             <Text style={estilosSeccion.tituloSeccion}>Consumo familiar</Text>
           </View>
           {salidasFamiliares.map((salida, index) => (
-            <View key={index} style={estilosSeccion.filaItem}>
+            <TouchableOpacity
+              key={index}
+              style={estilosSeccion.filaItem}
+              onPress={() => onEditarSalida?.(salida)}
+              disabled={!onEditarSalida}
+            >
               <View style={{ flex: 1 }}>
                 <Text style={estilosSeccion.nombreItem}>{salida.nombre}</Text>
                 {salida.persona ? (
@@ -60,7 +73,10 @@ export default function SeccionMovimientos({ entradas, salidasFamiliares }: Prop
                 -{salida.cantidad} unid.
               </Text>
               <Text style={estilosSeccion.horaItem}>{formatearFecha(salida.fecha_hora)}</Text>
-            </View>
+              {onEditarSalida && (
+                <Ionicons name="pencil-outline" size={16} color="#a0aec0" style={{ marginLeft: 6 }} />
+              )}
+            </TouchableOpacity>
           ))}
         </View>
       )}
@@ -69,21 +85,6 @@ export default function SeccionMovimientos({ entradas, salidasFamiliares }: Prop
 }
 
 const estilos = StyleSheet.create({
-  cantidadEntrada: { 
-    fontSize: 15, 
-    fontWeight: '600', 
-    color: '#38a169' 
-  },
-  horaItem: { 
-    fontSize: 13, 
-    color: '#a0aec0', 
-    width: 48, 
-    textAlign: 'right' 
-  },
-  textoPersona: { 
-    fontSize: 12, 
-    color: '#ed64a6', 
-    fontWeight: '600', 
-    marginTop: 2 
-  },
+  cantidadEntrada: { fontSize: 15, fontWeight: '600', color: '#38a169' },
+  textoPersona: { fontSize: 12, color: '#ed64a6', fontWeight: '600', marginTop: 2 },
 });
