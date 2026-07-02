@@ -6,11 +6,9 @@ import { useCierreTurno } from '../hooks/useCierreTurno';
 import SeccionResumenVentas from '../components/cierre/SeccionResumenVentas';
 import SeccionDespachosExternos from '../components/cierre/SeccionDespachosExternos';
 import SeccionCuadreCaja from '../components/cierre/SeccionCuadreCaja';
-import SeccionMovimientos from '../components/cierre/SeccionMovimientos';
 import SeccionMermas from '../components/cierre/SeccionMermas';
-import SeccionInventario from '../components/cierre/SeccionInventario';
 import SeccionAdvertenciaPedidos from '../components/cierre/SeccionAdvertenciaPedidos';
-import SeccionInventarioInicial from '../components/cierre/SeccionInventarioInicial';
+import SeccionInventarioComparadoCierre from '../components/cierre/SeccionInventarioComparadoCierre';
 import SeccionResumenDias from '../components/cierre/SeccionResumenDias';
 import ModalEditarMovimiento from '../components/cierre/ModalEditarMovimiento';
 import SeccionCambiosPrecio from '../components/cierre/SeccionCambiosPrecio';
@@ -115,12 +113,6 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           onBlurEfectivo={handleBlurEfectivo}
         />
 
-        <SeccionMovimientos
-          entradas={entradas}
-          salidasFamiliares={salidasFamiliares}
-          onEditarSalida={abrirEditarSalida}
-        />
-
         <SeccionMermas
           mermas={mermas}
           mermasExpandidas={mermasExpandidas}
@@ -128,9 +120,11 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           onEditarItem={abrirEditarMerma}
         />
 
-        <SeccionInventarioInicial inventario={inventarioInicial} />
-
-        <SeccionInventario inventario={inventario} />
+        <SeccionInventarioComparadoCierre
+          inventarioInicial={inventarioInicial}
+          inventarioCierre={inventario}
+          entradas={entradas}
+        />
 
         <SeccionAdvertenciaPedidos pedidos={pedidosAbiertos} />
 

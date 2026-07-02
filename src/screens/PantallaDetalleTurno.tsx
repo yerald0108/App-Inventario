@@ -9,10 +9,8 @@ import SeccionCuadreCajaTurno from '../components/detalleTurno/SeccionCuadreCaja
 import SeccionVentasTurno from '../components/detalleTurno/SeccionVentasTurno';
 import SeccionAnulacionesTurno from '../components/detalleTurno/SeccionAnulacionesTurno';
 import SeccionDespachosDetalle from '../components/detalleTurno/SeccionDespachosDetalle';
-import SeccionMovimientosTurno from '../components/detalleTurno/SeccionMovimientosTurno';
+import SeccionInventarioComparadoTurno from '../components/detalleTurno/SeccionInventarioComparadoTurno';
 import SeccionMermasTurno from '../components/detalleTurno/SeccionMermasTurno';
-import SeccionInventarioTurno from '../components/detalleTurno/SeccionInventarioTurno';
-import SeccionInventarioInicialTurno from '../components/detalleTurno/SeccionInventarioInicialTurno';
 import SeccionCambiosPrecio from '../components/cierre/SeccionCambiosPrecio';
 
 type Props = {
@@ -86,11 +84,7 @@ export default function PantallaDetalleTurno({ route }: Props) {
           resumenDespachos={hook.resumenDespachos}
         />
 
-        <SeccionMovimientosTurno
-          entradas={hook.entradas}
-          salidasFamiliares={hook.salidasFamiliares}
-          formatearHora={hook.formatearHora}
-        />
+  
 
         <SeccionMermasTurno
           mermas={hook.mermas}
@@ -98,12 +92,10 @@ export default function PantallaDetalleTurno({ route }: Props) {
           onToggle={hook.toggleMerma}
         />
 
-        <SeccionInventarioInicialTurno
-          inventario={hook.inventarioInicial}
-        />
-
-        <SeccionInventarioTurno
-          inventario={hook.inventario}
+        <SeccionInventarioComparadoTurno
+          inventarioInicial={hook.inventarioInicial}
+          inventarioCierre={hook.inventario}
+          entradas={hook.entradas}
         />
 
       </ScrollView>
