@@ -14,7 +14,6 @@ import {
   DiaTurno,
 } from '../database/turnos';
 import { 
-  obtenerSalidasFamiliaresTurno, 
   actualizarSalidaFamiliar, 
   eliminarSalidaFamiliar 
 } from '../database/salidas_familiares';
@@ -26,6 +25,7 @@ import { obtenerResumenExternoPorDespacho } from '../database/despachos';
 import { formatCUP } from '../utils';
 import { useExpandable } from './useExpandable';
 import { obtenerCambiosPrecioTurno, CambioPrecio } from '../database/historialPrecios';
+import { registrarEntrada } from '../database/entradas';
 
 export type ResumenDespacho = {
   despacho_id: number;
@@ -85,6 +85,8 @@ export function useCierreTurno(
   const procesandoRef = useRef(false);
   const { expandidos: mermasExpandidas, toggle: toggleMerma } = useExpandable();
   const [itemEditando, setItemEditando] = useState<ItemEnEdicion | null>(null);
+  const [modalEntradaVisible, setModalEntradaVisible] = useState(false);
+  const [guardandoEntrada, setGuardandoEntrada] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -269,6 +271,26 @@ export function useCierreTurno(
     setItemEditando(null);
   }
 
+  async function handleRegistrarEntradaRapida(
+    productoId: number,
+    _nombreProducto: string,
+    cantidad: number
+  ) {
+    if (!turnoId) return;
+    setGuardandoEntrada(true);
+    try {
+      const dia = await obtenerDiaActivo(turnoId);
+      await registrarEntrada(productoId, cantidad, turnoId, dia?.id ?? null);
+      setModalEntradaVisible(false);
+      await cargarResumen();
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo registrar la entrada.');
+      console.error(error);
+    } finally {
+      setGuardandoEntrada(false);
+    }
+  }
+
   async function guardarEdicionItem(cantidad: number, persona: string | null) {
     if (!itemEditando) return;
     if (itemEditando.tipo === 'salida') {
@@ -331,6 +353,11 @@ export function useCierreTurno(
     cerrarEdicion,
     guardarEdicionItem,
     eliminarItemEditando,
-    cambiosPrecio
+    cambiosPrecio,
+    // Entrada rápida
+    modalEntradaVisible,
+    guardandoEntrada,
+    setModalEntradaVisible,
+    handleRegistrarEntradaRapida,
   };
 }

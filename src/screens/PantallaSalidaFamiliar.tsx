@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
-import { Producto, ItemCesta } from '../types';
+import { Producto } from '../types';
 import { registrarSalidaFamiliar } from '../database/salidas_familiares';
 import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
 import { useCestaStore, NAMESPACE_SALIDA_FAMILIAR} from '../store/useCestaStore';
@@ -27,7 +27,7 @@ export default function PantallaSalidaFamiliar() {
   // Obtener navigation hook
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'SalidaFamiliar'>>();
   
-  const { productos, cargandoProductos: cargando, cargarProductos, cargarMasProductos, cargandoMas } = useProductos();
+  const { productos, cargandoProductos: cargando, cargarProductos } = useProductos();
 
   const {
     namespaces,

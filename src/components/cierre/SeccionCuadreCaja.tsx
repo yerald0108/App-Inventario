@@ -26,6 +26,15 @@ export default function SeccionCuadreCaja({
         <Text style={estilosSeccion.tituloSeccion}>Cuadre de caja</Text>
       </View>
 
+      {/* Indicador prominente del efectivo esperado */}
+      <View style={estilos.bannerEsperado}>
+        <View style={estilos.filaBanner}>
+          <Ionicons name="cash-outline" size={18} color="#2b6cb0" />
+          <Text style={estilos.labelEsperado}>Se esperan en caja</Text>
+        </View>
+        <Text style={estilos.valorEsperado}>{formatCUP(totalEfectivo)} CUP</Text>
+      </View>
+
       <Text style={estilos.etiquetaCuadre}>Efectivo físico contado (CUP)</Text>
       <TextInput
         style={[
@@ -43,7 +52,7 @@ export default function SeccionCuadreCaja({
         onChangeText={onCambioEfectivo}
         onBlur={onBlurEfectivo}
         keyboardType="numeric"
-        placeholder="0.00"
+        placeholder={`Ej: ${formatCUP(totalEfectivo)}`}
         placeholderTextColor="#a0aec0"
       />
 
@@ -65,6 +74,32 @@ export default function SeccionCuadreCaja({
 }
 
 const estilos = StyleSheet.create({
+  bannerEsperado: {
+    backgroundColor: '#ebf8ff',
+    borderWidth: 1.5,
+    borderColor: '#bee3f8',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: 4,
+  },
+  filaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  labelEsperado: {
+    fontSize: 13,
+    color: '#2b6cb0',
+    fontWeight: '600',
+  },
+  valorEsperado: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#1a365d',
+    letterSpacing: 0.5,
+  },
   etiquetaCuadre: { fontSize: 14, color: '#4a5568', marginBottom: 8, fontWeight: '600' },
   inputEfectivo: {
     borderWidth: 1.5, borderColor: '#cbd5e0', borderRadius: 12,

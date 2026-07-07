@@ -1,4 +1,5 @@
 import { View, StyleSheet, ScrollView, TouchableOpacity, Text, ActivityIndicator, RefreshControl } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../App';
@@ -13,6 +14,8 @@ import SeccionResumenDias from '../components/cierre/SeccionResumenDias';
 import ModalEditarMovimiento from '../components/cierre/ModalEditarMovimiento';
 import SeccionCambiosPrecio from '../components/cierre/SeccionCambiosPrecio';
 import SeccionSalidasFamiliares from '../components/cierre/SeccionSalidasFamiliares';
+import ModalEntradaRapida from '../components/cierre/ModalEntradaRapida';
+import { useProductos } from '../context/ProductosContext';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
@@ -47,7 +50,6 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     inventarioInicial,
     resumenDias,
     diasPlanificados,
-    diaActivo,
     itemEditando,
     abrirEditarSalida,
     abrirEditarMerma,
@@ -55,7 +57,13 @@ export default function PantallaCierreTurno({ navigation }: Props) {
     guardarEdicionItem,
     eliminarItemEditando,
     cambiosPrecio,
+    modalEntradaVisible,
+    guardandoEntrada,
+    setModalEntradaVisible,
+    handleRegistrarEntradaRapida,
   } = useCierreTurno(navigation);
+
+  const { productos, cargandoProductos } = useProductos();
 
   if (cargando || sinTurno) {
     return (
@@ -132,6 +140,16 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           entradas={entradas}
         />
 
+        {/* Botón de entrada rápida */}
+        <TouchableOpacity
+          style={estilos.botonEntradaRapida}
+          onPress={() => setModalEntradaVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#ffffff" />
+          <Text style={estilos.textoBotonEntrada}>+ Registrar entrada de mercancía</Text>
+        </TouchableOpacity>
+
         <SeccionAdvertenciaPedidos pedidos={pedidosAbiertos} />
 
         <TouchableOpacity
@@ -154,6 +172,14 @@ export default function PantallaCierreTurno({ navigation }: Props) {
         onGuardar={guardarEdicionItem}
         onEliminar={eliminarItemEditando}
         onCancelar={cerrarEdicion}
+      />
+      <ModalEntradaRapida
+        visible={modalEntradaVisible}
+        productos={productos}
+        cargandoProductos={cargandoProductos}
+        guardando={guardandoEntrada}
+        onGuardar={handleRegistrarEntradaRapida}
+        onCancelar={() => setModalEntradaVisible(false)}
       />
     </SafeAreaView>
   );
@@ -188,5 +214,22 @@ const estilos = StyleSheet.create({
     color: '#ffffff', 
     fontSize: 18, 
     fontWeight: 'bold' 
+  },
+  botonEntradaRapida: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#2b6cb0',
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginTop: 12,
+    elevation: 2,
+  },
+  textoBotonEntrada: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

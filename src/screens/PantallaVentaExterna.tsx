@@ -43,7 +43,6 @@ export default function PantallaVentaExterna({ route }: Props) {
   const {
     namespaces,
     cambiarCantidad: cambiarCantidadStore,
-    obtenerItemsCesta,
     resetCesta,
   } = useCestaStore();
 
@@ -361,7 +360,7 @@ export default function PantallaVentaExterna({ route }: Props) {
           cantidad: i.cantidad,
         }))}
         metodoPagoInicial="efectivo"
-        onConfirmar={async (metodo, monto, cambioCalculado) => {
+        onConfirmar={async (metodo, _monto, cambioCalculado) => {
           if (procesandoRef.current) return;
           procesandoRef.current = true;
           setProcesando(true);

@@ -1,5 +1,5 @@
 import { getDatabase } from '../database/database';
-import { sumaSegura, calcularTotalItemsBD } from '../utils';
+import { calcularTotalItemsBD } from '../utils';
 import { Turno } from '../types';
 
 export interface DiaTurno {

@@ -1,6 +1,6 @@
 import { getDatabase } from '../database/database';
 import { VentaAgrupada } from '../types';
-import { sumaSegura, calcularTotalItemsBD } from '../utils';
+import { calcularTotalItemsBD } from '../utils';
 
 // Obtener todas las ventas del turno actual agrupadas por venta_id
 // DESPUÉS

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, ScrollView, ActivityIndicator,
@@ -298,7 +298,6 @@ export default function PantallaHistorial({ navigation }: Props) {
               (item.total_esperado_efectivo ?? 0) +
               (item.total_esperado_transferencia ?? 0);
             const totalExterno = totalesExternos.get(item.id) ?? 0;
-            const totalVendido = totalPropio + totalExterno;
             const cuadre = estadoCuadre(item);
             const duracion = calcularDuracion(item.fecha_inicio, item.fecha_cierre);
 

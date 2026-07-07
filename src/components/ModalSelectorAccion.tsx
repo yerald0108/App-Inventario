@@ -1,5 +1,5 @@
 // src/components/ModalSelectorAccion.tsx
-import React from 'react';
+
 import {
   Modal, View, Text, TouchableOpacity,
   StyleSheet, Pressable

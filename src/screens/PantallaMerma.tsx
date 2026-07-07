@@ -21,14 +21,13 @@ import { useCestaStore, NAMESPACE_MERMA } from '../store/useCestaStore';
 import { useProductos } from '../context/ProductosContext';
 import EstadoVacio from '../components/EstadoVacio';
 import { SkeletonProducto } from '../components/Skeleton';
-import { formatCUP } from '../utils';
 
 type ItemLista = Producto | { __tipo: 'separador'; id: number };
 
 export default function PantallaMerma() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const { productos, cargandoProductos: cargando, cargarProductos, cargarMasProductos, cargandoMas } = useProductos();
+  const { productos, cargandoProductos: cargando, cargarProductos } = useProductos();
   
   const {
     namespaces,

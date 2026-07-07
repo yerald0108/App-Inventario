@@ -1,10 +1,8 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Alert } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { renombrarPedido, obtenerPedidoConItems, PedidoConItems } from '../database/pedidos';
 import { RootStackParamList } from '../../App';
-import { sumaSegura } from '../utils';
 import { usePedidoCobro } from './usePedidoCobro';
 import { usePedidoProductos } from './usePedidoProductos';
 
@@ -33,31 +31,6 @@ export function usePedidoDetalle(
     onItemsChanged: cargarPedido,
   });
 
-  // ── Totales separados (propio vs despachos) ──────────────────────────────
-  const totalesSeparados = useMemo(() => {
-    if (!pedido) {
-      return {
-        propio: 0,
-        porDespacho: new Map<number, { nombre: string; color: string; total: number }>(),
-      };
-    }
-    const propio = sumaSegura(
-      pedido.items.filter(i => i.origen === 'propio').map(i => i.subtotal)
-    );
-    const porDespacho = new Map<number, { nombre: string; color: string; total: number }>();
-    for (const item of pedido.items.filter(i => i.origen === 'despacho')) {
-      if (item.despacho_id === null) continue;
-      const despacho = productosHook.despachos.find(d => d.id === item.despacho_id);
-      const entrada = porDespacho.get(item.despacho_id) ?? {
-        nombre: despacho?.nombre ?? `Despacho ${item.despacho_id}`,
-        color: despacho?.color ?? '#805ad5',
-        total: 0,
-      };
-      entrada.total = sumaSegura([entrada.total, item.subtotal]);
-      porDespacho.set(item.despacho_id, entrada);
-    }
-    return { propio, porDespacho };
-  }, [pedido, productosHook.despachos]);
 
   const cobroHook = usePedidoCobro({
     pedidoId,

@@ -2,7 +2,6 @@ import { getDatabase } from '../database/database';
 import { Producto } from '../types';
 import { ProductoDespacho } from './despachos';
 import { sumaSegura } from '../utils';
-import { obtenerDiaActivo } from './turnos';
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export type EstadoPedido = 'abierto' | 'cerrado' | 'cancelado';

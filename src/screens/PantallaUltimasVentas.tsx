@@ -11,7 +11,7 @@ import { RootStackParamList } from '../../App';
 import { VentaAgrupada } from '../types';
 import { obtenerVentasTurnoActual, cancelarVenta, cambiarMetodoPagoVenta } from '../database/cancelaciones';
 import { obtenerTurnoAbierto, obtenerDiaActivo } from '../database/turnos';
-import Skeleton, { SkeletonVenta } from '../components/Skeleton';
+import { SkeletonVenta } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import { formatCUP } from '../utils';
 

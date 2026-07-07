@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, Alert, TextInput, Modal,
@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+
 import { Producto } from '../types';
 import { crearProducto } from '../database/productos';
 import { registrarEntrada } from '../database/entradas';

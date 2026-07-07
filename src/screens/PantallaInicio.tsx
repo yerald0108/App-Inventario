@@ -13,7 +13,6 @@ import {
   crearTurno,
   obtenerResumenTurno,
   obtenerDiaActivo,
-  obtenerDiasTurno,
   cerrarDiaActual,
   actualizarDiasPlanificados,
   DiaTurno,

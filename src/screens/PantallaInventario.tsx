@@ -11,7 +11,7 @@ import { crearProducto, actualizarProducto, eliminarProducto } from '../database
 import { Producto } from '../types';
 import ProductoItem from '../components/ProductoItem';
 import FormularioProducto from '../components/FormularioProducto';
-import Skeleton, { SkeletonProducto } from '../components/Skeleton';
+import { SkeletonProducto } from '../components/Skeleton';
 import EstadoVacio from '../components/EstadoVacio';
 import { useProductos } from '../context/ProductosContext';
 import { handleError } from '../utils';

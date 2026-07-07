@@ -1,5 +1,5 @@
 import { getDatabase } from '../database/database';
-import { formatCUP } from '../utils';
+
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -38,7 +38,7 @@ export async function registrarMerma(
   motivo: MotivoMerma,
   motivoDetalle: string | null,
   turnoId: number,
-  diaTurnoId: number | null = null
+  _diaTurnoId: number | null = null
 ): Promise<void> {
   const grupoId = `MERMA-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const fechaHora = new Date().toISOString();

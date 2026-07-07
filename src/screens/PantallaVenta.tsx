@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, Alert,
   Text, TextInput, TouchableOpacity, ActivityIndicator
@@ -111,7 +111,7 @@ export default function PantallaVenta({ navigation }: Props) {
   async function confirmarVenta(
     items: ItemCesta[],
     metodoPago: 'efectivo' | 'transferencia',
-    montoRecibido: number,
+    _montoRecibido: number,
     cambio: number,
     propina: number
   ) {
