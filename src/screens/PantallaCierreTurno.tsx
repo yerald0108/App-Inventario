@@ -12,6 +12,7 @@ import SeccionInventarioComparadoCierre from '../components/cierre/SeccionInvent
 import SeccionResumenDias from '../components/cierre/SeccionResumenDias';
 import ModalEditarMovimiento from '../components/cierre/ModalEditarMovimiento';
 import SeccionCambiosPrecio from '../components/cierre/SeccionCambiosPrecio';
+import SeccionSalidasFamiliares from '../components/cierre/SeccionSalidasFamiliares';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CierreTurno'>;
@@ -118,6 +119,11 @@ export default function PantallaCierreTurno({ navigation }: Props) {
           mermasExpandidas={mermasExpandidas}
           onToggle={toggleMerma}
           onEditarItem={abrirEditarMerma}
+        />
+
+        <SeccionSalidasFamiliares
+          salidas={salidasFamiliares}
+          onEditarItem={abrirEditarSalida}
         />
 
         <SeccionInventarioComparadoCierre

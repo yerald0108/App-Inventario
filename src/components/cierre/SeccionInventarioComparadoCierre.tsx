@@ -53,7 +53,7 @@ export default function SeccionInventarioComparadoCierre({
       <View style={estilos.filaEncabezado}>
         <Text style={[estilos.celdaNombre, estilos.textoEncabezado]}>Producto</Text>
         <Text style={[estilos.celdaValor, estilos.textoEncabezado]}>Inicio</Text>
-        <Text style={[estilos.celdaValor, estilos.textoEncabezado]}>Entradas</Text>
+        <Text style={[estilos.celdaValor, estilos.textoEncabezado]}>Entrada</Text>
         <Text style={[estilos.celdaValor, estilos.textoEncabezado]}>Cierre</Text>
       </View>
 

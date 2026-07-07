@@ -12,6 +12,7 @@ import SeccionDespachosDetalle from '../components/detalleTurno/SeccionDespachos
 import SeccionInventarioComparadoTurno from '../components/detalleTurno/SeccionInventarioComparadoTurno';
 import SeccionMermasTurno from '../components/detalleTurno/SeccionMermasTurno';
 import SeccionCambiosPrecio from '../components/cierre/SeccionCambiosPrecio';
+import SeccionSalidasFamiliaresTurno from '../components/detalleTurno/SeccionSalidasFamiliaresTurno';
 
 type Props = {
   route: RouteProp<RootStackParamList, 'DetalleTurno'>;
@@ -84,12 +85,14 @@ export default function PantallaDetalleTurno({ route }: Props) {
           resumenDespachos={hook.resumenDespachos}
         />
 
-  
-
         <SeccionMermasTurno
           mermas={hook.mermas}
           mermasExpandidas={hook.mermasExpandidas}
           onToggle={hook.toggleMerma}
+        />
+
+        <SeccionSalidasFamiliaresTurno
+          salidas={hook.salidasFamiliares}
         />
 
         <SeccionInventarioComparadoTurno
